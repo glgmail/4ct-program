@@ -74,6 +74,7 @@ third_party/     git submodules pinned to commits; read-only upstreams
 - [`.github/PROTECTION.md`](.github/PROTECTION.md) — what protects this
   repository, and the one open question about its visibility.
 - [`.github/RUNNER.md`](.github/RUNNER.md) — registering the self-hosted
-  32 GB Windows runner that `lean-build` needs. Read its first section
-  before registering: a self-hosted runner on a public repository needs
-  care.
+  runner that `lean-build` needs: Linux inside WSL2, on a 32 GB Windows
+  host. Read its first two sections before registering — WSL2's default
+  memory limit is too low for this build, and a self-hosted runner on a
+  public repository needs care.
