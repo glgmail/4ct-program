@@ -125,12 +125,15 @@ ls /mnt                        # should be empty
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y git git-lfs gcc g++ make cmake curl ca-certificates python3 python3-venv
+sudo apt-get install -y git git-lfs gcc g++ make cmake curl ca-certificates python3 python3-venv python3-numpy
 git lfs install
 ```
 
 `cmake`, `g++` and `make` are here for task F1's C++ checks, which now build
-natively.
+natively. **`python3-numpy` is needed by the corun1024 port**: its
+`scripts/bulkspace.py` imports numpy, and without it a build dies during
+certificate generation, several minutes in. `port-build.yml` now checks for
+it up front rather than letting you find out the slow way.
 
 Check:
 
@@ -272,6 +275,40 @@ Disk: the Mathlib cache plus `data/` in Git LFS runs to tens of gigabytes,
 inside the WSL virtual disk. It grows on demand but does **not** shrink when
 files are deleted; reclaim with `wsl --manage Ubuntu --set-sparse true` from
 the host if it gets tight.
+
+## Keeping the machine awake
+
+A port build runs for hours. If Windows sleeps, WSL2 stops with it, the
+runner service goes down, and the job is lost — GitHub will eventually mark
+it failed with nothing useful in the log.
+
+From an **elevated PowerShell on the Windows host**, stop it idling while on
+mains power:
+
+```powershell
+powercfg /change standby-timeout-ac 0
+powercfg /change hibernate-timeout-ac 0
+powercfg /change disk-timeout-ac 0
+```
+
+Leave `monitor-timeout-ac` alone — the screen switching off is fine and does
+not stop the build. Check what took effect with `powercfg /query` , and
+`powercfg /requests` to see what is currently holding the machine awake.
+
+Two things those settings do **not** cover:
+
+- **Closing the laptop lid** still sleeps the machine. Change it under
+  Control Panel → Power Options → "Choose what closing the lid does", or
+  leave the lid open.
+- **Windows Update restarts.** Set active hours, or pause updates, before a
+  long build: Settings → Windows Update → Advanced options. A reboot mid-build
+  loses the run even with the scheduled task bringing WSL2 back, because the
+  job was already assigned to a runner that vanished.
+
+If a build is interrupted anyway, re-dispatch `port-build` with `fresh` left
+**off**: it reuses the existing checkout, so lake's incremental state and the
+generated reducibility certificates survive and only the unfinished work
+re-runs.
 
 ## Housekeeping
 
