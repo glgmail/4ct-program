@@ -253,6 +253,26 @@ jobs:
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
+      # Cancelling this workflow does NOT reliably stop the build. On
+      # 2026-09-27 GitHub marked a run cancelled and build_pool.py exited,
+      # but left four lean processes orphaned and still compiling, ~13 GB
+      # between them, for a job that no longer existed. They are identifiable
+      # by the port checkout in their -R argument, so nothing else is touched.
+      - name: Sweep any orphaned build processes
+        if: always()
+        run: |
+          set -uo pipefail
+          pids=$(ps -eo pid,args | grep '[l]ean ' | grep -F "$GITHUB_WORKSPACE/port" | awk '{print $1}')
+          pool=$(pgrep -f 'scripts/build_pool\.py' || true)
+          if [ -n "${pool}${pids}" ]; then
+            echo "killing leftovers: pool=${pool:-none} lean=${pids:-none}"
+            [ -n "$pool" ] && kill -KILL $pool 2>/dev/null
+            [ -n "$pids" ] && kill -KILL $pids 2>/dev/null
+            sleep 2
+          fi
+          left=$(ps -eo pid,args | grep -c "[l]ean .*$GITHUB_WORKSPACE/port" || true)
+          echo "lean processes still in the port checkout: $left"
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
