@@ -44,8 +44,10 @@ third_party/     git submodules pinned to commits; read-only upstreams
 
 ## Working in this repository
 
-- `main` is protected. Every change arrives as a pull request; only Gabriel
-  merges.
+- Every change arrives as a pull request; only Gabriel merges. Note that on
+  the current GitHub plan this is **convention, not enforcement** — see
+  [`.github/PROTECTION.md`](.github/PROTECTION.md) for exactly what is and is
+  not enforced, and how to close the gap.
 - Two checks gate a pull request: `lean-build` (self-hosted 32 GB runner) and
   `checks` (repository guardrails, GitHub-hosted).
 - `third_party/` holds git submodules pinned to commits. Clone with
@@ -65,3 +67,10 @@ third_party/     git submodules pinned to commits; read-only upstreams
 | D | Topology and gauge theory |
 | E | Logic and proof complexity |
 | F | AI and computation engine |
+
+## Setting up
+
+- [`.github/PROTECTION.md`](.github/PROTECTION.md) — what protects this
+  repository, what does not, and the commands to turn the rest on.
+- [`.github/RUNNER.md`](.github/RUNNER.md) — registering the self-hosted
+  32 GB Linux runner that `lean-build` needs.

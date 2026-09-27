@@ -1,0 +1,93 @@
+# Tripwires.
+#
+# These exist because this account is on GitHub Free, where branch protection,
+# rulesets and tag protection are all unavailable on a private repository.
+# They are *detective*, not preventive: they cannot stop a push, they report
+# one that broke the rules, loudly and in an issue.
+#
+# If the account moves to GitHub Pro, replace these with real branch
+# protection and a tag ruleset, and delete this file. See .github/PROTECTION.md.
+name: guard
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+permissions: {}
+
+jobs:
+  visibility:
+    name: repository is still private
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          R: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          private=$(gh api "repos/$R" --jq .private)
+          echo "private: $private"
+          if [ "$private" != "true" ]; then
+            gh issue create --repo "$R" \
+              --title "ALERT: the repository is no longer private" \
+              --body "A push at \`${{ github.sha }}\` ran while \`$R\` was public. The plan of record says this repository is private and that no agent may change that. Check the audit log and restore the setting."
+            exit 1
+          fi
+
+  direct-push:
+    name: main only moves by pull request
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Was this commit merged from a pull request?
+        env:
+          GH_TOKEN: ${{ github.token }}
+          R: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          count=$(gh api "repos/$R/commits/$SHA/pulls" --jq 'length')
+          echo "pull requests containing $SHA: $count"
+          if [ "$count" -eq 0 ]; then
+            gh issue create --repo "$R" \
+              --title "Direct push to main: ${SHA:0:7}" \
+              --body "\`$SHA\` was pushed to \`main\` by @${{ github.actor }} without a pull request.
+
+          Every change goes through a pull request for Gabriel to review. If this was deliberate, close this issue with a note saying why. If it was not, revert it.
+
+          (This repository is on GitHub Free, where branch protection cannot enforce that rule on a private repository, so this check reports it after the fact.)"
+            exit 1
+          fi
+
+  tag:
+    name: only Gabriel creates v* tags
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Who pushed this tag?
+        env:
+          GH_TOKEN: ${{ github.token }}
+          R: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          echo "tag:   ${{ github.ref_name }}"
+          echo "actor: ${{ github.actor }}"
+          echo "owner: ${{ github.repository_owner }}"
+          if [ "${{ github.actor }}" != "${{ github.repository_owner }}" ]; then
+            gh issue create --repo "$R" \
+              --title "ALERT: release tag ${{ github.ref_name }} pushed by @${{ github.actor }}" \
+              --body "Only Gabriel creates tags matching \`v*\`. \`${{ github.ref_name }}\` was pushed by @${{ github.actor }} at \`${{ github.sha }}\`. Delete the tag unless this was expected."
+            exit 1
+          fi
+          echo "ok"
