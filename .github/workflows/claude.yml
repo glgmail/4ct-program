@@ -73,6 +73,6 @@ jobs:
                 from the unlicensed upstreams listed at the end of
                 THIRD_PARTY_NOTICES.md.
             Heavy Lean builds and searches belong on the self-hosted runner
-            (labels: self-hosted, linux, 32gb), not on a GitHub-hosted one.
+            (labels: self-hosted, windows, 32gb), not on a GitHub-hosted one.
           claude_args: |
             --max-turns 60

@@ -1,8 +1,7 @@
 # Lean build. Required status check on main: "lean-build".
 #
-# Runs on Gabriel's self-hosted 32 GB Linux machine, which serves only this
-# private repository. The machine needs elan, git, git-lfs, gcc and python3;
-# see .github/RUNNER.md.
+# Runs on Gabriel's self-hosted 32 GB **Windows** machine. The machine needs
+# elan, git, git-lfs, python3 and a C/C++ toolchain; see .github/RUNNER.md.
 name: lean-build
 
 on:
@@ -18,23 +17,24 @@ concurrency:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: pwsh
+
 jobs:
   lean-build:
     name: lean-build
-    runs-on: [self-hosted, linux, 32gb]
+    runs-on: [self-hosted, windows, 32gb]
     timeout-minutes: 360
 
     env:
       # Peak memory must stay under 32 GB. Some modules of the corun1024 port
       # peak around 20 GB on their own, so parallelism is capped rather than
       # left to the core count. JOBS is what `lake -j` and the corun1024
-      # build.sh both take; MEMORY is the per-process soft cap in MB that the
-      # corun1024 build reads.
+      # build both take; MEMORY is the per-process soft cap in MB.
       JOBS: '2'
       MEMORY: '12000'
-      # Lean's own thread pool, kept in step with JOBS.
       LEAN_NUM_THREADS: '2'
-      ELAN_HOME: ${{ github.workspace }}/../.elan
 
     steps:
       - uses: actions/checkout@v4
@@ -46,36 +46,57 @@ jobs:
 
       - name: Runner has what it needs
         run: |
-          set -euo pipefail
-          for tool in git git-lfs gcc python3 elan lake; do
-            command -v "$tool" >/dev/null || { echo "missing: $tool"; exit 1; }
-          done
-          echo "toolchain pin: $(cat lean-toolchain)"
-          free -g
-          total_gb=$(awk '/MemTotal/ {printf "%d", $2/1024/1024}' /proc/meminfo)
-          echo "total memory: ${total_gb} GB"
-          if [ "$total_gb" -lt 30 ]; then
-            echo "this runner has less memory than the build is tuned for"
+          $ErrorActionPreference = 'Stop'
+          foreach ($tool in 'git','git-lfs','python','elan','lake') {
+            if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) {
+              Write-Host "missing: $tool"; exit 1
+            }
+          }
+          Write-Host "toolchain pin: $(Get-Content lean-toolchain)"
+
+          # Long paths bite on Windows: .lake/packages/mathlib/... plus a deep
+          # workspace easily passes 260 characters.
+          $lp = git config --get core.longpaths
+          if ($lp -ne 'true') {
+            Write-Host 'core.longpaths is not true; enable it (see .github/RUNNER.md)'
             exit 1
-          fi
+          }
+
+          $bytes = (Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory
+          $gb = [math]::Round($bytes / 1GB, 1)
+          Write-Host "total memory: $gb GB"
+          if ($gb -lt 30) {
+            Write-Host 'this runner has less memory than the build is tuned for'
+            exit 1
+          }
 
       - name: Install the pinned toolchain
         run: |
-          set -euo pipefail
-          elan toolchain install "$(cat lean-toolchain)"
-          elan override set "$(cat lean-toolchain)"
+          $ErrorActionPreference = 'Stop'
+          $pin = (Get-Content lean-toolchain).Trim()
+          elan toolchain install $pin
+          elan override set $pin
           lean --version
 
       - name: Restore the Mathlib cache
         run: |
-          set -euo pipefail
+          $ErrorActionPreference = 'Stop'
           lake exe cache get
 
       - name: Build lean/
         run: |
-          set -euo pipefail
-          /usr/bin/time -v lake build -j "$JOBS" 2>&1 | tail -40
+          $ErrorActionPreference = 'Stop'
+          $sw = [Diagnostics.Stopwatch]::StartNew()
+          lake build -j $env:JOBS
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $sw.Stop()
+          Write-Host "build took $($sw.Elapsed)"
 
       - name: Peak memory
         if: always()
-        run: free -g
+        run: |
+          $cs = Get-CimInstance Win32_ComputerSystem
+          $os = Get-CimInstance Win32_OperatingSystem
+          $total = [math]::Round($cs.TotalPhysicalMemory / 1GB, 1)
+          $free  = [math]::Round($os.FreePhysicalMemory * 1KB / 1GB, 1)
+          Write-Host "total ${total} GB, free now ${free} GB"
