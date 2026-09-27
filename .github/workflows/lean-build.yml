@@ -36,8 +36,13 @@ jobs:
       LEAN_NUM_THREADS: '2'
       # JOBS and MEMORY are for the corun1024 build script, which reads them
       # itself. They do not affect `lake build`.
+      #
+      # MEMORY is in GIGABYTES, not megabytes: scripts/build_pool.py takes
+      # `--memory GB`, and its build.sh header reads `JOBS=8 MEMORY=40`. This
+      # previously said 12000, which would have meant a 12 TB budget — i.e. no
+      # cap at all, on the one build where the cap is the point.
       JOBS: '2'
-      MEMORY: '12000'
+      MEMORY: '20'
 
     steps:
       - uses: actions/checkout@v4

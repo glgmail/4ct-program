@@ -258,8 +258,9 @@ has no `--jobs` or `-j` option** — verified against
 `q v d f o K U R h H J`. Lake schedules build jobs on the Lean task
 runtime, and `LEAN_NUM_THREADS` sizes that.
 
-`JOBS=2` and `MEMORY=12000` are also exported, but only for the corun1024
-build script, which reads them itself. They do nothing to `lake build`. Some
+`JOBS=2` and `MEMORY=20` are also exported, but only for the corun1024
+build script, which reads them itself (MEMORY in **gigabytes** — its
+`build_pool.py` takes `--memory GB`). They do nothing to `lake build`. Some
 modules of that port peak around 20 GB on their own — when a job builds it
 (tasks A1 and A2), drop to `JOBS=1` and `LEAN_NUM_THREADS=1`.
 
