@@ -10,6 +10,7 @@ clean checkout. Leads, partial arguments and AI-written summaries go under
 
 | Date | Result | Evidence | Tier | PR |
 | --- | --- | --- | --- | --- |
+| 2026-09-27 | `RBarish-UTokyo/FourColorTheorem-Lean4` builds clean on its own pinned toolchain, and `FourColor.RealPlane.four_color` depends on no axioms beyond `propext`, `Classical.choice`, `Quot.sound`. | port-build run [36350029344](https://github.com/glgmail/4ct-program/actions/runs/36350029344), artifact `port-build-RBarish-UTokyo` | evidence for A1 | #24 |
 | 2026-09-27 | `corun1024/4ct` builds clean on its own pinned toolchain, and `FourColor.fourColorTheorem` depends on no axioms beyond `propext`, `Classical.choice`, `Quot.sound`. 115,342 declarations, no sorries. | port-build run [36336993686](https://github.com/glgmail/4ct-program/actions/runs/36336993686), artifact `port-build-corun1024` | evidence for A1 | #20 |
 
 ## Open leads
@@ -255,27 +256,51 @@ in this program.
    moving back a minor version.
 4. **Its build is memory-aware**, which matters on a 26 GB WSL2 share.
 
-Two of the four things that could have overturned this are now settled, in
-corun1024's favour:
+**Both ports are now built and measured, and the decision is close.** It was
+not close when only corun had been measured, and I am recording the change
+of view rather than quietly keeping the earlier answer.
 
-- **`#print axioms` is clean** — `[propext, Classical.choice, Quot.sound]`
-  and nothing more, across 115,342 declarations. Had anything else appeared
-  it would have been decisive against the port regardless of its other
-  merits.
-- **Peak memory fits**, though not comfortably: 20.2 GB in a 25 GB share.
+Both produce exactly `[propext, Classical.choice, Quot.sound]`. The axiom
+check, which was the one thing that could have been decisive, discriminates
+between them not at all.
 
-What could still change it:
+**The case for corun1024** rests on two things A3 and A4 will use directly:
 
-- **RBarish builds clean on `v4.34.1` and corun1024 does not**, or corun
-  needs changes touching statements rather than proofs when moved. That is
-  A2's question, and portability beats convenience.
-- **RBarish's `#print axioms` is equally clean and its `Examples.lean` gives
-  comparable non-vacuity coverage**, which would neutralise the audit
-  advantage and leave the Mathlib bridge as the only differentiator.
+- `RealPlaneMathlib.lean` already connects the statement's elementary
+  topology to `IsOpen`, `closure` and `IsPreconnected`. A3 needs planar
+  embedding and duality against Mathlib; A4 needs Tait and flows stated
+  that way. With RBarish we write that bridge ourselves, and a wrong
+  definition there is invisible to the kernel — the one category of error
+  this program has no mechanical defence against.
+- Its verification apparatus is stronger where it counts for a
+  computational proof: 115,342 declarations checked for sorries and stray
+  axioms, and negative controls proving the reducibility oracle and quiz
+  data are not degenerate.
 
-Neither is known yet: **RBarish has not been built.** The comparison is
-still one-sided, and a recommendation resting on one measured port and one
-unmeasured one should be read accordingly.
+**The case for RBarish** is now much stronger than the statement review
+suggested, and it is operational:
+
+- **3.5 GB peak against 20.2 GB.** A 3.5 GB build runs on a GitHub-hosted
+  runner; a 20.2 GB build never will. Choosing RBarish would take the
+  self-hosted machine off workstream A's critical path entirely.
+- **~22 minutes against 2 hours.** Every A2 iteration, every re-pin at a
+  gate review, pays that difference.
+- `check_challenge_sync.py` mechanically verifies the published statement
+  matches the proved one — a guarantee corun does not offer.
+
+**I still recommend corun1024, less confidently than before.** The Mathlib
+bridge is load-bearing for the next two tasks and building it ourselves is
+precisely the error-prone definitional work; the audit is closer to this
+program's trust rule than anything RBarish has. But if the self-hosted
+runner proves as much trouble over the next month as it was on day one,
+that judgement should be revisited — the argument for RBarish is that it
+makes an entire class of infrastructure problem go away, and today gave
+real evidence about how expensive that class is.
+
+The remaining unknown is **A2's question**: which port survives the move to
+`v4.34.1`. corun moves forward one patch; RBarish moves back one minor,
+un-adopting whatever arrived in v4.35, which is the harder direction. If
+that turns out badly for corun, the case inverts.
 
 Gabriel decides. This is a recommendation with its reasons, not a choice.
 
@@ -386,6 +411,67 @@ RSS; the sampler is for the shape of the run, not its worst moment.
 Neither affects the result above: the build, the axioms and the audit all
 ran before the sweep, and a full rebuild is if anything the stronger
 evidence.
+
+## Build attempt 3 — RBarish, 2026-09-27: **clean**
+
+Run [36350029344], `JOBS=4`. **Exit 0, axiom check passed.**
+
+```
+'FourColor.RealPlane.four_color' depends on axioms: [propext, Classical.choice, Quot.sound]
+```
+
+and `scripts/check_challenge_sync.py`:
+
+```
+OK: Challenge.lean and FourColor/RealPlane.lean are in sync
+```
+
+So the statement-only spec and the definitions the proof actually uses are
+identical, mechanically verified. That is a different guarantee from
+corun's audit and a valuable one: it closes the gap between "the statement
+we published" and "the statement we proved".
+
+### Both ports side by side, measured
+
+| | corun1024 | RBarish |
+| --- | --- | --- |
+| Axioms of the final theorem | `propext, Classical.choice, Quot.sound` | `propext, Classical.choice, Quot.sound` |
+| Wall clock, from scratch | **2 h 00 m** | **~22 min** (7 m 29 s + 14 m 13 s resumed) |
+| Peak single process | **20.2 GB** | **3.5 GB** |
+| Peak system-wide | 18.9 GB | 6.4 GB |
+| Built tree on disk | 8.0 GB | 8.0 GB |
+| Declaration-wide audit | 115,342 declarations, no sorries, no extra axioms | none |
+| Anti-vacuity | checkers are not degenerate; 4 colours genuinely needed | planarity predicate discriminates (`Examples.lean`) |
+| Statement/proof sync check | none | `check_challenge_sync.py` |
+| Mathlib topology bridge | `RealPlaneMathlib.lean` | none, by design |
+| Distance to our pin | `v4.34.0-rc2`, forward one patch | `v4.35.0-rc2`, back one minor |
+
+### The new fact that matters most
+
+**RBarish peaks at 3.5 GB where corun peaks at 20.2 GB.** That is not a
+marginal efficiency difference; it changes what hardware the program needs.
+A 3.5 GB build fits a GitHub-hosted runner. A 20.2 GB build does not, and
+cannot be made to.
+
+If RBarish were the base port, `lean-build` could run on GitHub-hosted
+runners and the self-hosted machine would stop being on the critical path
+for workstream A. Given that today the self-hosted runner filled its disk,
+crashed its listener, flapped online and offline, orphaned jobs and produced
+one false red and one false green, that is worth more than it would have
+been this morning.
+
+### On `Examples.lean`
+
+It is a real non-vacuity check, and narrower than corun's. It proves
+`unitMap` is planar (genus 0) and that a `torus` hypermap is **not** planar
+and not Jordan, exhibiting an explicit Moebius path — so the planarity
+predicate discriminates rather than accepting everything.
+
+What it does not cover is what corun's `Audit.lean` covers: that the
+*reducibility oracle* is not constantly true, that the quiz tree is real
+data, and that four colours are genuinely necessary. For a proof whose
+weight rests on computation, corun's controls sit closer to the thing that
+could silently be vacuous.
 
 ## What the build must still produce
 
