@@ -99,7 +99,15 @@ jobs:
       - name: Check out the port at its pinned commit
         run: |
           set -euo pipefail
+          # Both absolute. PORT_DIR is outside the workspace so checkout
+          # cannot wipe it; OUT_DIR must nonetheless stay INSIDE the
+          # workspace, because actions/upload-artifact resolves its path
+          # relative to the workspace. Relative "../out" paths were correct
+          # only while the build ran from inside the workspace, and moving
+          # PORT_DIR silently redirected every result file to
+          # $HOME/4ct-port-cache/out where the upload could not see them.
           echo "PORT_DIR=$HOME/4ct-port-cache/${{ inputs.port }}" >> "$GITHUB_ENV"
+          echo "OUT_DIR=$GITHUB_WORKSPACE/out" >> "$GITHUB_ENV"
           PORT_DIR="$HOME/4ct-port-cache/${{ inputs.port }}"
           mkdir -p "$(dirname "$PORT_DIR")"
           case "${{ inputs.port }}" in
@@ -159,11 +167,11 @@ jobs:
           LEAN_NUM_THREADS: ${{ inputs.jobs }}
         run: |
           set -euo pipefail
-          mkdir -p ../out
+          mkdir -p "$OUT_DIR"
           # Sample peak memory alongside the build: /usr/bin/time -v reports the
           # largest single process, which understates a pool of parallel jobs.
           ( while true; do
-              awk '/MemAvailable/ {print systime(), $2}' /proc/meminfo >> ../out/mem-samples.txt
+              awk '/MemAvailable/ {print systime(), $2}' /proc/meminfo >> "$OUT_DIR/mem-samples.txt"
               sleep 5
             done ) &
           SAMPLER=$!
@@ -173,10 +181,10 @@ jobs:
           set +e
           if [ -x ./build.sh ]; then
             echo "using the port's own build.sh (JOBS=$JOBS MEMORY=$MEMORY GB)"
-            /usr/bin/time -v ./build.sh > ../out/build.log 2>&1
+            /usr/bin/time -v ./build.sh > "$OUT_DIR/build.log" 2>&1
           else
             echo "no build.sh; using lake build"
-            /usr/bin/time -v lake build > ../out/build.log 2>&1
+            /usr/bin/time -v lake build > "$OUT_DIR/build.log" 2>&1
           fi
           status=$?
           set -e
@@ -185,19 +193,19 @@ jobs:
           echo "exit_status=$status" >> "$GITHUB_OUTPUT"
           echo "wall_seconds=$((end - start))" >> "$GITHUB_OUTPUT"
           echo "build exited $status after $((end - start))s"
-          tail -60 ../out/build.log
+          tail -60 "$OUT_DIR/build.log"
 
       - name: Peak memory actually observed
         if: always()
         run: |
           set -euo pipefail
           total_kb=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
-          min_avail=$(awk '{print $2}' out/mem-samples.txt 2>/dev/null | sort -n | head -1)
+          min_avail=$(awk '{print $2}' "$OUT_DIR/mem-samples.txt" 2>/dev/null | sort -n | head -1)
           if [ -n "${min_avail:-}" ]; then
             peak_gb=$(awk -v t="$total_kb" -v a="$min_avail" 'BEGIN {printf "%.1f", (t-a)/1024/1024}')
-            echo "peak memory in use during the build: ${peak_gb} GB" | tee out/peak-memory.txt
+            echo "peak memory in use during the build: ${peak_gb} GB" | tee "$OUT_DIR/peak-memory.txt"
           else
-            echo "no samples collected" | tee out/peak-memory.txt
+            echo "no samples collected" | tee "$OUT_DIR/peak-memory.txt"
           fi
 
       - name: Axioms of the final theorem
@@ -217,9 +225,9 @@ jobs:
           esac
           printf '%s\n#print axioms %s\n' "$IMPORT" "$NAME" > Axioms.lean
           echo "--- Axioms.lean ---"; cat Axioms.lean
-          lake env lean Axioms.lean 2>&1 | tee ../out/axioms.txt || \
+          lake env lean Axioms.lean 2>&1 | tee "$OUT_DIR/axioms.txt" || \
             echo "axiom check failed - see build.log; it cannot succeed if the build did not" \
-              | tee -a ../out/axioms.txt
+              | tee -a "$OUT_DIR/axioms.txt"
 
       - name: The port's own checks
         if: always()
@@ -236,7 +244,7 @@ jobs:
                   || echo "check_challenge_sync.py: absent or failed"
                 ;;
             esac
-          } 2>&1 | tee ../out/upstream-checks.txt || true
+          } 2>&1 | tee "$OUT_DIR/upstream-checks.txt" || true
 
       - name: Summary
         if: always()
@@ -253,11 +261,11 @@ jobs:
             echo "| memory budget | ${{ inputs.memory_gb }} GB |"
             echo "| build exit status | ${{ steps.build.outputs.exit_status }} |"
             echo "| wall clock | ${{ steps.build.outputs.wall_seconds }} s |"
-            echo "| $(cat out/peak-memory.txt 2>/dev/null || echo 'peak memory | unknown') |"
+            echo "| $(cat "$OUT_DIR/peak-memory.txt" 2>/dev/null || echo 'peak memory | unknown') |"
             echo
             echo '### Axioms'
             echo '```'
-            cat out/axioms.txt 2>/dev/null || echo "(none captured)"
+            cat "$OUT_DIR/axioms.txt" 2>/dev/null || echo "(none captured)"
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
