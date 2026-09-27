@@ -1,0 +1,18 @@
+* text=auto eol=lf
+
+# Everything under data/ is stored in Git LFS (plan of record: "Choose data
+# storage: Git LFS for everything under data/, with a manifest listing each
+# file's source, license and checksum").
+data/** filter=lfs diff=lfs merge=lfs -text
+
+# Exceptions: the manifest and the prose that describes the data stay in plain
+# git, so a reviewer can read them in the pull request diff.
+data/MANIFEST.csv filter= diff= merge= text eol=lf
+data/README.md    filter= diff= merge= text eol=lf
+data/.gitkeep     filter= diff= merge= text eol=lf
+
+*.lean          text eol=lf
+*.py            text eol=lf
+*.yml           text eol=lf
+lean-toolchain  text eol=lf
+lakefile.toml   text eol=lf

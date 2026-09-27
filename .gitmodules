@@ -1,0 +1,20 @@
+# Read-only upstreams, pinned to commits. Nothing here is edited in this
+# repository; see THIRD_PARTY_NOTICES.md for licences.
+#
+# After cloning:  git submodule update --init --recursive
+
+[submodule "near-linear-4ct/computer-checks"]
+	path = third_party/near-linear-4ct/computer-checks
+	url = https://github.com/near-linear-4ct/computer-checks.git
+[submodule "near-linear-4ct/reducible-configurations"]
+	path = third_party/near-linear-4ct/reducible-configurations
+	url = https://github.com/near-linear-4ct/reducible-configurations.git
+[submodule "near-linear-4ct/discharging-rules"]
+	path = third_party/near-linear-4ct/discharging-rules
+	url = https://github.com/near-linear-4ct/discharging-rules.git
+[submodule "corun1024/4ct"]
+	path = third_party/corun1024/4ct
+	url = https://github.com/corun1024/4ct.git
+[submodule "RBarish-UTokyo/FourColorTheorem-Lean4"]
+	path = third_party/RBarish-UTokyo/FourColorTheorem-Lean4
+	url = https://github.com/RBarish-UTokyo/FourColorTheorem-Lean4.git

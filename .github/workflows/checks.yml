@@ -1,0 +1,43 @@
+# Repository guardrails. Required status check on main: "checks".
+#
+# Runs on a GitHub-hosted runner on purpose, so that a pull request is never
+# blocked by the availability of the self-hosted machine.
+name: checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+          # LFS objects are not pulled: repo_guardrails.py verifies a digest
+          # from the LFS pointer, which already carries the sha256.
+          lfs: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Repository guardrails
+        run: python3 checks/repo_guardrails.py
+
+      - name: Manifest is up to date
+        run: |
+          python3 checks/repo_guardrails.py --update-manifest
+          git diff --exit-code -- data/MANIFEST.csv

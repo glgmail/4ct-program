@@ -1,0 +1,106 @@
+# Lean build. Required status check on main: "lean-build".
+#
+# Runs on Gabriel's self-hosted runner: Linux inside WSL2, on a 32 GB Windows
+# host. It serves only this repository. The distro needs elan, git, git-lfs,
+# gcc and python3; see .github/RUNNER.md.
+name: lean-build
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: lean-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lean-build:
+    name: lean-build
+    runs-on: [self-hosted, linux, 32gb]
+    timeout-minutes: 360
+
+    env:
+      # Peak memory must stay under the distro's share, so parallelism is
+      # capped rather than left to the core count. Some modules of the
+      # corun1024 port peak around 20 GB on their own.
+      #
+      # LEAN_NUM_THREADS is the knob that actually bounds `lake build`: Lake
+      # at v4.34.1 has no --jobs or -j option at all (checked against
+      # src/lake/Lake/CLI/Main.lean at that tag), and schedules its build
+      # jobs on the Lean task runtime, which this sizes.
+      LEAN_NUM_THREADS: '2'
+      # JOBS and MEMORY are for the corun1024 build script, which reads them
+      # itself. They do not affect `lake build`.
+      JOBS: '2'
+      MEMORY: '12000'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # third_party/ is not needed to build lean/; tasks that need it
+          # check it out themselves.
+          submodules: false
+          lfs: false
+
+      - name: Runner has what it needs
+        run: |
+          set -euo pipefail
+          for tool in git git-lfs gcc python3 elan lake; do
+            command -v "$tool" >/dev/null || { echo "missing: $tool"; exit 1; }
+          done
+          echo "toolchain pin: $(cat lean-toolchain)"
+          echo "kernel: $(cat /proc/version)"
+          free -g
+
+          # Under WSL2 this is the distro's configured share, not the host's
+          # 32 GB. WSL2 defaults to about half the host, which is under the
+          # ~20 GB a single corun1024 module can take, so .wslconfig has to
+          # raise it. See .github/RUNNER.md.
+          total_gb=$(awk '/MemTotal/ {printf "%d", $2/1024/1024}' /proc/meminfo)
+          echo "memory visible to this runner: ${total_gb} GB"
+          if [ "$total_gb" -lt 24 ]; then
+            echo "too little memory for this build."
+            if grep -qi microsoft /proc/version; then
+              echo "this is WSL2: raise memory= in %UserProfile%\\.wslconfig,"
+              echo "then 'wsl --shutdown' and start it again."
+            fi
+            exit 1
+          fi
+
+          # The runner must live in the distro's own filesystem. Working
+          # under /mnt/c crosses the 9p boundary on every file, which is
+          # slow enough to matter for a Mathlib tree.
+          case "$GITHUB_WORKSPACE" in
+            /mnt/*)
+              echo "workspace is on the Windows filesystem: $GITHUB_WORKSPACE"
+              echo "re-register the runner under the distro's home directory."
+              exit 1
+              ;;
+          esac
+
+      - name: Install the pinned toolchain
+        run: |
+          set -euo pipefail
+          elan toolchain install "$(cat lean-toolchain)"
+          elan override set "$(cat lean-toolchain)"
+          lean --version
+
+      - name: Restore the Mathlib cache
+        run: |
+          set -euo pipefail
+          lake exe cache get
+
+      - name: Build lean/
+        run: |
+          set -euo pipefail
+          # No -j: see the LEAN_NUM_THREADS note above.
+          /usr/bin/time -v lake build 2>&1 | tail -60
+
+      - name: Peak memory
+        if: always()
+        run: free -g
