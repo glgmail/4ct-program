@@ -118,6 +118,13 @@ it at <https://github.com/settings/installations>. If it ever asks for
 Note what the tag ruleset adds here: even holding `contents: write`, an agent
 cannot create a `v*` tag, because the ruleset bypass is admin-only.
 
+`.github/workflows/claude.yml` authenticates with the **`ANTHROPIC_API_KEY`**
+repository secret, so runs bill to Anthropic API credits rather than to a
+Claude subscription. Two properties of that worth keeping in mind on a public
+repository: a workflow run from a forked pull request is never given repository
+secrets, and such a run additionally needs an owner's approval before it
+starts. The key is reachable only from branches in this repository.
+
 ## History
 
 An earlier revision of this file recorded that none of the above was
