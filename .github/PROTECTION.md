@@ -7,8 +7,9 @@ available: on the account's GitHub Free plan they are free for public
 repositories and would need GitHub Pro for a private one. It is also what
 makes the fork-pull-request rules below matter.
 
-> The plan of record says this repository is private. It is not. That
-> conflict is Gabriel's to resolve — see "Open question" at the end.
+> Public is the settled choice, made on 2026-09-27 — see the last section.
+> The plan of record still says "private"; the repository is the source of
+> truth for what is actually configured.
 
 ## Branch protection on `main`
 
@@ -127,18 +128,36 @@ limitation. `.github/workflows/guard.yml`, which reported violations after
 the fact because nothing could prevent them, has been deleted — real
 protection replaces it.
 
-## Open question
+## Settled: the repository stays public
 
-The plan of record says, and `README.md` repeats:
+Gabriel decided on 2026-09-27 that the repository stays public. `README.md`
+has been updated to match, keeping the release discipline that the original
+wording carried: readable is not released, and a result is announced only as
+a tagged release he approves.
 
-> This repository is private. Nothing leaves it except as a tagged public
-> release approved by Gabriel.
+What that decision changes, and does not:
 
-That is no longer true, and the program's stated position is "no outreach
-until a tier 3 or tier 4 result needs referees". A public repository is a
-form of outreach whether or not anyone is reading it.
+- **Unchanged.** No agent may alter visibility, publish a release, push a
+  tag, or post to arXiv. The `v*` ruleset and the `public-release`
+  environment enforce the last two, and agent credentials carry no admin
+  rights.
+- **Unchanged.** A tier 3 or tier 4 claim is formalized in Lean before
+  release approval or referee contact. Being publicly readable is not a
+  claim.
+- **Changed.** Work in progress is visible as it happens, including wrong
+  turns and dead ends. The `notes/` logs are written to be read that way:
+  results under the trust rule, everything else filed as a lead.
+- **Changed.** Fork pull requests are possible, which is why the
+  fork-PR rules above and the runner mitigations in `.github/RUNNER.md`
+  exist.
 
-Either the plan of record changes to match the repository, or the repository
-goes back to private and these protections need GitHub Pro. Nobody but
-Gabriel should decide which, and until he does, `README.md` is left as it
-stands rather than quietly edited to match the new state.
+One thing to check before task F3 lands the data. Git LFS quotas are
+per-account and are not lifted for public repositories, while a public
+repository means anyone can clone and draw on the bandwidth allowance.
+F3 imports 8,202 configuration files plus the discharging rules. Check the
+account's LFS storage and bandwidth allowance against that before the import,
+rather than discovering it when LFS starts refusing fetches.
+
+The plan of record still says "private GitHub repository". It is the
+program's plan of record, so Gabriel updates it; this file records what the
+repository actually does.

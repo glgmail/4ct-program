@@ -1,4 +1,4 @@
-# 4ct-program (private)
+# 4ct-program
 
 Independent research program toward a conceptual proof of the Four Color Theorem.
 Plan of record: the "Four Color Theorem: A Unified Research Program" doc.
@@ -13,10 +13,14 @@ Plan of record: the "Four Color Theorem: A Unified Research Program" doc.
 - AI-written arguments, notes and summaries are leads, not results.
 
 ## Releases and outside contact
-- This repository is private. Nothing leaves it except as a tagged public
-  release approved by Gabriel.
-- No agent may make the repository public, publish a release, push tags,
-  or post to arXiv. Agent tokens have no admin or release rights.
+- This repository is public: anyone can read the work in progress. Being
+  readable is not the same as being released. A result is announced only as
+  a tagged release approved by Gabriel, and nothing here is a claim until
+  then.
+- No agent may change the repository's visibility, publish a release, push
+  tags, or post to arXiv. Agent credentials carry no admin or release
+  rights, and the `v*` tag ruleset blocks tag creation by anyone but
+  Gabriel.
 - A claimed tier 3 or tier 4 proof must be formalized in Lean before
   release approval or referee contact.
 - Referees are contacted only for internally checked tier 3 or tier 4 results.
