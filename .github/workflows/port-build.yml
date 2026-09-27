@@ -199,12 +199,22 @@ jobs:
 
           start=$(date +%s)
           set +e
+          # EXTRA_TARGET matters. RBarish keeps its final theorem in
+          # Solution.lean, a separate root: a bare `lake build` builds the
+          # FourColor library, exits 0, and never produces Solution.olean, so
+          # the axiom check has nothing to import while the build looks
+          # entirely successful.
+          case "${{ inputs.port }}" in
+            RBarish-UTokyo) EXTRA_TARGET=Solution ;;
+            *)              EXTRA_TARGET="" ;;
+          esac
+
           if [ -x ./build.sh ]; then
             echo "using the port's own build.sh (JOBS=$JOBS MEMORY=$MEMORY GB)"
             /usr/bin/time -v ./build.sh > "$OUT_DIR/build.log" 2>&1
           else
-            echo "no build.sh; using lake build"
-            /usr/bin/time -v lake build > "$OUT_DIR/build.log" 2>&1
+            echo "no build.sh; using lake build ${EXTRA_TARGET}"
+            /usr/bin/time -v lake build $EXTRA_TARGET > "$OUT_DIR/build.log" 2>&1
           fi
           status=$?
           set -e
@@ -229,6 +239,7 @@ jobs:
           fi
 
       - name: Axioms of the final theorem
+        id: axioms
         if: always()
         working-directory: ${{ env.PORT_DIR }}
         run: |
@@ -245,9 +256,12 @@ jobs:
           esac
           printf '%s\n#print axioms %s\n' "$IMPORT" "$NAME" > Axioms.lean
           echo "--- Axioms.lean ---"; cat Axioms.lean
-          lake env lean Axioms.lean 2>&1 | tee "$OUT_DIR/axioms.txt" || \
-            echo "axiom check failed - see build.log; it cannot succeed if the build did not" \
-              | tee -a "$OUT_DIR/axioms.txt"
+          if lake env lean Axioms.lean 2>&1 | tee "$OUT_DIR/axioms.txt"; then
+            echo "axioms_ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "axioms_ok=false" >> "$GITHUB_OUTPUT"
+            echo "axiom check FAILED - the final theorem was not produced" | tee -a "$OUT_DIR/axioms.txt"
+          fi
 
       - name: The port's own checks
         if: always()
@@ -320,7 +334,20 @@ jobs:
           path: out/
           retention-days: 30
 
-      - name: Fail the run if the build failed
+      # Both conditions. Checking only the build's exit code produced a green
+      # run on 2026-09-27 whose axiom check had in fact failed: lake build
+      # succeeded at a target that did not include the theorem. A green run
+      # that proves nothing is worse than a red one.
+      - name: Fail the run unless the build AND the axiom check passed
         if: always()
         run: |
-          test "${{ steps.build.outputs.exit_status }}" = "0"
+          set -uo pipefail
+          ok=0
+          if [ "${{ steps.build.outputs.exit_status }}" != "0" ]; then
+            echo "build exited ${{ steps.build.outputs.exit_status }}"; ok=1
+          fi
+          if [ "${{ steps.axioms.outputs.axioms_ok }}" != "true" ]; then
+            echo "axiom check did not pass (axioms_ok=${{ steps.axioms.outputs.axioms_ok }})"; ok=1
+          fi
+          if [ "$ok" -eq 0 ]; then echo "build and axiom check both passed"; fi
+          exit $ok
