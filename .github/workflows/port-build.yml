@@ -25,9 +25,9 @@ on:
           - corun1024
           - RBarish-UTokyo
       jobs:
-        description: 'Parallel build jobs (1 is safest; corun modules peak near 20 GB)'
+        description: 'Parallel build jobs. corun schedules against the memory budget, so 4 is fine; most modules run under 2 GB.'
         required: true
-        default: '1'
+        default: '4'
         type: string
       memory_gb:
         description: 'Memory budget in GB for corun build_pool.py (NOT MB). Ignored for RBarish.'
@@ -47,7 +47,12 @@ jobs:
   build:
     name: port-build
     runs-on: [self-hosted, linux, 32gb]
-    timeout-minutes: 360
+    # A first corun1024 run reported "plan: 821 modules, 7.9 core-hours,
+    # 1 jobs, 20 GB budget, predicted 474 min" — over the old 360 cap, so the
+    # build would have been killed about three quarters through. Headroom
+    # matters more than a tight cap here: the run is manual, the resume makes
+    # a second attempt cheap, and a build cut off at 99% teaches us nothing.
+    timeout-minutes: 720
     if: github.actor == github.repository_owner
 
     steps:
