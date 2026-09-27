@@ -277,6 +277,32 @@ def check_statements_signoff_note() -> None:
     report(ok, "lean/Statements/ carries the sign-off rule")
 
 
+def check_house_rules() -> None:
+    """CLAUDE.md is how the house rules reach every agent run.
+
+    Claude Code reads it automatically as project context, in the GitHub
+    Action and locally, so it is load-bearing rather than documentation. If
+    a rule silently disappears from it, nothing else puts it back.
+    """
+    path = ROOT / "CLAUDE.md"
+    if not path.is_file():
+        report(False, "CLAUDE.md exists")
+        return
+    text = path.read_text(encoding="utf-8")
+    required = {
+        "never merge": "Never merge a pull request",
+        "no tags or releases": "Never publish a release or push a tag",
+        "no visibility change": "Never change the repository's visibility",
+        "toolchain pin": LEAN_TOOLCHAIN.rsplit(":", 1)[-1],
+        "statement sign-off": "sign-off",
+        "trust rule": "reruns identically",
+        "unlicensed upstreams": "Copy nothing",
+    }
+    missing = [name for name, needle in required.items() if needle not in text]
+    report(not missing, "CLAUDE.md still carries every house rule",
+           "" if not missing else "missing: " + ", ".join(missing))
+
+
 # --------------------------------------------------------------------------
 # manifest regeneration
 # --------------------------------------------------------------------------
@@ -331,6 +357,7 @@ def main() -> int:
     check_submodules()
     check_manifest()
     check_statements_signoff_note()
+    check_house_rules()
 
     print()
     if failures:
