@@ -212,22 +212,57 @@ echo "PATH=$HOME/.elan/bin:$PATH" >> .env
 sudo ./svc.sh stop && sudo ./svc.sh start
 ```
 
-## 6. Make it survive a reboot
+## 6. Keep the distro alive — this one is not optional
 
-**WSL2 does not start with Windows.** Without this the runner is simply
-offline after every reboot, and `lean-build` sits queued with nothing to say
-why.
+Two separate problems, and the second is the one that will waste your day.
 
-From an elevated PowerShell on the host, create a startup task that boots
-the distro (systemd then starts the runner service):
+**WSL2 does not start with Windows.** After a reboot the distro is down and
+the runner with it.
+
+**WSL2 also terminates an idle distro about 15-25 seconds after the last
+`wsl.exe` client detaches — even with systemd running.** Observed on
+2026-09-27: the runner service started, logged `√ Connected to GitHub`, and
+16 seconds later `Runner listener exited with error code 0` as systemd shut
+it down with the distro. Repeatedly. GitHub showed the runner flapping
+between online and offline, jobs were picked up and orphaned mid-step, and
+nothing in the runner's own logs said why, because from its point of view it
+had exited cleanly.
+
+A task that merely *boots* the distro does not fix this — it boots, exits,
+and the distro dies twenty seconds later. Something must hold a client
+**open**. From an elevated PowerShell:
 
 ```powershell
-$action  = New-ScheduledTaskAction -Execute 'C:\Windows\System32\wsl.exe' -Argument '-d Ubuntu -- /bin/true'
+$action  = New-ScheduledTaskAction -Execute 'C:\Windows\System32\wsl.exe' `
+             -Argument '-d Ubuntu -u root -e sleep infinity'
 $trigger = New-ScheduledTaskTrigger -AtStartup
-Register-ScheduledTask -TaskName 'Start WSL runner' -Action $action -Trigger $trigger -RunLevel Highest -User 'SYSTEM'
+Register-ScheduledTask -TaskName 'WSL runner keepalive' -Action $action -Trigger $trigger `
+             -RunLevel Highest -User 'SYSTEM'
 ```
 
-Reboot once and confirm the runner comes back idle on its own.
+`sleep infinity` never returns, so the client never detaches and the distro
+stays up. Start it now without rebooting:
+
+```powershell
+Start-Process wsl.exe -ArgumentList '-d','Ubuntu','-u','root','-e','sleep','infinity' -WindowStyle Hidden
+```
+
+Confirm it holds — this should read `RUNNING` indefinitely, not for twenty
+seconds:
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::Unicode
+wsl.exe --list --running
+```
+
+Note the encoding line. `wsl.exe` emits UTF-16, and a script that greps its
+output without accounting for that will report the distro stopped when it is
+running. That mistake cost an hour of misdiagnosis.
+
+A corollary worth knowing: a long build survives partly because the job
+itself keeps a client attached. The first two-hour build here appeared to
+work without a keepalive only because it was being polled every minute from
+outside. Do not rely on that.
 
 ## 7. Confirm
 
