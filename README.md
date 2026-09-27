@@ -48,11 +48,13 @@ third_party/     git submodules pinned to commits; read-only upstreams
 
 ## Working in this repository
 
-- `main` is protected: every change arrives as a pull request, `lean-build`
-  and `checks` must pass, and Gabriel's code-owner review is required. Only
-  Gabriel merges. See [`.github/PROTECTION.md`](.github/PROTECTION.md) for
-  exactly what is enforced — including the fork-pull-request rules, which
-  matter because the repository is currently public.
+- `main` is protected: every change arrives as a pull request, and
+  `lean-build` and `checks` must pass before it can be merged — including
+  for administrators. Only Gabriel merges. See
+  [`.github/PROTECTION.md`](.github/PROTECTION.md) for exactly what is
+  enforced, why no approving review is required while he is the only
+  collaborator, and the fork-pull-request rules, which matter because the
+  repository is public.
 - Two checks gate a pull request: `lean-build` (self-hosted 32 GB runner) and
   `checks` (repository guardrails, GitHub-hosted).
 - `third_party/` holds git submodules pinned to commits. Clone with

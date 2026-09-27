@@ -26,7 +26,8 @@ Already set on the repository:
   contributors** (`all_external_contributors`), not just first-time ones.
   Nothing from a fork runs until someone approves that specific run.
 - `main` is protected: pull request required, `lean-build` and `checks`
-  required, code-owner review required, no force pushes, no deletion.
+  required and enforced against administrators too, no force pushes, no
+  deletion.
 - The default `GITHUB_TOKEN` is read-only and cannot approve pull requests.
 
 Left to you:

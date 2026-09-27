@@ -14,45 +14,63 @@ makes the fork-pull-request rules below matter.
 
 | Setting | Value |
 | --- | --- |
+| Setting | Value |
+| --- | --- |
+| Pull request | required |
 | Required status checks | `lean-build`, `checks` — strict (branch must be up to date) |
-| Required approving reviews | 1 |
-| Code-owner review | required |
+| Required approving reviews | **0** — see below |
+| Code-owner review | not required |
+| Require approval of the most recent push | no |
 | Dismiss stale reviews on push | yes |
-| Require approval of the most recent push | yes |
 | Conversation resolution | required |
 | Force pushes | blocked |
 | Branch deletion | blocked |
 | Fork syncing | blocked |
-| `enforce_admins` | **off** — see below |
+| `enforce_admins` | **on** — the checks bind Gabriel too |
 
-### Why `enforce_admins` stays off
+### Why no approving review is required
 
-**Do not turn it on while Gabriel is the only collaborator.** It would
-deadlock the repository permanently.
+Not an oversight, and worth understanding before anyone "tightens" it back.
 
-GitHub does not let anyone approve their own pull request. `main` requires
-one approving review, and `enforce_admins` removes the admin's ability to
-merge past an unmet requirement. Gabriel is the sole collaborator, so he
-authors every pull request, cannot approve any of them, and — with
-`enforce_admins` on — could not merge any of them either. There would be no
-way out short of an admin turning the setting back off.
+GitHub does not let anyone approve their own pull request. Gabriel is the
+only collaborator, so he authors every pull request and can approve none of
+them. A required review count of 1 was therefore never a gate that could be
+*met* — only one that had to be *bypassed*, on every single merge. Combined
+with `enforce_admins`, it deadlocked the repository outright: on
+2026-09-27 pull request #1 could not be merged by anybody, by any route.
 
-With it off, the configuration does what was actually wanted:
+So the requirement that cannot be satisfied is gone, and the one that can is
+enforced against everyone:
 
-- **Everyone other than Gabriel** is bound by the required review, the
-  required code-owner review, and both required status checks. An agent
-  holding `contents: write` cannot merge anything.
-- **Gabriel** merges his own pull requests using the admin bypass. His
-  judgement is the approval; the checks still run and still show red or
-  green on the pull request, he is simply not blocked by the
-  self-approval rule.
+- **`enforce_admins` is on.** Gabriel cannot merge a pull request whose
+  `lean-build` or `checks` is red. That is the gate that actually catches
+  things, and it now binds the one person who could previously click past
+  it.
+- **A pull request is still required.** Nothing reaches `main` by a direct
+  push, Gabriel included.
+- **No force pushes, no deletion**, for anyone.
 
-Revisit this the moment a second person gets write access. At that point
-turn it on, because the deadlock disappears:
+What this gives up: an agent or collaborator holding `contents: write` could,
+in principle, open a pull request and merge it once the checks pass, without
+a human approving. Today nobody holds that — Gabriel is the sole
+collaborator, and the Claude GitHub App cannot merge — so the exposure is
+theoretical. **It stops being theoretical the moment a second person or a
+write-capable token is added**, and at that point the review requirement
+should go back on, which is then satisfiable because a second human exists:
 
 ```bash
-gh api -X POST repos/glgmail/4ct-program/branches/main/protection/enforce_admins
+gh api -X PATCH repos/glgmail/4ct-program/branches/main/protection/required_pull_request_reviews \
+  -F required_approving_review_count=1 -F require_code_owner_reviews=true
 ```
+
+### The `lean/Statements/` sign-off is no longer machine-enforced
+
+It was expressed as required code-owner review, which needs a second human to
+function. With the review requirement gone it is documentation and
+discipline: the pull request template, `lean/Statements/README.md`, and the
+house rules in `claude.yml`. Since Gabriel *is* the sign-off, GitHub was
+never going to check it for him — but the rule is no weaker in substance than
+it was, and it is the rule that matters most in this repository.
 
 ## Release tags
 
@@ -102,8 +120,10 @@ they are not optional.
 - `allow_rebase_merge` off, `delete_branch_on_merge` on, wiki and projects
   off.
 - `.github/CODEOWNERS` makes Gabriel the owner of everything, and of
-  `lean/Statements/`, the toolchain pins, the licences and CI explicitly.
-  Combined with required code-owner review, every pull request needs him.
+  `lean/Statements/`, the toolchain pins, the licences and CI explicitly. It
+  no longer gates a merge (code-owner review is off, above), but it still
+  requests him as reviewer on every pull request, and it is the list to
+  re-activate if a second collaborator arrives.
 - `.github/workflows/claude.yml` runs only when the actor is the repository
   owner, and holds `contents` / `pull-requests` / `issues` write and nothing
   more: no administration, no release rights.
