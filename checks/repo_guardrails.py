@@ -26,6 +26,7 @@ import configparser
 import csv
 import hashlib
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -195,6 +196,31 @@ def check_submodules() -> None:
     extra = sorted(set(found) - set(EXPECTED_SUBMODULES))
     report(not extra, "no unexpected submodules",
            "" if not extra else "found: " + ", ".join(extra))
+
+    # .gitmodules only describes the submodules; the commit each is pinned to
+    # lives in the tree as a gitlink. A plain `git add -A` run while the
+    # submodule directories are not checked out will happily stage their
+    # removal and leave .gitmodules untouched, so check the tree too.
+    try:
+        listing = subprocess.run(
+            ["git", "ls-files", "-s", "--", "third_party"],
+            cwd=ROOT, capture_output=True, text=True, check=True).stdout
+    except (OSError, subprocess.CalledProcessError) as exc:
+        report(False, "gitlinks are present in the tree", f"could not run git: {exc}")
+        return
+
+    gitlinks = {}
+    for line in listing.splitlines():
+        meta, _, path = line.partition("\t")
+        fields = meta.split()
+        if fields and fields[0] == "160000":
+            gitlinks[path] = fields[1]
+
+    for sub_path in sorted(EXPECTED_SUBMODULES):
+        sha = gitlinks.get(sub_path)
+        report(sha is not None, f"gitlink {sub_path}",
+               "" if sha else "no commit pinned in the tree; "
+                              "the submodule is described but not recorded")
 
     # Nothing from an unlicensed upstream may be vendored.
     forbidden = ("instructions-for-checking-reproducibility",)
