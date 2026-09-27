@@ -70,8 +70,8 @@ jobs:
           echo "kernel:     $(cat /proc/version)"
           free -g
           df -h .
-          case "$GITHUB_WORKSPACE" in
-            /mnt/*) echo "workspace is on the Windows filesystem; too slow to measure"; exit 1 ;;
+          case "$HOME" in
+            /mnt/*) echo "runner home is on the Windows filesystem; too slow to measure"; exit 1 ;;
           esac
 
           # Fail here rather than five minutes into the build. corun's
@@ -91,9 +91,17 @@ jobs:
           fi
           echo "dependencies present, numpy $(python3 -c 'import numpy; print(numpy.__version__)')"
 
+      # PORT_DIR deliberately sits OUTSIDE $GITHUB_WORKSPACE. actions/checkout
+      # cleans the workspace at the start of every job, which silently deleted
+      # the previous checkout and made the resume a no-op: the 2026-09-27 run
+      # regenerated the reducibility certificates from scratch even with
+      # `fresh` off, because there was nothing left to reuse.
       - name: Check out the port at its pinned commit
         run: |
           set -euo pipefail
+          echo "PORT_DIR=$HOME/4ct-port-cache/${{ inputs.port }}" >> "$GITHUB_ENV"
+          PORT_DIR="$HOME/4ct-port-cache/${{ inputs.port }}"
+          mkdir -p "$(dirname "$PORT_DIR")"
           case "${{ inputs.port }}" in
             corun1024)
               URL=https://github.com/corun1024/4ct.git
@@ -107,7 +115,7 @@ jobs:
           esac
           if [ "${{ inputs.fresh }}" = "true" ]; then
             echo "fresh requested; discarding any previous checkout"
-            rm -rf port
+            rm -rf "$PORT_DIR"
           fi
 
           # Resume where possible. A full run regenerates the reducibility
@@ -115,21 +123,21 @@ jobs:
           # interrupted build should not start from nothing. Lake is
           # incremental; keeping .lake and the generated certificates is the
           # whole saving.
-          if [ -d port/.git ] && [ "$(git -C port rev-parse HEAD 2>/dev/null)" = "$SHA" ]; then
-            echo "reusing the existing checkout at $SHA"
-            git -C port status --short | head -20
+          if [ -d "$PORT_DIR/.git" ] && [ "$(git -C "$PORT_DIR" rev-parse HEAD 2>/dev/null)" = "$SHA" ]; then
+            echo "RESUME: reusing the existing checkout at $SHA in $PORT_DIR"
+            du -sh "$PORT_DIR" 2>/dev/null || true
           else
-            rm -rf port && mkdir port && cd port
+            echo "FRESH: cloning $URL at $SHA into $PORT_DIR"
+            rm -rf "$PORT_DIR" && mkdir -p "$PORT_DIR" && cd "$PORT_DIR"
             git init -q .
             git remote add origin "$URL"
             git fetch -q --depth 1 origin "$SHA"
             git checkout -q FETCH_HEAD
-            cd ..
           fi
-          echo "port toolchain: $(cat port/lean-toolchain)"
+          echo "port toolchain: $(cat "$PORT_DIR/lean-toolchain")"
 
       - name: Install that port's own toolchain
-        working-directory: port
+        working-directory: ${{ env.PORT_DIR }}
         run: |
           set -euo pipefail
           elan toolchain install "$(cat lean-toolchain)"
@@ -137,14 +145,14 @@ jobs:
           lean --version
 
       - name: Mathlib cache
-        working-directory: port
+        working-directory: ${{ env.PORT_DIR }}
         run: |
           set -euo pipefail
           lake exe cache get || echo "cache get failed; the build will compile Mathlib itself"
 
       - name: Build, measured
         id: build
-        working-directory: port
+        working-directory: ${{ env.PORT_DIR }}
         env:
           JOBS: ${{ inputs.jobs }}
           MEMORY: ${{ inputs.memory_gb }}
@@ -194,7 +202,7 @@ jobs:
 
       - name: Axioms of the final theorem
         if: always()
-        working-directory: port
+        working-directory: ${{ env.PORT_DIR }}
         run: |
           set -euo pipefail
           case "${{ inputs.port }}" in
@@ -215,7 +223,7 @@ jobs:
 
       - name: The port's own checks
         if: always()
-        working-directory: port
+        working-directory: ${{ env.PORT_DIR }}
         run: |
           set -euo pipefail
           {
@@ -240,7 +248,7 @@ jobs:
             echo "| | |"
             echo "| --- | --- |"
             echo "| commit | pinned, see the checkout step |"
-            echo "| toolchain | \`$(cat port/lean-toolchain 2>/dev/null || echo unknown)\` |"
+            echo "| toolchain | \`$(cat "${PORT_DIR:-}/lean-toolchain" 2>/dev/null || echo unknown)\` |"
             echo "| JOBS | ${{ inputs.jobs }} |"
             echo "| memory budget | ${{ inputs.memory_gb }} GB |"
             echo "| build exit status | ${{ steps.build.outputs.exit_status }} |"
@@ -262,7 +270,11 @@ jobs:
         if: always()
         run: |
           set -uo pipefail
-          pids=$(ps -eo pid,args | grep '[l]ean ' | grep -F "$GITHUB_WORKSPACE/port" | awk '{print $1}')
+          # Every grep here can legitimately match nothing, and the step runs
+          # under `bash -e` with pipefail, so an unguarded pipeline that finds
+          # no orphans kills the step. That is what marked an entirely
+          # successful 2-hour build as failed on 2026-09-27.
+          pids=$(ps -eo pid,args | grep '[l]ean ' | grep -F "$PORT_DIR" | awk '{print $1}' || true)
           pool=$(pgrep -f 'scripts/build_pool\.py' || true)
           if [ -n "${pool}${pids}" ]; then
             echo "killing leftovers: pool=${pool:-none} lean=${pids:-none}"
@@ -270,7 +282,7 @@ jobs:
             [ -n "$pids" ] && kill -KILL $pids 2>/dev/null
             sleep 2
           fi
-          left=$(ps -eo pid,args | grep -c "[l]ean .*$GITHUB_WORKSPACE/port" || true)
+          left=$(ps -eo pid,args | grep -c "[l]ean .*$PORT_DIR" || true)
           echo "lean processes still in the port checkout: $left"
 
       - uses: actions/upload-artifact@v4

@@ -10,7 +10,7 @@ clean checkout. Leads, partial arguments and AI-written summaries go under
 
 | Date | Result | Evidence | Tier | PR |
 | --- | --- | --- | --- | --- |
-|  |  |  |  |  |
+| 2026-09-27 | `corun1024/4ct` builds clean on its own pinned toolchain, and `FourColor.fourColorTheorem` depends on no axioms beyond `propext`, `Classical.choice`, `Quot.sound`. 115,342 declarations, no sorries. | port-build run [36336993686](https://github.com/glgmail/4ct-program/actions/runs/36336993686), artifact `port-build-corun1024` | evidence for A1 | #20 |
 
 ## Open leads
 
@@ -236,7 +236,7 @@ RBarish has `scripts/engine_memtime.py`, `final_run.sh` and
 `palomar_check.sh`; the plan of record records it as needing about 16 GB and
 25 GB of disk, 2.4–3.3 hours on 16 cores.
 
-## Provisional recommendation: corun1024/4ct
+## Recommendation: corun1024/4ct — now with build evidence
 
 On the statement itself there is nothing to choose between them. Both are
 faithful transcriptions of Gonthier, and both narrow the reals in the same
@@ -255,17 +255,27 @@ in this program.
    moving back a minor version.
 4. **Its build is memory-aware**, which matters on a 26 GB WSL2 share.
 
-What would change this recommendation:
+Two of the four things that could have overturned this are now settled, in
+corun1024's favour:
 
-- **RBarish builds clean on `v4.34.1` and corun1024 does not**, or needs
-  changes that touch statements rather than proofs. Portability beats
-  convenience.
-- **`#print axioms` differs.** Anything beyond `propext`,
-  `Classical.choice`, `Quot.sound` in either port is decisive against it.
-- **corun1024's peak memory does not fit** the runner's share even at
-  `JOBS=1`, and RBarish's does.
-- **`Examples.lean` turns out to give RBarish comparable non-vacuity
-  coverage**, which would neutralise point 2.
+- **`#print axioms` is clean** — `[propext, Classical.choice, Quot.sound]`
+  and nothing more, across 115,342 declarations. Had anything else appeared
+  it would have been decisive against the port regardless of its other
+  merits.
+- **Peak memory fits**, though not comfortably: 20.2 GB in a 25 GB share.
+
+What could still change it:
+
+- **RBarish builds clean on `v4.34.1` and corun1024 does not**, or corun
+  needs changes touching statements rather than proofs when moved. That is
+  A2's question, and portability beats convenience.
+- **RBarish's `#print axioms` is equally clean and its `Examples.lean` gives
+  comparable non-vacuity coverage**, which would neutralise the audit
+  advantage and leave the Mathlib bridge as the only differentiator.
+
+Neither is known yet: **RBarish has not been built.** The comparison is
+still one-sided, and a recommendation resting on one measured port and one
+unmeasured one should be read accordingly.
 
 Gabriel decides. This is a recommendation with its reasons, not a choice.
 
@@ -306,6 +316,76 @@ Not a measurement of the port. But three things did come out of it:
 Wall-clock for the whole run was 57 minutes, most of it Mathlib cache
 decompression and toolchain install rather than the 5 minutes of `build.sh`.
 Budget for that on a first run of the other port too.
+
+## Build attempt 2 — corun1024, 2026-09-27: **clean**
+
+Run [36336993686], `JOBS=4`, `memory_gb=20`, self-hosted runner (WSL2, 25 GB
+share). **821/821 modules, exit 0, 2 h 00 m 12 s.** Zero module failures.
+
+### Axioms — the question that could have sunk the recommendation
+
+```
+'FourColor.fourColorTheorem' depends on axioms: [propext, Classical.choice, Quot.sound]
+```
+
+and from corun's own `scripts/check.sh`:
+
+```
+THEOREM PROVED: FourColor.fourColorTheorem : FourColor.FourColorTheorem
+  depends only on [propext, Classical.choice, Quot.sound]
+checked 115342 FourColor declarations: no sorries, no extra axioms
+anti-vacuity audit: negative controls pass
+```
+
+Exactly the three standard axioms of classical Lean, and nothing else. No
+`sorryAx`, no `Lean.ofReduceBool` (which is what `native_decide` would have
+introduced, putting the compiler in the trusted base). The source reading in
+the statement review said there was no `sorry` and no compiled evaluation;
+the kernel now agrees, across all 115,342 declarations rather than the
+handful a human can read.
+
+The anti-vacuity audit passing is the part worth dwelling on: it is a
+kernel-checked statement that corun's *checkers* are not degenerate — that
+`theRedpart` is not constantly `true` and the quiz tree is the real data.
+Sound and vacuous is the failure mode this program's trust rule exists to
+catch, and corun catches it mechanically.
+
+### Cost
+
+| | |
+| --- | --- |
+| Wall clock | 2 h 00 m 12 s at `JOBS=4` |
+| Total work | 7.9 core-hours (corun's own estimate, borne out) |
+| `build_pool.py` prediction | 135 min at 4 jobs — it was accurate |
+| Peak single process | **20.2 GB** (`/usr/bin/time` max RSS) |
+| Peak system-wide | 18.9 GB (sampled every 5 s from `/proc/meminfo`) |
+| Modules | 821, none failed |
+
+**The 20 GB module is real.** corun's warning was not conservative: one
+process reached 20.2 GB, in a 25 GB WSL2 share. That leaves under 5 GB of
+headroom, so the `memory_gb=20` budget should not be raised, and `JOBS` above
+4 is not obviously safe — the risk is not the average module but that one.
+
+Note the sampler *understated* the peak (18.9 vs 20.2 GB): a 5-second
+interval can miss a spike. For a hard ceiling, trust `/usr/bin/time`'s max
+RSS; the sampler is for the shape of the run, not its worst moment.
+
+### Two bugs in my own harness, both now fixed
+
+- **The run is marked `failure` despite the build succeeding.** The
+  orphan-sweep step I added runs under `bash -e` with `pipefail`, and its
+  first pipeline greps for orphaned processes — which, on a clean run, match
+  nothing, so `grep` exits 1 and kills the step. A cleanup step invented to
+  handle a failure mode manufactured a false one.
+- **The resume never worked.** `actions/checkout` cleans the workspace at
+  the start of every job, so the `port/` directory from the previous run was
+  deleted before the resume check could see it. That is why the reducibility
+  certificates were regenerated despite `fresh` being off. The port checkout
+  now lives in `$HOME/4ct-port-cache/<port>`, outside the workspace.
+
+Neither affects the result above: the build, the axioms and the audit all
+ran before the sweep, and a full rebuild is if anything the stronger
+evidence.
 
 ## What the build must still produce
 
