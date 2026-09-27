@@ -25,15 +25,19 @@ jobs:
     timeout-minutes: 360
 
     env:
-      # Peak memory must stay under 32 GB. Some modules of the corun1024 port
-      # peak around 20 GB on their own, so parallelism is capped rather than
-      # left to the core count. JOBS is what `lake -j` and the corun1024
-      # build.sh both take; MEMORY is the per-process soft cap in MB that the
-      # corun1024 build reads.
+      # Peak memory must stay under the distro's share, so parallelism is
+      # capped rather than left to the core count. Some modules of the
+      # corun1024 port peak around 20 GB on their own.
+      #
+      # LEAN_NUM_THREADS is the knob that actually bounds `lake build`: Lake
+      # at v4.34.1 has no --jobs or -j option at all (checked against
+      # src/lake/Lake/CLI/Main.lean at that tag), and schedules its build
+      # jobs on the Lean task runtime, which this sizes.
+      LEAN_NUM_THREADS: '2'
+      # JOBS and MEMORY are for the corun1024 build script, which reads them
+      # itself. They do not affect `lake build`.
       JOBS: '2'
       MEMORY: '12000'
-      # Lean's own thread pool, kept in step with JOBS.
-      LEAN_NUM_THREADS: '2'
 
     steps:
       - uses: actions/checkout@v4
@@ -94,7 +98,8 @@ jobs:
       - name: Build lean/
         run: |
           set -euo pipefail
-          /usr/bin/time -v lake build -j "$JOBS" 2>&1 | tail -40
+          # No -j: see the LEAN_NUM_THREADS note above.
+          /usr/bin/time -v lake build 2>&1 | tail -60
 
       - name: Peak memory
         if: always()

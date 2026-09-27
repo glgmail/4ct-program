@@ -251,10 +251,17 @@ with interop off.
 
 ## Memory
 
-`lean-build.yml` sets `JOBS=2`, `MEMORY=12000` and `LEAN_NUM_THREADS=2` so
-peak memory stays inside the distro's 26 GB. Some modules of the corun1024
-port peak around 20 GB on their own — when a job builds that port (tasks A1
-and A2), drop to `JOBS=1`.
+`lean-build.yml` sets `LEAN_NUM_THREADS=2` so peak memory stays inside the
+distro's 26 GB. That is the knob that bounds `lake build`: **Lake at v4.34.1
+has no `--jobs` or `-j` option** — verified against
+`src/lake/Lake/CLI/Main.lean` at that tag, whose short options are only
+`q v d f o K U R h H J`. Lake schedules build jobs on the Lean task
+runtime, and `LEAN_NUM_THREADS` sizes that.
+
+`JOBS=2` and `MEMORY=12000` are also exported, but only for the corun1024
+build script, which reads them itself. They do nothing to `lake build`. Some
+modules of that port peak around 20 GB on their own — when a job builds it
+(tasks A1 and A2), drop to `JOBS=1` and `LEAN_NUM_THREADS=1`.
 
 Remember there are two limits now: the distro's `memory=` in `.wslconfig`,
 and the host's 32 GB behind it. Raising the first past about 28 GB will
