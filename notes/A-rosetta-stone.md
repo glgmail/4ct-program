@@ -237,6 +237,34 @@ RBarish has `scripts/engine_memtime.py`, `final_run.sh` and
 `palomar_check.sh`; the plan of record records it as needing about 16 GB and
 25 GB of disk, 2.4–3.3 hours on 16 cores.
 
+## Decision: corun1024/4ct (Gabriel, 2026-09-27)
+
+**The base port is `corun1024/4ct`**, at pinned commit `3db71e0`. A2 moves
+it to `v4.34.1`.
+
+Taken with the full comparison below in view, including the case for
+RBarish. What the choice commits the program to, so it is not rediscovered
+later:
+
+- **CI cost is now A2's problem to solve.** corun builds in ~2 hours at a
+  20.2 GB peak. Once it lives in `lean/`, `lean-build` rebuilds it on every
+  pull request unless A2 puts a persistent build cache in place. See #3.
+- **The self-hosted runner stays on the critical path** for workstream A. A
+  20.2 GB build will never fit a GitHub-hosted runner. Its reliability — the
+  keepalive, the disk floor, the memory cap — is now load-bearing, not
+  incidental.
+- **`RealPlaneMathlib.lean` is the foundation A3 and A4 build on.** That was
+  the main reason for the choice; A3 should start from it rather than
+  re-derive the bridge.
+- **corun's `Audit.lean` and `scripts/check.sh` become part of our
+  verification**, and should keep passing after every change to the port —
+  not only after A2.
+
+RBarish remains pinned in `third_party/` as the second independent Lean
+formalisation, and `check_challenge_sync.py` is worth imitating for
+`lean/Statements/`: a mechanical check that the published statement and the
+proved statement are the same text.
+
 ## Recommendation: corun1024/4ct — now with build evidence
 
 On the statement itself there is nothing to choose between them. Both are
