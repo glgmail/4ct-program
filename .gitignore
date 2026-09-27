@@ -1,0 +1,19 @@
+# Lake
+/.lake/
+/build/
+lake-packages/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Editors and OS
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Local run output; anything worth keeping goes in notes/ or data/
+/scratch/
+*.log
