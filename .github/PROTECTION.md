@@ -7,9 +7,8 @@ available: on the account's GitHub Free plan they are free for public
 repositories and would need GitHub Pro for a private one. It is also what
 makes the fork-pull-request rules below matter.
 
-> Public is the settled choice, made on 2026-09-27 — see the last section.
-> The plan of record still says "private"; the repository is the source of
-> truth for what is actually configured.
+> Public is the settled choice, made on 2026-09-27, and the plan of record
+> has been updated to match — see the last section.
 
 ## Branch protection on `main`
 
@@ -158,6 +157,7 @@ F3 imports 8,202 configuration files plus the discharging rules. Check the
 account's LFS storage and bandwidth allowance against that before the import,
 rather than discovering it when LFS starts refusing fetches.
 
-The plan of record still says "private GitHub repository". It is the
-program's plan of record, so Gabriel updates it; this file records what the
-repository actually does.
+The plan of record has been updated to match: its decisions, checklist and
+README draft now say public, and its kickoff prompt is kept verbatim as the
+record of what was originally asked, with a dated note above it saying which
+of its premises have since changed.
