@@ -1,0 +1,17 @@
+# Gabriel reviews and merges everything. Only he can approve on behalf of a
+# code owner, so every pull request needs his review.
+*                     @glgmail
+
+# Statement files need Gabriel's written sign-off, not just an approval.
+# The Lean kernel checks proofs; it does not check that a statement says what
+# we mean. See lean/Statements/README.md.
+/lean/Statements/     @glgmail
+
+# Toolchain pins, licences, CI and the guardrails.
+/lean-toolchain       @glgmail
+/lakefile.toml        @glgmail
+/.gitmodules          @glgmail
+/.gitattributes       @glgmail
+/THIRD_PARTY_NOTICES.md @glgmail
+/.github/             @glgmail
+/checks/repo_guardrails.py @glgmail
