@@ -34,6 +34,11 @@ on:
         required: true
         default: '20'
         type: string
+      fresh:
+        description: 'Discard any previous checkout and start over. Leave off to resume an interrupted build.'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -64,6 +69,23 @@ jobs:
             /mnt/*) echo "workspace is on the Windows filesystem; too slow to measure"; exit 1 ;;
           esac
 
+          # Fail here rather than five minutes into the build. corun's
+          # scripts/bulkspace.py imports numpy, and a 2026-09-27 run got all the
+          # way to certificate generation before dying on it.
+          missing=""
+          for tool in git elan lake python3; do
+            command -v "$tool" >/dev/null || missing="$missing $tool"
+          done
+          python3 -c 'import numpy' 2>/dev/null || missing="$missing python3-numpy"
+          if [ -n "$missing" ]; then
+            echo "missing on this runner:$missing"
+            echo
+            echo "Install inside the WSL2 distro, as the runner's user:"
+            echo "  sudo apt-get update && sudo apt-get install -y python3-numpy"
+            exit 1
+          fi
+          echo "dependencies present, numpy $(python3 -c 'import numpy; print(numpy.__version__)')"
+
       - name: Check out the port at its pinned commit
         run: |
           set -euo pipefail
@@ -78,12 +100,28 @@ jobs:
               ;;
             *) echo "unknown port"; exit 1 ;;
           esac
-          rm -rf port && mkdir port && cd port
-          git init -q .
-          git remote add origin "$URL"
-          git fetch -q --depth 1 origin "$SHA"
-          git checkout -q FETCH_HEAD
-          echo "port toolchain: $(cat lean-toolchain)"
+          if [ "${{ inputs.fresh }}" = "true" ]; then
+            echo "fresh requested; discarding any previous checkout"
+            rm -rf port
+          fi
+
+          # Resume where possible. A full run regenerates the reducibility
+          # certificates (about a core-hour) and rebuilds every olean, so an
+          # interrupted build should not start from nothing. Lake is
+          # incremental; keeping .lake and the generated certificates is the
+          # whole saving.
+          if [ -d port/.git ] && [ "$(git -C port rev-parse HEAD 2>/dev/null)" = "$SHA" ]; then
+            echo "reusing the existing checkout at $SHA"
+            git -C port status --short | head -20
+          else
+            rm -rf port && mkdir port && cd port
+            git init -q .
+            git remote add origin "$URL"
+            git fetch -q --depth 1 origin "$SHA"
+            git checkout -q FETCH_HEAD
+            cd ..
+          fi
+          echo "port toolchain: $(cat port/lean-toolchain)"
 
       - name: Install that port's own toolchain
         working-directory: port

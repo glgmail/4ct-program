@@ -269,6 +269,44 @@ What would change this recommendation:
 
 Gabriel decides. This is a recommendation with its reasons, not a choice.
 
+## Build attempt 1 — corun1024, 2026-09-27 (failed: environment)
+
+Run [36305441480], `JOBS=1`, `memory_gb=20`, self-hosted runner. **Failed
+after 5 min 13 s of `build.sh`, on a missing Python package** — not on
+anything about the port.
+
+```
+File ".../port/scripts/bulkspace.py", line 17, in <module>
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'
+```
+
+corun's `scripts/bulkspace.py` imports numpy; the runner had no numpy. Fixed
+by adding `python3-numpy` to the runner dependencies, and `port-build.yml`
+now checks for it before starting rather than five minutes in.
+
+Not a measurement of the port. But three things did come out of it:
+
+- **The toolchain coexists.** `elan` installed the port's `v4.34.0-rc2`
+  alongside our `v4.34.1` with no conflict, and `lake exe cache get` restored
+  Mathlib from cache (8,905 files decompressed, nothing downloaded). The
+  build reached corun's own code.
+- **`JOBS=1` is not honoured by every phase.** `/usr/bin/time` reported
+  **1101 % CPU** over the 5 min 13 s — roughly eleven cores — during the
+  reducibility-certificate generation, which corun's own output describes as
+  "about one core-hour". That phase parallelises independently of `JOBS`.
+  Peak memory was only 2.3 GB, so it did no harm here, but it means the
+  memory ceiling during certificate generation is not something `JOBS`
+  controls. Watch it on the next run.
+- **Peak memory sampling works.** 2.3 GB observed from `/proc/meminfo`,
+  against a `Maximum resident set size` of 0.8 GB from `/usr/bin/time` —
+  which is the single largest process and, as expected, understates a
+  parallel pool.
+
+Wall-clock for the whole run was 57 minutes, most of it Mathlib cache
+decompression and toolchain install rather than the 5 minutes of `build.sh`.
+Budget for that on a first run of the other port too.
+
 ## What the build must still produce
 
 `.github/workflows/port-build.yml`, run once per port, on the self-hosted
