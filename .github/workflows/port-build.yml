@@ -1,0 +1,223 @@
+# Build one of the two Lean ports on the self-hosted runner, and collect the
+# evidence task A1 needs: wall time, peak memory, whether it builds clean, and
+# `#print axioms` on the final theorem.
+#
+# Manual trigger only. This is a multi-hour job on Gabriel's machine and must
+# never start by itself.
+#
+# It builds each port on its OWN pinned toolchain, not ours. Moving the chosen
+# port to v4.34.1 is task A2; mixing the two would confound the measurement.
+# `checks/repo_guardrails.py` is not run here for the same reason — this
+# workflow deliberately steps outside the pin.
+#
+# Nothing is committed. Results land as a run artifact for a human to read and
+# paste into notes/A-rosetta-stone.md.
+name: port-build
+
+on:
+  workflow_dispatch:
+    inputs:
+      port:
+        description: 'Which port to build'
+        required: true
+        type: choice
+        options:
+          - corun1024
+          - RBarish-UTokyo
+      jobs:
+        description: 'Parallel build jobs (1 is safest; corun modules peak near 20 GB)'
+        required: true
+        default: '1'
+        type: string
+      memory_gb:
+        description: 'Memory budget in GB for corun build_pool.py (NOT MB). Ignored for RBarish.'
+        required: true
+        default: '20'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: port-build
+    runs-on: [self-hosted, linux, 32gb]
+    timeout-minutes: 360
+    if: github.actor == github.repository_owner
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+          lfs: false
+
+      - name: Where we are, and what we have
+        run: |
+          set -euo pipefail
+          echo "port:       ${{ inputs.port }}"
+          echo "jobs:       ${{ inputs.jobs }}"
+          echo "memory_gb:  ${{ inputs.memory_gb }} GB"
+          echo "kernel:     $(cat /proc/version)"
+          free -g
+          df -h .
+          case "$GITHUB_WORKSPACE" in
+            /mnt/*) echo "workspace is on the Windows filesystem; too slow to measure"; exit 1 ;;
+          esac
+
+      - name: Check out the port at its pinned commit
+        run: |
+          set -euo pipefail
+          case "${{ inputs.port }}" in
+            corun1024)
+              URL=https://github.com/corun1024/4ct.git
+              SHA=3db71e0a786a1f19be04c5266fe3d06fed216885
+              ;;
+            RBarish-UTokyo)
+              URL=https://github.com/RBarish-UTokyo/FourColorTheorem-Lean4.git
+              SHA=20fa34599f5189dd569d96dd22f306c94ab1c446
+              ;;
+            *) echo "unknown port"; exit 1 ;;
+          esac
+          rm -rf port && mkdir port && cd port
+          git init -q .
+          git remote add origin "$URL"
+          git fetch -q --depth 1 origin "$SHA"
+          git checkout -q FETCH_HEAD
+          echo "port toolchain: $(cat lean-toolchain)"
+
+      - name: Install that port's own toolchain
+        working-directory: port
+        run: |
+          set -euo pipefail
+          elan toolchain install "$(cat lean-toolchain)"
+          elan override set "$(cat lean-toolchain)"
+          lean --version
+
+      - name: Mathlib cache
+        working-directory: port
+        run: |
+          set -euo pipefail
+          lake exe cache get || echo "cache get failed; the build will compile Mathlib itself"
+
+      - name: Build, measured
+        id: build
+        working-directory: port
+        env:
+          JOBS: ${{ inputs.jobs }}
+          MEMORY: ${{ inputs.memory_gb }}
+          LEAN_NUM_THREADS: ${{ inputs.jobs }}
+        run: |
+          set -euo pipefail
+          mkdir -p ../out
+          # Sample peak memory alongside the build: /usr/bin/time -v reports the
+          # largest single process, which understates a pool of parallel jobs.
+          ( while true; do
+              awk '/MemAvailable/ {print systime(), $2}' /proc/meminfo >> ../out/mem-samples.txt
+              sleep 5
+            done ) &
+          SAMPLER=$!
+          trap 'kill $SAMPLER 2>/dev/null || true' EXIT
+
+          start=$(date +%s)
+          set +e
+          if [ -x ./build.sh ]; then
+            echo "using the port's own build.sh (JOBS=$JOBS MEMORY=$MEMORY GB)"
+            /usr/bin/time -v ./build.sh > ../out/build.log 2>&1
+          else
+            echo "no build.sh; using lake build"
+            /usr/bin/time -v lake build > ../out/build.log 2>&1
+          fi
+          status=$?
+          set -e
+          end=$(date +%s)
+
+          echo "exit_status=$status" >> "$GITHUB_OUTPUT"
+          echo "wall_seconds=$((end - start))" >> "$GITHUB_OUTPUT"
+          echo "build exited $status after $((end - start))s"
+          tail -60 ../out/build.log
+
+      - name: Peak memory actually observed
+        if: always()
+        run: |
+          set -euo pipefail
+          total_kb=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+          min_avail=$(awk '{print $2}' out/mem-samples.txt 2>/dev/null | sort -n | head -1)
+          if [ -n "${min_avail:-}" ]; then
+            peak_gb=$(awk -v t="$total_kb" -v a="$min_avail" 'BEGIN {printf "%.1f", (t-a)/1024/1024}')
+            echo "peak memory in use during the build: ${peak_gb} GB" | tee out/peak-memory.txt
+          else
+            echo "no samples collected" | tee out/peak-memory.txt
+          fi
+
+      - name: Axioms of the final theorem
+        if: always()
+        working-directory: port
+        run: |
+          set -euo pipefail
+          case "${{ inputs.port }}" in
+            corun1024)
+              IMPORT="import FourColor.Complete"
+              NAME="FourColor.fourColorTheorem"
+              ;;
+            RBarish-UTokyo)
+              IMPORT="import Solution"
+              NAME="FourColor.RealPlane.four_color"
+              ;;
+          esac
+          printf '%s\n#print axioms %s\n' "$IMPORT" "$NAME" > Axioms.lean
+          echo "--- Axioms.lean ---"; cat Axioms.lean
+          lake env lean Axioms.lean 2>&1 | tee ../out/axioms.txt || \
+            echo "axiom check failed - see build.log; it cannot succeed if the build did not" \
+              | tee -a ../out/axioms.txt
+
+      - name: The port's own checks
+        if: always()
+        working-directory: port
+        run: |
+          set -euo pipefail
+          {
+            case "${{ inputs.port }}" in
+              corun1024)
+                [ -x scripts/check.sh ] && bash scripts/check.sh || echo "scripts/check.sh: absent or failed"
+                ;;
+              RBarish-UTokyo)
+                [ -f scripts/check_challenge_sync.py ] && python3 scripts/check_challenge_sync.py \
+                  || echo "check_challenge_sync.py: absent or failed"
+                ;;
+            esac
+          } 2>&1 | tee ../out/upstream-checks.txt || true
+
+      - name: Summary
+        if: always()
+        run: |
+          set -euo pipefail
+          {
+            echo "## port-build: ${{ inputs.port }}"
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| commit | pinned, see the checkout step |"
+            echo "| toolchain | \`$(cat port/lean-toolchain 2>/dev/null || echo unknown)\` |"
+            echo "| JOBS | ${{ inputs.jobs }} |"
+            echo "| memory budget | ${{ inputs.memory_gb }} GB |"
+            echo "| build exit status | ${{ steps.build.outputs.exit_status }} |"
+            echo "| wall clock | ${{ steps.build.outputs.wall_seconds }} s |"
+            echo "| $(cat out/peak-memory.txt 2>/dev/null || echo 'peak memory | unknown') |"
+            echo
+            echo '### Axioms'
+            echo '```'
+            cat out/axioms.txt 2>/dev/null || echo "(none captured)"
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: port-build-${{ inputs.port }}
+          path: out/
+          retention-days: 30
+
+      - name: Fail the run if the build failed
+        if: always()
+        run: |
+          test "${{ steps.build.outputs.exit_status }}" = "0"
