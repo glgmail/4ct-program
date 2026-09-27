@@ -90,5 +90,33 @@ jobs:
           #
           # The house rules live in /CLAUDE.md, which Claude Code reads
           # automatically as project context, here and in local sessions.
+          #
+          # Tool grant. Without --allowedTools the agent cannot run anything:
+          # a wiring test on 2026-09-27 could read `lean-toolchain` but not
+          # execute `checks/repo_guardrails.py`. Every workstream task needs
+          # to run something, so the local toolset is granted.
+          #
+          # What contains this, given the repository is public:
+          #   - the job runs on an ephemeral GitHub-hosted runner, never on
+          #     the self-hosted machine (see "Where the heavy work happens"
+          #     below);
+          #   - only the repository owner can trigger a run at all;
+          #   - the job token is contents / pull-requests / issues write,
+          #     with no administration and no release rights;
+          #   - `main` is protected, so nothing here can merge;
+          #   - the `v*` ruleset is admin-only, so nothing here can tag or
+          #     release even holding contents: write.
+          # The worst case is a bad branch and a pull request Gabriel then
+          # declines.
+          #
+          # Web tools are deliberately NOT granted. Fetched pages are
+          # untrusted input, and nothing in the current tasks needs them. Add
+          # them deliberately if a task genuinely does.
+          #
+          # --disallowedTools restates the hard rules at the tool layer. The
+          # ruleset and token scope already block these; this makes the
+          # attempt fail immediately and legibly instead of burning a run.
           claude_args: |
             --max-turns 60
+            --allowedTools "Bash,Read,Write,Edit,MultiEdit,Glob,Grep,TodoWrite"
+            --disallowedTools "Bash(gh release:*),Bash(gh repo edit:*),Bash(gh repo delete:*),Bash(git tag:*),Bash(git push --force:*),Bash(git push -f:*)"

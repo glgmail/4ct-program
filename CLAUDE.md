@@ -81,14 +81,32 @@ in source and licence by hand. Never invent either.
 
 ## Where work runs
 
-Heavy Lean builds and searches go on the self-hosted runner —
-labels `self-hosted`, `linux`, `32gb`, which is Linux inside WSL2 on a 32 GB
-Windows host. Not on a GitHub-hosted runner.
+There are two machines, and knowing which one you are on matters.
 
-Keep work inside the distro's own filesystem, never under `/mnt/`. Peak
-memory must stay inside the distro's ~26 GB share: `LEAN_NUM_THREADS` caps
-`lake build`, and some corun1024 modules peak near 20 GB on their own, so
-drop to 1 for those.
+**You, in the `claude` workflow, run on an ephemeral GitHub-hosted runner.**
+Modest: a few cores and roughly 16 GB. Good for editing, `git`, `python3`,
+`checks/repo_guardrails.py`, and `lake build` of this repository's own small
+library once `lake exe cache get` has fetched Mathlib. **Not** good for
+building either Lean port — some corun1024 modules peak near 20 GB on their
+own and will simply be killed here.
+
+**The self-hosted runner** — labels `self-hosted`, `linux`, `32gb`, Linux
+inside WSL2 on a 32 GB Windows host — runs `lean-build` on every pull
+request. That is where a heavy build gets verified.
+
+So the division of labour is: you draft the change and open the pull request;
+the 32 GB machine proves it builds. Do not try to do a 20 GB build inside
+your own run, and do not treat "it did not build on my runner" as a result
+when the reason is memory — say which machine you were on.
+
+If a task genuinely needs the big machine interactively, say so in the pull
+request and let Gabriel run it. Nothing in this repository should be quietly
+arranged so that agent-authored commands execute on his machine.
+
+Constraints that apply on the self-hosted runner: keep work inside the
+distro's own filesystem, never under `/mnt/`; peak memory must stay inside
+its ~26 GB share; `LEAN_NUM_THREADS` caps `lake build`, and drop it to 1 for
+the corun1024 modules.
 
 ## Before you open a pull request
 
