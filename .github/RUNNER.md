@@ -75,10 +75,22 @@ too and fails with a pointer back here if it is under 24 GB.
 
 WSL2 is not a security boundary by default: it can reach your Windows drives
 through `/mnt/c` and launch Windows executables through interop. With a
-self-hosted runner on a public repository, close both. In the distro, edit
-`/etc/wsl.conf`:
+self-hosted runner on a public repository, close both.
 
-```ini
+This is done in `/etc/wsl.conf`, **inside the distro**. Note two things
+before you go looking for it:
+
+- **It does not exist until you create it.** There is nothing to find and
+  edit on a fresh install.
+- It is a file named `wsl.conf` in `/etc` — not a directory `/etc/wsl/`.
+  And it is a different file from `%UserProfile%\.wslconfig` in step 1:
+  that one is on the Windows side and sets the VM's memory; this one is
+  inside the distro and sets its behaviour. Neither exists by default.
+
+From the Ubuntu shell:
+
+```bash
+sudo tee /etc/wsl.conf > /dev/null <<'EOF'
 [boot]
 systemd=true
 
@@ -88,10 +100,17 @@ appendWindowsPath=false
 
 [automount]
 enabled=false
+EOF
 ```
 
 `systemd=true` is also what makes `svc.sh` work in step 5 — WSL2 does not
 enable systemd by default.
+
+`appendWindowsPath=false` takes Windows executables off the distro's
+`PATH`, so `gh` and friends from the Windows side stop being callable from
+inside Ubuntu. That is the point, but it means **step 5's registration
+token has to come from the Windows host**, not from the distro. Step 5 says
+so.
 
 Apply it with `wsl --shutdown` from PowerShell, then restart the distro and
 check:
@@ -136,11 +155,19 @@ lean --version   # expect: Lean (version 4.34.1, ...)
 Generate the token yourself — it lasts one hour and must never be written
 into a file in this repository.
 
-```bash
+Run this **on the Windows host, in PowerShell**. Step 2 took Windows
+executables off the distro's `PATH`, so `gh` is not callable from inside
+Ubuntu:
+
+```powershell
 gh api -X POST repos/glgmail/4ct-program/actions/runners/registration-token --jq .token
 ```
 
-Equivalently: **Settings → Actions → Runners → New self-hosted runner**.
+Equivalently, and just as good: **Settings → Actions → Runners → New
+self-hosted runner**, which shows the same token in the browser.
+
+Then paste the token into the `config.sh` call below, which does run inside
+the distro.
 
 ```bash
 mkdir -p ~/actions-runner && cd ~/actions-runner
@@ -200,7 +227,9 @@ Reboot once and confirm the runner comes back idle on its own.
 
 ## 7. Confirm
 
-```bash
+From the Windows host again, for the same `PATH` reason as step 5:
+
+```powershell
 gh api repos/glgmail/4ct-program/actions/runners --jq '.runners[] | {name, status, labels: [.labels[].name]}'
 ```
 
@@ -211,9 +240,14 @@ fails fast on anything missing.
 Once it is green, turn on `enforce_admins` so the required checks bind
 everyone, yourself included:
 
-```bash
+```powershell
 gh api -X POST repos/glgmail/4ct-program/branches/main/protection/enforce_admins
 ```
+
+If you would rather run `gh` from inside the distro, install the Linux
+build there (`https://github.com/cli/cli/blob/trunk/docs/install_linux.md`)
+and `gh auth login` separately — the Windows login does not carry across
+with interop off.
 
 ## Memory
 
