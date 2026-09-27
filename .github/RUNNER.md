@@ -237,12 +237,11 @@ Then re-run `lean-build` on the open pull request. Its first step prints the
 kernel, the toolchain pin and the memory actually visible to the runner, and
 fails fast on anything missing.
 
-Once it is green, turn on `enforce_admins` so the required checks bind
-everyone, yourself included:
-
-```powershell
-gh api -X POST repos/glgmail/4ct-program/branches/main/protection/enforce_admins
-```
+That is the runner done. **Do not turn on `enforce_admins`** while you are
+the only collaborator — it would deadlock the repository, because GitHub
+will not let you approve your own pull requests and `main` requires an
+approving review. `.github/PROTECTION.md` explains the trade and when to
+revisit it.
 
 If you would rather run `gh` from inside the distro, install the Linux
 build there (`https://github.com/cli/cli/blob/trunk/docs/install_linux.md`)

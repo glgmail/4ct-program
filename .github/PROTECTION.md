@@ -25,16 +25,34 @@ makes the fork-pull-request rules below matter.
 | Fork syncing | blocked |
 | `enforce_admins` | **off** — see below |
 
-`enforce_admins` is deliberately off for now: `lean-build` cannot report
-until the self-hosted runner exists, so with it on, nothing could be merged
-at all. **Turn it on once the runner is registered:**
+### Why `enforce_admins` stays off
+
+**Do not turn it on while Gabriel is the only collaborator.** It would
+deadlock the repository permanently.
+
+GitHub does not let anyone approve their own pull request. `main` requires
+one approving review, and `enforce_admins` removes the admin's ability to
+merge past an unmet requirement. Gabriel is the sole collaborator, so he
+authors every pull request, cannot approve any of them, and — with
+`enforce_admins` on — could not merge any of them either. There would be no
+way out short of an admin turning the setting back off.
+
+With it off, the configuration does what was actually wanted:
+
+- **Everyone other than Gabriel** is bound by the required review, the
+  required code-owner review, and both required status checks. An agent
+  holding `contents: write` cannot merge anything.
+- **Gabriel** merges his own pull requests using the admin bypass. His
+  judgement is the approval; the checks still run and still show red or
+  green on the pull request, he is simply not blocked by the
+  self-approval rule.
+
+Revisit this the moment a second person gets write access. At that point
+turn it on, because the deadlock disappears:
 
 ```bash
 gh api -X POST repos/glgmail/4ct-program/branches/main/protection/enforce_admins
 ```
-
-Until then, Gabriel can merge past a pending check. Nobody else can: everyone
-else is stopped by the required review and the required checks.
 
 ## Release tags
 
