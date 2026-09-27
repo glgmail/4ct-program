@@ -212,22 +212,57 @@ echo "PATH=$HOME/.elan/bin:$PATH" >> .env
 sudo ./svc.sh stop && sudo ./svc.sh start
 ```
 
-## 6. Make it survive a reboot
+## 6. Keep the distro alive — this one is not optional
 
-**WSL2 does not start with Windows.** Without this the runner is simply
-offline after every reboot, and `lean-build` sits queued with nothing to say
-why.
+Two separate problems, and the second is the one that will waste your day.
 
-From an elevated PowerShell on the host, create a startup task that boots
-the distro (systemd then starts the runner service):
+**WSL2 does not start with Windows.** After a reboot the distro is down and
+the runner with it.
+
+**WSL2 also terminates an idle distro about 15-25 seconds after the last
+`wsl.exe` client detaches — even with systemd running.** Observed on
+2026-09-27: the runner service started, logged `√ Connected to GitHub`, and
+16 seconds later `Runner listener exited with error code 0` as systemd shut
+it down with the distro. Repeatedly. GitHub showed the runner flapping
+between online and offline, jobs were picked up and orphaned mid-step, and
+nothing in the runner's own logs said why, because from its point of view it
+had exited cleanly.
+
+A task that merely *boots* the distro does not fix this — it boots, exits,
+and the distro dies twenty seconds later. Something must hold a client
+**open**. From an elevated PowerShell:
 
 ```powershell
-$action  = New-ScheduledTaskAction -Execute 'C:\Windows\System32\wsl.exe' -Argument '-d Ubuntu -- /bin/true'
+$action  = New-ScheduledTaskAction -Execute 'C:\Windows\System32\wsl.exe' `
+             -Argument '-d Ubuntu -u root -e sleep infinity'
 $trigger = New-ScheduledTaskTrigger -AtStartup
-Register-ScheduledTask -TaskName 'Start WSL runner' -Action $action -Trigger $trigger -RunLevel Highest -User 'SYSTEM'
+Register-ScheduledTask -TaskName 'WSL runner keepalive' -Action $action -Trigger $trigger `
+             -RunLevel Highest -User 'SYSTEM'
 ```
 
-Reboot once and confirm the runner comes back idle on its own.
+`sleep infinity` never returns, so the client never detaches and the distro
+stays up. Start it now without rebooting:
+
+```powershell
+Start-Process wsl.exe -ArgumentList '-d','Ubuntu','-u','root','-e','sleep','infinity' -WindowStyle Hidden
+```
+
+Confirm it holds — this should read `RUNNING` indefinitely, not for twenty
+seconds:
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::Unicode
+wsl.exe --list --running
+```
+
+Note the encoding line. `wsl.exe` emits UTF-16, and a script that greps its
+output without accounting for that will report the distro stopped when it is
+running. That mistake cost an hour of misdiagnosis.
+
+A corollary worth knowing: a long build survives partly because the job
+itself keeps a client attached. The first two-hour build here appeared to
+work without a keepalive only because it was being polled every minute from
+outside. Do not rely on that.
 
 ## 7. Confirm
 
@@ -271,10 +306,41 @@ Remember there are two limits now: the distro's `memory=` in `.wslconfig`,
 and the host's 32 GB behind it. Raising the first past about 28 GB will
 starve Windows.
 
-Disk: the Mathlib cache plus `data/` in Git LFS runs to tens of gigabytes,
-inside the WSL virtual disk. It grows on demand but does **not** shrink when
-files are deleted; reclaim with `wsl --manage Ubuntu --set-sparse true` from
-the host if it gets tight.
+## Disk
+
+The distro started at 29 GB and **filled completely** after one corun build
+(2026-09-27). The failure mode is worth knowing because nothing says "disk
+full": `Runner.Listener` crashes at startup because it cannot write its own
+diagnostic log, the wrapper relaunches it every five seconds forever, GitHub
+shows the runner **offline**, and unrelated jobs die mid-step with no error.
+
+Where it goes: about 8 GB per built port under `~/4ct-port-cache`, ~9 GB of
+`~/.elan` toolchains (ours plus one per port, each on its own release
+candidate), ~5 GB of `~/actions-runner/_work`, and the Mathlib cache.
+RBarish's README asks for about 25 GB on its own.
+
+The distro is now sized at 50 GB. To grow it further, from an elevated
+PowerShell with the distro stopped:
+
+```powershell
+wsl --shutdown
+wsl --manage Ubuntu --resize 60GB
+```
+
+The virtual disk is **sparse-by-growth**: the maximum is a ceiling, not a
+reservation, so raising it does not consume host space until the distro
+writes. Check host headroom first all the same — Windows running out of disk
+is worse than a failed build.
+
+Deleting files inside the distro frees them **for the distro** immediately,
+which is all the runner needs. The backing `ext4.vhdx` does not shrink, so
+host space is only returned by compacting. Do **not** use
+`wsl --manage ... --set-sparse true`: Microsoft has disabled it over a
+data-corruption bug, and `--allow-unsafe` is not worth it here. Use
+`diskpart`'s `compact vdisk` with the distro shut down if you ever need the
+host space back.
+
+`port-build.yml` refuses to start below 30 GB free.
 
 ## Keeping the machine awake
 
