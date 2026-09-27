@@ -340,7 +340,10 @@ data-corruption bug, and `--allow-unsafe` is not worth it here. Use
 `diskpart`'s `compact vdisk` with the distro shut down if you ever need the
 host space back.
 
-`port-build.yml` refuses to start below 30 GB free.
+`port-build.yml` refuses to start below 15 GB free. That figure is measured,
+not guessed: a built port tree is 8.0 GB for **both** corun1024 and RBarish,
+plus about 3 GB for a toolchain not yet installed. RBarish's README asks for
+about 25 GB, which is roughly three times what it actually used.
 
 ## Keeping the machine awake
 

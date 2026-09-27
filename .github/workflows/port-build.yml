@@ -95,15 +95,20 @@ jobs:
           # build, and the symptom was not a helpful error: Runner.Listener
           # crashed at startup because it could not write its own log, the
           # runner went offline to GitHub, and an unrelated lean-build died
-          # mid-step with no message. A two-hour build should not start
-          # without room to finish. RBarish's README asks for about 25 GB;
-          # corun's tree is ~8 GB built.
+          # mid-step with no message. A long build should not start without
+          # room to finish.
+          #
+          # 15 GB, from measurement rather than from a README. Both ports
+          # come to 8.0 GB built, plus about 3 GB for a toolchain that is not
+          # yet installed. The first version of this check demanded 30 GB,
+          # taken from RBarish's "about 25 GB" claim, and promptly blocked a
+          # build that needed 8 GB and had 20 free.
           avail_gb=$(df -BG --output=avail "$HOME" | tail -1 | tr -dc '0-9')
           echo "disk available to the runner: ${avail_gb} GB"
           df -h "$HOME"
-          if [ "${avail_gb:-0}" -lt 30 ]; then
+          if [ "${avail_gb:-0}" -lt 15 ]; then
             echo
-            echo "under 30 GB free; this build would probably fill the disk."
+            echo "under 15 GB free; this build would probably fill the disk."
             echo "Free space, or grow the distro:"
             echo "  rm -rf \$HOME/4ct-port-cache/<port you no longer need>"
             echo "  elan toolchain uninstall <a toolchain no longer needed>"
