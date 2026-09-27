@@ -322,7 +322,14 @@ jobs:
           # no orphans kills the step. That is what marked an entirely
           # successful 2-hour build as failed on 2026-09-27.
           pids=$(ps -eo pid,args | grep '[l]ean ' | grep -F "$PORT_DIR" | awk '{print $1}' || true)
-          pool=$(pgrep -f 'scripts/build_pool\.py' || true)
+          # Scope build_pool.py by working directory, not by name: it is
+          # started by a relative path, so a bare pgrep would also kill any
+          # other build on the machine, including lean-build's.
+          pool=""
+          for p in $(pgrep -f 'scripts/build_pool\.py' || true); do
+            [ "$(readlink "/proc/$p/cwd" 2>/dev/null)" = "$PORT_DIR" ] && pool="$pool $p"
+          done
+          pool=${pool# }
           if [ -n "${pool}${pids}" ]; then
             echo "killing leftovers: pool=${pool:-none} lean=${pids:-none}"
             [ -n "$pool" ] && kill -KILL $pool 2>/dev/null

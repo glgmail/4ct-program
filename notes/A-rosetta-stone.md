@@ -10,6 +10,7 @@ clean checkout. Leads, partial arguments and AI-written summaries go under
 
 | Date | Result | Evidence | Tier | PR |
 | --- | --- | --- | --- | --- |
+| 2026-09-27 | **The four colour theorem builds on Lean and Mathlib `v4.34.1`**, the program's pinned toolchain, as `FourColor.fourColorTheorem` in `lean/`. Depends only on `propext`, `Classical.choice`, `Quot.sound`; 115,342 declarations, no sorries, no extra axioms; anti-vacuity controls pass. No Lean source changed from corun1024 `3db71e0`. | `lean/build.sh` on the self-hosted runner; `lean-build` on this PR | A2 | #26 |
 | 2026-09-27 | `RBarish-UTokyo/FourColorTheorem-Lean4` builds clean on its own pinned toolchain, and `FourColor.RealPlane.four_color` depends on no axioms beyond `propext`, `Classical.choice`, `Quot.sound`. | port-build run [36350029344](https://github.com/glgmail/4ct-program/actions/runs/36350029344), artifact `port-build-RBarish-UTokyo` | evidence for A1 | #24 |
 | 2026-09-27 | `corun1024/4ct` builds clean on its own pinned toolchain, and `FourColor.fourColorTheorem` depends on no axioms beyond `propext`, `Classical.choice`, `Quot.sound`. 115,342 declarations, no sorries. | port-build run [36336993686](https://github.com/glgmail/4ct-program/actions/runs/36336993686), artifact `port-build-corun1024` | evidence for A1 | #20 |
 
@@ -18,6 +19,73 @@ clean checkout. Leads, partial arguments and AI-written summaries go under
 - _(none yet)_
 
 ---
+
+# A2 — the base port on the pinned toolchain
+
+**Done, and it needed no Lean source changes at all.**
+
+The base port, corun1024/4ct at `3db71e0`, was moved from
+`leanprover/lean4:v4.34.0-rc2` with Mathlib unpinned (resolving to a
+`master` commit, `141f6b6`) onto `v4.34.1` for both, and built with its own
+`build.sh`:
+
+```
+plan: 821 modules, 7.9 core-hours, 4 jobs, 20 GB budget, predicted 135 min
+anti-vacuity audit: negative controls pass
+THEOREM PROVED: FourColor.fourColorTheorem : FourColor.FourColorTheorem
+  depends only on [propext, Classical.choice, Quot.sound]
+checked 115342 FourColor declarations: no sorries, no extra axioms
+```
+
+| | Upstream (A1) | On `v4.34.1` (A2) |
+| --- | --- | --- |
+| Axioms | `propext, Classical.choice, Quot.sound` | identical |
+| Declarations checked | 115,342 | 115,342 |
+| Modules | 821, none failed | 821, none failed |
+| Wall clock at `JOBS=4` | 2 h 00 m | 2 h 07 m |
+| Peak single process | 20.2 GB | 20.3 GB |
+
+### What changed
+
+Three files, all build configuration:
+
+- `lean-toolchain`: `v4.34.0-rc2` → `v4.34.1`;
+- `lakefile.toml`: `rev = "v4.34.1"` added to the Mathlib requirement;
+- `lake-manifest.json`: re-resolved.
+
+The "non-mechanical changes" list #3 asked for is **empty**. Nothing in
+the proof needed adjusting for the patch release or for the move off Mathlib
+master. The certificate generator reproduced the same outputs (62 bulk
+groups, 110 walks, 152 bridge modules).
+
+This was the outcome to hope for rather than to expect. The risk named in
+#3 — that corun's heavy `decide +kernel` computations would show changed
+kernel reduction as a timeout or memory blow-up — did not materialise: peak
+memory moved by 0.1 GB.
+
+### How it landed in the repository
+
+`lean/` is now the Lake package root, with corun's tree laid out there
+unchanged so its scripts run unmodified. All 498 upstream `.lean` files were
+verified byte-identical to upstream by git blob hash when copied. See
+`lean/README.md`.
+
+The layout was forced by a constraint that is easy to miss and expensive to
+get wrong: corun builds with `scripts/build_pool.py`, which writes **no Lake
+trace files**. Lake therefore does not recognise its output, and any `lake
+build` that reaches FourColor rebuilds all 821 modules with no job cap or
+memory budget — an OOM on this runner. Guardrails now prevent that three
+ways (see `lean/README.md`), and **task A3 will need to extend the build**
+before any FourCT module can import FourColor.
+
+### Per-PR CI cost
+
+The decision #3 asked A2 to make: `lean-build` keeps its workspace between
+runs (`clean: false`), so `build_pool.py`'s content fingerprints make a
+pull request that does not touch the port rebuild none of it. The first run
+after this merges pays the full ~2.5 hours once. Editing `lean/lakefile.toml`,
+`lean/lean-toolchain` or `lean/lake-manifest.json` invalidates everything
+again.
 
 # A1 — statement review of the two Lean ports
 

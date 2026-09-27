@@ -1,0 +1,54 @@
+# The Lean package for the whole program. Its root is this directory, lean/,
+# so that the vendored corun1024 tree (FourColor.lean, FourColor/, scripts/,
+# tools/, build.sh) sits exactly where its own scripts expect it and runs
+# unmodified. See lean/README.md.
+#
+# Toolchain policy (plan of record): Lean and Mathlib pinned to v4.34.1,
+# re-pinned only at a gate review, never to a release candidate. Enforced by
+# checks/repo_guardrails.py.
+#
+# EDITING THIS FILE REBUILDS EVERYTHING. scripts/build_pool.py fingerprints
+# every FourColor module against the whole of this file, lean-toolchain and
+# lake-manifest.json, so any change here invalidates all 821 oleans — a
+# two-hour rebuild on the self-hosted runner. That is why the Statements
+# library is declared below before it has any files: task A4 can add
+# statement files without touching this file.
+
+name = "FourCT"
+version = "0.1.0"
+
+# NOT "FourColor". A bare `lake build` of the FourColor library rebuilds all
+# 821 modules with one job per hardware thread and no memory budget; with
+# modules that peak at 20 GB that is how the runner runs out of memory.
+# FourColor is built only by scripts/build_pool.py, via build.sh.
+defaultTargets = ["FourCT"]
+
+# These options apply to every library here. The last two come from corun1024
+# and change what its modules compile to; they must stay for the port to be
+# the port.
+[leanOptions]
+pp.unicode.fun = true
+autoImplicit = false
+relaxedAutoImplicit = false
+weak.linter.mathlibStandardSet = true
+maxSynthPendingDepth = 3
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.34.1"
+
+# The base port: corun1024/4ct, the vertex-colouring formulation, moved to
+# v4.34.1 (task A2). Build with ./build.sh, never with `lake build`.
+[[lean_lib]]
+name = "FourColor"
+
+# The Rosetta Stone: one module per reformulation, and the Transfer tactic.
+[[lean_lib]]
+name = "FourCT"
+
+# Human-readable statement files, one per reformulation (task A4). Each needs
+# Gabriel's written sign-off before merge. Declared ahead of time; see above.
+[[lean_lib]]
+name = "Statements"
+globs = ["Statements.+"]

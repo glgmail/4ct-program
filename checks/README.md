@@ -7,7 +7,7 @@ Two different things live here.
 Runs as the `checks` status check on every pull request. It enforces the
 mechanical parts of the plan of record:
 
-- `lean-toolchain` pins `leanprover/lean4:v4.34.1`, and `lakefile.toml` pins
+- `lean/lean-toolchain` pins `leanprover/lean4:v4.34.1`, and `lean/lakefile.toml` pins
   Mathlib to the same tag. No release candidates.
 - Every file under `data/` has a `MANIFEST.csv` row, and every digest matches.
 - `.gitattributes` still routes `data/**` through Git LFS.

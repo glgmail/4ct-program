@@ -25,6 +25,7 @@ import argparse
 import configparser
 import csv
 import hashlib
+import json
 import re
 import subprocess
 import sys
@@ -36,6 +37,10 @@ ROOT = Path(__file__).resolve().parent.parent
 # to a release candidate.
 LEAN_TOOLCHAIN = "leanprover/lean4:v4.34.1"
 MATHLIB_REV = "v4.34.1"
+
+# The Lean package root. Moved from the repository root to lean/ in task A2,
+# so that the vendored corun1024 tree runs its own scripts unmodified.
+LEAN_ROOT = ROOT / "lean"
 
 MANIFEST = ROOT / "data" / "MANIFEST.csv"
 MANIFEST_COLUMNS = ["path", "source_url", "license", "sha256"]
@@ -127,29 +132,97 @@ def read_manifest() -> tuple[list[dict[str, str]], list[str] | None]:
 # --------------------------------------------------------------------------
 
 def check_toolchain() -> None:
-    path = ROOT / "lean-toolchain"
+    # One toolchain file, in the package root. A second copy at the repository
+    # root would be read by elan from there and could silently disagree.
+    stray = [f for f in ("lean-toolchain", "lakefile.toml", "lake-manifest.json")
+             if (ROOT / f).exists()]
+    report(not stray, "no Lean package files left at the repository root",
+           "" if not stray else "found: " + ", ".join(stray) + " (they belong in lean/)")
+    path = LEAN_ROOT / "lean-toolchain"
     if not path.is_file():
-        report(False, "lean-toolchain exists")
+        report(False, "lean/lean-toolchain exists")
         return
     got = path.read_text(encoding="utf-8").strip()
     report(got == LEAN_TOOLCHAIN,
-           f"lean-toolchain pins {LEAN_TOOLCHAIN}",
+           f"lean/lean-toolchain pins {LEAN_TOOLCHAIN}",
            "" if got == LEAN_TOOLCHAIN else f"found {got!r}")
     report("-rc" not in got, "lean-toolchain is not a release candidate")
 
 
 def check_lakefile() -> None:
-    path = ROOT / "lakefile.toml"
+    path = LEAN_ROOT / "lakefile.toml"
     if not path.is_file():
-        report(False, "lakefile.toml exists")
+        report(False, "lean/lakefile.toml exists")
         return
     text = path.read_text(encoding="utf-8")
+
+    # A bare `lake build` must never build FourColor: it would rebuild 821
+    # modules with no job cap or memory budget, and modules peak at 20 GB.
+    m = re.search(r'^\s*defaultTargets\s*=\s*\[([^\]]*)\]', text, re.MULTILINE)
+    targets = re.findall(r'"([^"]+)"', m.group(1)) if m else []
+    report("FourColor" not in targets,
+           "lakefile defaultTargets excludes FourColor (build it with build.sh)",
+           "" if "FourColor" not in targets else f"defaultTargets = {targets}")
     revs = re.findall(r'^\s*rev\s*=\s*"([^"]+)"', text, re.MULTILINE)
     report(revs == [MATHLIB_REV] or (len(revs) == 1 and revs[0] == MATHLIB_REV),
-           f"lakefile.toml pins Mathlib to {MATHLIB_REV}",
+           f"lean/lakefile.toml pins Mathlib to {MATHLIB_REV}",
            "" if revs == [MATHLIB_REV] else f"found revs {revs!r}")
     report(all("-rc" not in rev for rev in revs),
            "no lakefile dependency is a release candidate")
+
+
+def check_lake_manifest() -> None:
+    """The committed manifest pins every transitive dependency by commit.
+
+    The lakefile says which Mathlib tag; the manifest says which commit that
+    resolved to, and pins Mathlib's own dependencies too. It is what makes a
+    build reproducible, and build_pool.py fingerprints against it.
+    """
+    path = LEAN_ROOT / "lake-manifest.json"
+    if not path.is_file():
+        report(False, "lean/lake-manifest.json is committed")
+        return
+    try:
+        pkgs = json.loads(path.read_text(encoding="utf-8"))["packages"]
+    except (ValueError, KeyError) as exc:
+        report(False, "lean/lake-manifest.json parses", str(exc))
+        return
+    by_name = {p.get("name"): p for p in pkgs}
+    ml = by_name.get("mathlib", {})
+    report(ml.get("inputRev") == MATHLIB_REV,
+           f"manifest resolves Mathlib from {MATHLIB_REV}",
+           "" if ml.get("inputRev") == MATHLIB_REV else f"inputRev = {ml.get('inputRev')!r}")
+    rcs = sorted(n for n, p in by_name.items() if "-rc" in (p.get("inputRev") or ""))
+    report(not rcs, "no manifest dependency is pinned to a release candidate",
+           "" if not rcs else "found: " + ", ".join(rcs))
+
+
+def check_vendored_port() -> None:
+    """The base port is vendored under lean/, and must stay attributable."""
+    lic = LEAN_ROOT / "LICENSES" / "corun1024-4ct.txt"
+    ok = lic.is_file() and all(needle in lic.read_text(encoding="utf-8")
+                               for needle in ("Chris Emery", "CeCILL-B", "CREDITS"))
+    report(ok, "corun1024 licence and CeCILL-B credit kept with the vendored port",
+           "" if ok else f"missing or incomplete: {lic.relative_to(ROOT).as_posix()}")
+
+    # Tripwire. FourColor is built by build_pool.py, which writes no Lake
+    # traces, so the moment a FourCT or Statements module imports FourColor,
+    # `lake build FourCT` would rebuild the entire port under Lake's own
+    # scheduler — no job cap, no memory budget. Whoever first needs that
+    # import (task A3) has to extend the build first; this makes them notice.
+    offenders = []
+    for base in ("FourCT", "Statements"):
+        paths = [LEAN_ROOT / f"{base}.lean"] + sorted((LEAN_ROOT / base).rglob("*.lean"))
+        for path in paths:
+            if path.is_file() and re.search(r"^\s*import\s+FourColor\b",
+                                            path.read_text(encoding="utf-8"), re.MULTILINE):
+                offenders.append(path.relative_to(ROOT).as_posix())
+    report(not offenders,
+           "no FourCT or Statements module imports FourColor yet",
+           "" if not offenders else
+           "found in: " + ", ".join(offenders) +
+           "\n        lake build would rebuild all of FourColor with no memory cap;"
+           "\n        extend the build (scripts/build_pool.py) before adding this import")
 
 
 def check_gitattributes() -> None:
@@ -352,6 +425,8 @@ def main() -> int:
     print(f"repository guardrails - {ROOT.name}\n")
     check_toolchain()
     check_lakefile()
+    check_lake_manifest()
+    check_vendored_port()
     check_gitattributes()
     check_notices()
     check_submodules()
