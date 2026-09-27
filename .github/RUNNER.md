@@ -271,10 +271,41 @@ Remember there are two limits now: the distro's `memory=` in `.wslconfig`,
 and the host's 32 GB behind it. Raising the first past about 28 GB will
 starve Windows.
 
-Disk: the Mathlib cache plus `data/` in Git LFS runs to tens of gigabytes,
-inside the WSL virtual disk. It grows on demand but does **not** shrink when
-files are deleted; reclaim with `wsl --manage Ubuntu --set-sparse true` from
-the host if it gets tight.
+## Disk
+
+The distro started at 29 GB and **filled completely** after one corun build
+(2026-09-27). The failure mode is worth knowing because nothing says "disk
+full": `Runner.Listener` crashes at startup because it cannot write its own
+diagnostic log, the wrapper relaunches it every five seconds forever, GitHub
+shows the runner **offline**, and unrelated jobs die mid-step with no error.
+
+Where it goes: about 8 GB per built port under `~/4ct-port-cache`, ~9 GB of
+`~/.elan` toolchains (ours plus one per port, each on its own release
+candidate), ~5 GB of `~/actions-runner/_work`, and the Mathlib cache.
+RBarish's README asks for about 25 GB on its own.
+
+The distro is now sized at 50 GB. To grow it further, from an elevated
+PowerShell with the distro stopped:
+
+```powershell
+wsl --shutdown
+wsl --manage Ubuntu --resize 60GB
+```
+
+The virtual disk is **sparse-by-growth**: the maximum is a ceiling, not a
+reservation, so raising it does not consume host space until the distro
+writes. Check host headroom first all the same — Windows running out of disk
+is worse than a failed build.
+
+Deleting files inside the distro frees them **for the distro** immediately,
+which is all the runner needs. The backing `ext4.vhdx` does not shrink, so
+host space is only returned by compacting. Do **not** use
+`wsl --manage ... --set-sparse true`: Microsoft has disabled it over a
+data-corruption bug, and `--allow-unsafe` is not worth it here. Use
+`diskpart`'s `compact vdisk` with the distro shut down if you ever need the
+host space back.
+
+`port-build.yml` refuses to start below 30 GB free.
 
 ## Keeping the machine awake
 

@@ -91,6 +91,26 @@ jobs:
           fi
           echo "dependencies present, numpy $(python3 -c 'import numpy; print(numpy.__version__)')"
 
+          # Disk. On 2026-09-27 the distro filled to 100% after the corun
+          # build, and the symptom was not a helpful error: Runner.Listener
+          # crashed at startup because it could not write its own log, the
+          # runner went offline to GitHub, and an unrelated lean-build died
+          # mid-step with no message. A two-hour build should not start
+          # without room to finish. RBarish's README asks for about 25 GB;
+          # corun's tree is ~8 GB built.
+          avail_gb=$(df -BG --output=avail "$HOME" | tail -1 | tr -dc '0-9')
+          echo "disk available to the runner: ${avail_gb} GB"
+          df -h "$HOME"
+          if [ "${avail_gb:-0}" -lt 30 ]; then
+            echo
+            echo "under 30 GB free; this build would probably fill the disk."
+            echo "Free space, or grow the distro:"
+            echo "  rm -rf \$HOME/4ct-port-cache/<port you no longer need>"
+            echo "  elan toolchain uninstall <a toolchain no longer needed>"
+            echo "  wsl --manage Ubuntu --resize 60GB   # from Windows, distro stopped"
+            exit 1
+          fi
+
       # PORT_DIR deliberately sits OUTSIDE $GITHUB_WORKSPACE. actions/checkout
       # cleans the workspace at the start of every job, which silently deleted
       # the previous checkout and made the resume a no-op: the 2026-09-27 run
