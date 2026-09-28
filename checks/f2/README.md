@@ -9,16 +9,19 @@ cross-check of the upstream C++ run in task F1, so it was written without
 looking at that code or at any other reimplementation. The **Independence
 log** at the end lists everything that was consulted.
 
-**Status: phase 2.** Everything up to and including the bad-cartwheel
-enumeration has been run in full, and all eleven numerical targets match:
-the five of phase 1, the wheel counts for centre degrees 8-11, and the bad
-cartwheels for degrees 7 and 8. No assertion or invariant failed anywhere.
+**Status: phase 3, complete.** Every computer check of appendix A has been
+run in full.
 
-**Lemmas A.4-A.6 (A.10) have not been run in full.** That is Gabriel's
-decision. A.10 is implemented, its new prefilter was verified to change
-nothing on 90 sampled roots, and it was timed on samples of the real
-C_all. It projects to about 1.5 CPU-hours, or roughly 10 minutes on 17
-processes.
+- All eleven numerical targets match: the five of phase 1, the wheel
+  counts for centre degrees 8-11, and the bad cartwheels for degrees 7
+  and 8.
+- **Lemmas A.4, A.5 and A.6 pass**, on every one of their 393, 1,320 and
+  298 roots.
+- No assertion, invariant or exception failed anywhere.
+- The whole pipeline is one command (see "How to run"). It takes about
+  an hour on 17 processes.
+
+Nothing has yet been compared object by object with the F1 outputs.
 
 ## Phase 1 results
 
@@ -172,7 +175,54 @@ strided roots for A.4 and A.5 and the 30 above for A.6. Nothing timed out
   71 pairs left no combination at all. So our transcription of Figure 12
   is now also used by, and satisfies, the check it exists for.
 
+## Phase 3 results: Lemmas A.4-A.6 (A.10) in full
+
+The run was detached, on 17 processes, at commit 7bf9ca7, with the
+prefilter on. The record is in `results/phase3/`. The per-root payload is
+`a10-roots.jsonl`, whose payload sha256 is `aeafff71…`; it stays in WSL at
+`/home/claude/f2-final/`.
+
+| Lemma | Check | Roots | Roots passed | Assertions checked | Failed | Exceptions | Verdict |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 8.3 | A.4 (A.10.4-A.10.8) | 393 | 393 | 528 | 0 | 0 | **pass** |
+| 8.5 | A.5 (A.10.9) | 1,320 | 1,320 | 1,838 | 0 | 0 | **pass** |
+| 8.6 | A.6 (A.10.10-A.10.12) | 298 | 298 | 630 | 0 | 0 | **pass** |
+
+- **What the assertions were:**
+  - A.4: 276 checks of case (i) ("88"). 247 case-(iii) pairs left no
+    combination at all, and the 5 that did left combinations that all
+    contain X ("787"). No root is in case (ii).
+  - A.5: 1,838 degree-7 triangles, all blocked.
+  - A.6: 23 case-(i) and 607 case-(ii) checks, all blocked.
+- **Time and memory:** 4.3 min of wall time and 4,339 CPU-seconds (1.2 h;
+  the projection was 1.5 h). By check, A.4/A.5/A.6 took 3,918/314/107
+  CPU-seconds. The slowest root was A.4 #5001 at 156 s. The session peak
+  was 2.5 GB, and the largest worker 212 MB.
+- **Prefilter equivalence, second check.** 65 further roots were rerun
+  without the prefilter and compared with the full run. They were the 20
+  slowest A.4 roots plus 15 strided roots per check, none of them among
+  the 90 compared in phase 2. **All 65 are identical**, down to the exact
+  structure of every surviving combination and every assertion. The
+  slowest root took 156 s with the prefilter and 257 s without. With
+  phase 2, 155 distinct roots have now been compared, with no difference.
+  That rerun took 4.3 min of wall time and 2,641 CPU-seconds, peaking at
+  2.6 GB.
+
 ## How to run
+
+The whole pipeline, from a clean checkout, is one command:
+
+```bash
+git lfs pull                                    # the data must be real files
+python3 checks/f2/run.py all --jobs 17 --out DIR
+```
+
+It runs A.1, A.2, the X/T73 checks, the wheels for centre degrees 7-11,
+the bad-cartwheel enumeration and Lemmas A.4-A.6, one after another, into
+DIR. On the self-hosted machine with 17 processes it takes about an hour:
+roughly 18 minutes for the wheels, 32 for the bad cartwheels and 5 for
+A.10. It needs about 2.6 GB at its peak. Results are in `DIR/summary.json`.
+The steps can also be run one by one:
 
 ```bash
 git lfs pull                                   # the data must be real files
@@ -185,6 +235,8 @@ python3 checks/f2/run.py special
 python3 checks/f2/run.py wheels --degree 11 --jobs 17 --out DIR
 python3 checks/f2/run.py bad --jobs 17 --out DIR          # resumable
 python3 checks/f2/run.py a10-sample --compare --count 30 --jobs 17 --out DIR
+python3 checks/f2/run.py a10 --jobs 17 --out DIR          # reads call.jsonl; resumable
+python3 checks/f2/run.py a10-verify --jobs 17 --heaviest 20 --count 15 --out DIR
 # projection helpers (samples; not results):
 python3 checks/f2/run.py sample-wheels --degree 11 --count 2000
 python3 checks/f2/run.py sample-bad --degree 8 --count 40 --pool 12000
@@ -232,6 +284,22 @@ digest.
 - `bad-progress.jsonl`: the working file of `bad`, one line per finished
   wheel with its time. It is not a payload, because its order depends on
   scheduling.
+- `a10-roots.jsonl`: one line per root of Lemmas A.4-A.6, in
+  (check, root) order:
+  `{"check", "root", "call_index", "results", "failed", "exception", "signature"}`.
+  - `root` is the root's position in the check's set after
+    `deleteDegreeFromKto9`, and for A.6 after removing the cartwheels
+    blocked by T73.
+  - `call_index` is its line in `call.jsonl`, counting from 0.
+  - `results` lists each assertion as `[kind, ok, detail]`. The kinds are
+    `88`, `87`, `787`, `787 (no combination)`, `7triangle`, `77` and `777`,
+    after the algorithms A.10.5-A.10.12. For the `88`, `87`, `7triangle`,
+    `77` and `777` kinds, `detail` is the number of combinations left.
+  - `signature` is the sha256 of the exact structure of every surviving
+    combination.
+
+  `a10-progress.jsonl` is the working file (with times); like
+  `bad-progress.jsonl`, it is not a payload.
 - `a10-sample` records its per-root rows in `summary.json`. Each row gives
   the time, the counters (identifications tried, prefiltered, free images,
   first-step survivors), the assertions, and a signature: the sha256 of the
@@ -261,11 +329,12 @@ of the code.
 | `nl4ct/combine.py` | A.8.1-A.8.2 `combineRules` (Lemmas A.1, A.2) |
 | `nl4ct/cartwheel.py` | A.9.1-A.9.7 and A.9.11-A.9.13: cartwheel generation, rule application, charge bounds, pruning, `enumPossibleBadWheels` |
 | `nl4ct/badcartwheels.py` | A.9.8-A.9.10, A.9.14-A.9.22 (run in full in phase 2) |
-| `nl4ct/cartcombine.py` | A.10.1-A.10.12, Lemmas A.4-A.6, organised by roots, with the exact prefilter for A.10.2 (**run on samples only**) |
+| `nl4ct/cartcombine.py` | A.10.1-A.10.12, Lemmas A.4-A.6, organised by roots, with the exact prefilter for A.10.2 (run in full in phase 3) |
 | `nl4ct/special.py` | self-consistency checks of the X/T73 transcription |
 | `data/special-configurations.json` | our transcription of X (Figure 12), X+w (Figure 13) and T73 |
 | `results/phase1/` | the record of the phase-1 run on the self-hosted machine: `summary.json` (results and payload digests), `timings.json`, `special.txt`, `samples.json` (projection samples) and the `/usr/bin/time -v` outputs. The payload files themselves are not committed; `run.py` rebuilds them in seconds, and their sha256 is in `summary.json`. |
 | `results/phase2/` | the record of phase 2 (see "Phase 2 results"). The full outputs are not committed; they stay in WSL at `/home/claude/f2-final/`, with their digests in `summary.json` (payloads) and `files.sha256` (whole files). |
+| `results/phase3/` | the record of phase 3: `summary.json` (including the per-lemma verdicts under `a10` and the equivalence rerun under `a10-verify`), `timings.json`, `steps.txt`, `time-a10*.txt`, and `files.sha256` for every full output, `a10-roots.jsonl` included. |
 
 ## Representation choices (where the paper leaves one open)
 
@@ -431,43 +500,44 @@ not show that it is the configuration the authors meant, so a human should
 compare the JSON with Figure 12. X is symmetric under the left-right
 reflection, which is why A.10.8 does not need its mirror.
 
-## Cost: phase-1 projection against phase-2 measurement
+## Cost: projections against measurements
 
-| Step | Phase-1 projection | Phase 2, measured (17 processes) |
+| Step | Phase-1 projection | Measured (17 processes) |
 | --- | --- | --- |
-| wheels, degrees 8-11 | about 2.2 CPU-hours, about 8 min | 18.1 min wall in all (degree 11: 14.3 min); session peak 1.8 GB |
+| A.1, A.2, X/T73, wheels for degree 7 | (measured in phase 1) | about 20 s serially |
+| wheels, degrees 8-11 | about 2.2 CPU-hours, about 8 min | 18.1 min wall; session peak 1.8 GB |
 | enumBadCartwheels over all of C0 | about 8 CPU-hours (5-15 h), 30-60 min | 9.0 CPU-hours, 31.8 min wall; session peak 1.2 GB |
-| A.10, Lemmas A.4-A.6 | unknown, 1 h to days | **not run**; projected about 1.5 CPU-hours (1-3 h), 10-20 min wall, about 2.5 GB |
+| A.10, Lemmas A.4-A.6 | unknown: 1 h to days (phase 2: about 1.5 CPU-hours) | 1.2 CPU-hours, 4.3 min wall; session peak 2.5 GB |
 
-So the whole pipeline would take about an hour on 17 processes: phase 1 in
-under a minute, the wheels 18 min, the bad cartwheels 32 min, and A.10 an
-estimated 10-20 min. For comparison, the other implementation took about
-70 minutes end to end in optimized C++ on 20 threads. Its slowest step, the
-degree-11 wheel enumeration, took 33 min single-threaded and 12.3 GB. Ours
-took 14.3 min on 17 processes, peaking at 1.8 GB for the whole session and
-0.7 GB for the main process.
+End to end, the pipeline takes about an hour on 17 processes. For
+comparison, the other implementation took about 70 minutes end to end in
+optimized C++ on 20 threads. Its slowest step, the degree-11 wheel
+enumeration, took 33 min single-threaded and 12.3 GB. Ours took 14.3 min
+on 17 processes and 1.8 GB for the whole session.
 
-Python was enough, with no PyPy and no compiled code. The prefilter was the
-step that made A.10 cheap. Without it, the same sample projects to about
-5.7 CPU-hours.
+Python was enough, with no PyPy and no compiled code. The prefilter was
+what made A.10 cheap. Without it, the A.10 samples project to about 5.7
+CPU-hours.
 
 ## Unfinished, unverified, uncertain
 
-- **Lemmas A.4-A.6 have not been run in full**, by instruction. The A.10
-  code has run only on 330 sampled roots: 90 in the comparison run and 240
-  in the timing run. No assertion failed there. The projection has a
-  heavy-tailed error: the slowest A.4 root seen took 120 s.
-- The prefilter's equivalence rests on the argument above and on 90 roots.
-  It has not been checked on every root.
-- `bad` resumes from its progress file, but the full run went straight
-  through, so resuming has only been tested on a small slice.
-- The agreement with Figures 7 and 8 rests on rule sets and counts, not on
+- **No object-by-object comparison with F1 yet.** Our outputs are ready for
+  it in WSL at `/home/claude/f2-final/`, with digests in
+  `results/phase3/files.sha256`. The main session will do it. Until then,
+  the agreement between F1 and F2 is on counts and pass/fail verdicts only.
+- **Prefilter equivalence** rests on the argument under "Speed-ups" and on
+  155 roots compared with and without it, all identical: the 90 of phase 2
+  and the 65 of phase 3, including the 20 slowest A.4 roots. It was not
+  compared on all 2,011 roots.
+- **Resuming** (`bad`, `a10`) has been tested only on small slices; the
+  full runs went straight through.
+- **Figures 7 and 8.** The agreement rests on rule sets and counts, not on
   an isomorphism check.
-- The X transcription passed its consistency checks, and `containX` found X
-  in all 5 sampled cases that reached it. It has still not been compared
-  with Figure 12 by a second person.
-- Nothing has been compared object by object with the F1 outputs. That
-  comparison belongs to the main session.
+- **X.** The transcription passed its consistency checks, and in the full
+  A.4 run `containX` found X in all 5 cases that reached it. A second
+  person has still not compared it with Figure 12.
+- **A.10.6** (case (ii) of Lemma 8.3) has no root in C_all, so that branch
+  of our code has never run on real input.
 
 ## Independence log
 
@@ -506,9 +576,12 @@ and the repository files the brief allows:
   - `/home/claude/f1-artifacts`;
   - the unlicensed reimplementations and `instructions-for-checking-reproducibility`;
   - any web search.
-- **Phase 2: unchanged.** Nothing beyond the list above was consulted. No
-  F1 output was looked at: `/home/claude/f1-artifacts` was not opened, and
-  the phase-2 work in WSL used only `/home/claude/f2-work`,
-  `/home/claude/f2-final`, `/home/claude/f2-phase2`, and two scratch
-  scripts of ours in `/home/claude` that break the A.10 sample down by
-  case.
+- **Phases 2 and 3: unchanged.** Nothing beyond the list above was
+  consulted, and no F1 output was looked at: `/home/claude/f1-artifacts`
+  was not opened. The work in WSL used only these locations:
+  - `/home/claude/f2-work`, `/home/claude/f2-final` and
+    `/home/claude/f2-phase2`;
+  - for the clean-checkout run of phase 3, `/home/claude/f2-clean` and
+    `/home/claude/f2-clean-out`;
+  - two scratch scripts of ours in `/home/claude` that broke the A.10
+    sample down by case (since deleted).
