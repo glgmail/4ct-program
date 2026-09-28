@@ -125,8 +125,11 @@ arranged so that agent-authored commands execute on his machine.
 
 Constraints that apply on the self-hosted runner: keep work inside the
 distro's own filesystem, never under `/mnt/`; peak memory must stay inside
-its ~26 GB share; `LEAN_NUM_THREADS` caps `lake build`, and drop it to 1 for
-the corun1024 modules.
+its ~26 GB share. Nothing caps `lake build`'s parallelism: Lake at v4.34.1
+has no `-j` or `--jobs` option, and `LEAN_NUM_THREADS` is not known to
+limit it. That is why the corun1024 modules are built only by
+`lean/build.sh`, whose `JOBS` and `MEMORY` (in GB, at most 20 on this
+runner) are the real limits. See `.github/RUNNER.md`.
 
 ## Before you open a pull request
 
