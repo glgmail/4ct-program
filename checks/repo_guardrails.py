@@ -48,6 +48,16 @@ MANIFEST_COLUMNS = ["path", "source_url", "license", "sha256"]
 # Files under data/ that are deliberately not LFS-tracked research data.
 DATA_EXEMPT = {"MANIFEST.csv", "README.md", ".gitkeep"}
 
+# The index over the reducible configurations (task F3), built by
+# search/index/build.py. One row per configuration of the paper's set D: a row
+# per file under CONFIG_PREFIX, plus the two single-vertex configurations that
+# D counts but upstream does not ship as files.
+CONFIG_INDEX = ROOT / "search" / "index" / "configurations.csv"
+CONFIG_PREFIX = "data/near-linear-4ct/reducible-configurations/D/"
+CONFIG_INDEX_HEADER = ("config,path,ring_size,vertices,edges,degree_sequence,"
+                       "shape,shape_oriented,chiral")
+CONFIG_NOT_FILES = {"deg3", "deg4"}
+
 EXPECTED_SUBMODULES = {
     "third_party/near-linear-4ct/computer-checks":
         "https://github.com/near-linear-4ct/computer-checks.git",
@@ -364,6 +374,45 @@ def check_manifest() -> None:
            "" if not mismatched else "\n        ".join(mismatched[:10]))
 
 
+def check_config_index() -> None:
+    """The configuration index covers exactly the imported configurations.
+
+    CI does not pull LFS objects, so it cannot rebuild the index here; that is
+    `python3 search/index/build.py --check`. What it can check is that the
+    index and the manifest agree on which configurations exist.
+    """
+    rows, _ = read_manifest()
+    conf_paths = {r["path"] for r in rows if r["path"].startswith(CONFIG_PREFIX)
+                  and r["path"].endswith(".conf")}
+    if not conf_paths and not CONFIG_INDEX.is_file():
+        return
+    exists = CONFIG_INDEX.is_file()
+    if not report(exists, "the configuration index exists",
+                  "" if exists else f"{CONFIG_INDEX.relative_to(ROOT).as_posix()} is missing"):
+        return
+    text = CONFIG_INDEX.read_text(encoding="ascii")
+    header = text.split("\n", 1)[0]
+    if not report(header == CONFIG_INDEX_HEADER, "the configuration index has the expected columns",
+                  "" if header == CONFIG_INDEX_HEADER else f"found {header!r}"):
+        return
+    index = list(csv.DictReader(text.splitlines()))
+    names = [r["config"] for r in index]
+    report(len(names) == len(set(names)), "no configuration is indexed twice")
+    indexed = {r["path"] for r in index if r["path"]}
+    not_files = {r["config"] for r in index if not r["path"]}
+    ok = indexed == conf_paths and not_files == CONFIG_NOT_FILES
+    detail = []
+    if indexed - conf_paths:
+        detail.append("indexed but not in the manifest: " + ", ".join(sorted(indexed - conf_paths)[:5]))
+    if conf_paths - indexed:
+        detail.append("in the manifest but not indexed: " + ", ".join(sorted(conf_paths - indexed)[:5]))
+    if not_files != CONFIG_NOT_FILES:
+        detail.append(f"rows without a file: {sorted(not_files)}, expected {sorted(CONFIG_NOT_FILES)}")
+    report(ok, f"the configuration index covers the {len(conf_paths)} files and "
+               f"{len(CONFIG_NOT_FILES)} single-vertex configurations",
+           "; ".join(detail))
+
+
 def check_statements_signoff_note() -> None:
     path = ROOT / "lean" / "Statements" / "README.md"
     ok = path.is_file() and "sign-off" in path.read_text(encoding="utf-8")
@@ -452,6 +501,7 @@ def main() -> int:
     check_notices()
     check_submodules()
     check_manifest()
+    check_config_index()
     check_statements_signoff_note()
     check_house_rules()
 
