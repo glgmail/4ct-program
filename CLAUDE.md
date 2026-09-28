@@ -22,9 +22,29 @@ you to, say so and stop.
 ## The toolchain is pinned
 
 Lean and Mathlib are pinned to **v4.34.1**, and never to a release candidate.
-`lean-toolchain` and `lakefile.toml` must agree, and
+`lean/lean-toolchain` and `lean/lakefile.toml` must agree, and
 `checks/repo_guardrails.py` enforces it. Re-pinning happens only at a gate
 review, decided by Gabriel — not as a fix for a build failure.
+
+## Building the base port — never with `lake build`
+
+`lean/` is the Lake package root. The base port, the `FourColor` library, is
+built **only** with `cd lean && ./build.sh`. Never run `lake build
+FourColor`, and never make a `FourCT` or `Statements` module import
+`FourColor`: Lake does not recognise the output of `scripts/build_pool.py`,
+so it would rebuild all 821 modules with no job cap and no memory budget, and
+some modules peak at 20 GB. `checks/repo_guardrails.py` fails on the import.
+Read `lean/README.md` before changing anything under `lean/`.
+
+Editing `lean/lakefile.toml`, `lean/lean-toolchain` or
+`lean/lake-manifest.json` — even a comment — invalidates every FourColor
+olean and costs a two-hour rebuild. Do not touch them without saying so in
+the pull request.
+
+Do not modify files under `lean/FourColor/`, `lean/scripts/` or
+`lean/tools/` without flagging it: they are vendored from corun1024/4ct,
+byte-identical to upstream today, and every divergence has to be listed in
+`THIRD_PARTY_NOTICES.md`.
 
 ## What counts as a result
 

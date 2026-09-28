@@ -16,11 +16,21 @@ A pull request touching this directory should carry, for each file:
 - what is quantified over and what is assumed,
 - where the statement differs from the textbook phrasing, and why.
 
-## Not yet wired into the build
+## How these get built
 
-`lakefile.toml` globs `FourCT` and `FourCT.+` only. Task A4 adds the first
-statement files (Tait and flow) and extends `globs` with `"Statements.+"` in
-the same pull request.
+`lean/lakefile.toml` already declares a `Statements` library globbing
+`Statements.+`, so adding a file here needs **no lakefile change**. That is
+deliberate: `scripts/build_pool.py` fingerprints every FourColor module
+against the whole lakefile, so editing it forces a two-hour rebuild of the
+base port.
+
+Build them with `lake build Statements` from `lean/`.
+
+One constraint, enforced by `checks/repo_guardrails.py`: a statement file
+must not `import FourColor` until the build is extended to handle it. The
+base port is built by `build_pool.py`, which writes no Lake traces, so a
+Lake build that reaches FourColor would rebuild all 821 of its modules with
+no memory cap. Task A3 is expected to hit this first.
 
 ## Order
 

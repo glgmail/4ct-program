@@ -14,5 +14,8 @@ data/.gitkeep     filter= diff= merge= text eol=lf
 *.lean          text eol=lf
 *.py            text eol=lf
 *.yml           text eol=lf
-lean-toolchain  text eol=lf
-lakefile.toml   text eol=lf
+lean/lean-toolchain     text eol=lf
+lean/lakefile.toml      text eol=lf
+lean/lake-manifest.json text eol=lf
+*.sh                    text eol=lf
+*.c                     text eol=lf

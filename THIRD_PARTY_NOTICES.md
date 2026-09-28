@@ -1,9 +1,14 @@
 # Third-party notices
 
-This repository reuses code and data from the projects below. Each is vendored
-as a git submodule under `third_party/`, pinned to a commit; the upstream
-`LICENSE` and `NOTICE` files travel with the submodule and are not edited here.
-This file collects the notices that must be preserved in any redistribution.
+This repository reuses code and data from the projects below. Each is pinned
+as a git submodule under `third_party/`, at a commit; the upstream `LICENSE`
+and `NOTICE` files travel with the submodule and are not edited there. This
+file collects the notices that must be preserved in any redistribution.
+
+**One project is also vendored, with modifications:** corun1024/4ct is copied
+into `lean/` as this program's base port (task A2). Its licence and CeCILL-B
+credit are kept alongside it at `lean/LICENSES/corun1024-4ct.txt`, and its
+section below lists exactly what was changed.
 
 Read-only upstreams that are **not** vendored and from which **no code is
 copied** are listed at the end.
@@ -58,8 +63,24 @@ in `data/MANIFEST.csv`, naming this source and this license.
 
 ## corun1024/4ct
 
+**Vendored into `lean/`, modified.** The FourColor library, its build and
+verification scripts, and its tools are copied from commit `3db71e0` into
+`lean/` as this program's base port. The modifications, all to build
+configuration:
+
+- `lean-toolchain`: `leanprover/lean4:v4.34.0-rc2` → `v4.34.1`;
+- `lakefile.toml`: Mathlib pinned to `v4.34.1`, and merged with this
+  program's own package definition;
+- `lake-manifest.json`: re-resolved against Mathlib `v4.34.1`, root package
+  renamed;
+- `README.md` and `LICENSE` moved to `lean/UPSTREAM-README.md` and
+  `lean/LICENSES/corun1024-4ct.txt`.
+
+No Lean source file was modified: all 498 are byte-identical to upstream.
+
 MIT, with a CeCILL-B credit that must be preserved. Reproduced from
-`third_party/corun1024/4ct/LICENSE`:
+`third_party/corun1024/4ct/LICENSE`, and kept verbatim beside the vendored
+code at `lean/LICENSES/corun1024-4ct.txt`:
 
 ```
 MIT License

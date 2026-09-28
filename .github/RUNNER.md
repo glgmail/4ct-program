@@ -289,18 +289,20 @@ with interop off.
 
 ## Memory
 
-`lean-build.yml` sets `LEAN_NUM_THREADS=2` so peak memory stays inside the
-distro's 26 GB. That is the knob that bounds `lake build`: **Lake at v4.34.1
-has no `--jobs` or `-j` option** — verified against
-`src/lake/Lake/CLI/Main.lean` at that tag, whose short options are only
-`q v d f o K U R h H J`. Lake schedules build jobs on the Lean task
-runtime, and `LEAN_NUM_THREADS` sizes that.
+The base port is built by corun's `scripts/build_pool.py`, via `build.sh`,
+never by `lake build`. It schedules modules against a per-module cost table
+and admits none whose predicted peak would break the budget. `lean-build.yml`
+sets `JOBS=4` and `MEMORY=20` (**gigabytes**). The largest module peaks at
+**20.3 GB** in a single process (measured, task A2), which is why `MEMORY`
+must not go above 20 on this runner.
 
-`JOBS=2` and `MEMORY=20` are also exported, but only for the corun1024
-build script, which reads them itself (MEMORY in **gigabytes** — its
-`build_pool.py` takes `--memory GB`). They do nothing to `lake build`. Some
-modules of that port peak around 20 GB on their own — when a job builds it
-(tasks A1 and A2), drop to `JOBS=1` and `LEAN_NUM_THREADS=1`.
+**Lake at v4.34.1 has no `--jobs` or `-j` option** — verified against
+`src/lake/Lake/CLI/Main.lean` at that tag, whose short options are only
+`q v d f o K U R h H J`. An earlier version of this file claimed
+`LEAN_NUM_THREADS` caps `lake build`'s parallelism. corun's author, who
+measured it, says Lake starts one job per hardware thread with no way to say
+fewer. That is not verified either way here, and no longer matters: the one
+build heavy enough for it to matter does not go through `lake build`.
 
 Remember there are two limits now: the distro's `memory=` in `.wslconfig`,
 and the host's 32 GB behind it. Raising the first past about 28 GB will

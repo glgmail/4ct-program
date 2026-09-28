@@ -1,8 +1,34 @@
 # Lean build. Required status check on main: "lean-build".
 #
-# Runs on Gabriel's self-hosted runner: Linux inside WSL2, on a 32 GB Windows
-# host. It serves only this repository. The distro needs elan, git, git-lfs,
-# gcc and python3; see .github/RUNNER.md.
+# Builds and verifies everything under lean/, the Lean package root:
+#
+#   1. the base port (library FourColor, vendored from corun1024/4ct), with
+#      corun's own ./build.sh — Mathlib from the cache, the reducibility
+#      certificates if absent, the 821 modules via scripts/build_pool.py
+#      under a memory budget, then scripts/check.sh: no sorry, no
+#      native_decide or other trusted-base escape hatches, the anti-vacuity
+#      negative controls, and a positive "THEOREM PROVED" line;
+#   2. our own library, FourCT, with lake build.
+#
+# Runs on Gabriel's self-hosted runner: Linux in WSL2 on a 32 GB Windows
+# host. The base port peaks at 20.2 GB in a single process and will never
+# fit a GitHub-hosted runner. See .github/RUNNER.md.
+#
+# WHY THE WORKSPACE IS NOT CLEANED. A full build of the base port is about two
+# hours. build_pool.py is incremental and keyed on content, not mtimes: it
+# skips a module only when its .olean was built from exactly the same source,
+# dependencies, lean-toolchain, lakefile.toml and lake-manifest.json. So if
+# lean/.lake survives between runs, a pull request that does not touch the
+# port rebuilds nothing of it. actions/checkout cleans the workspace by
+# default, which would make every pull request pay the full two hours; hence
+# `clean: false` below.
+#
+# The cost: untracked files persist between runs on this one machine. That is
+# acceptable because only the owner's pull requests run here (fork pull
+# requests need approval), and the build is content-fingerprinted rather than
+# trusting what happens to be on disk. The one derived input that is not
+# fingerprinted, the generated certificate modules, is handled explicitly
+# below.
 name: lean-build
 
 on:
@@ -10,6 +36,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      clean:
+        description: 'Rebuild everything from nothing (about 2.5 hours)'
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: lean-build-${{ github.ref }}
@@ -18,94 +50,143 @@ concurrency:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+    working-directory: lean
+
 jobs:
   lean-build:
     name: lean-build
     runs-on: [self-hosted, linux, 32gb]
-    timeout-minutes: 360
+    # A cold build is ~2 h for the modules plus certificate generation.
+    timeout-minutes: 720
 
     env:
-      # Peak memory must stay under the distro's share, so parallelism is
-      # capped rather than left to the core count. Some modules of the
-      # corun1024 port peak around 20 GB on their own.
-      #
-      # LEAN_NUM_THREADS is the knob that actually bounds `lake build`: Lake
-      # at v4.34.1 has no --jobs or -j option at all (checked against
-      # src/lake/Lake/CLI/Main.lean at that tag), and schedules its build
-      # jobs on the Lean task runtime, which this sizes.
-      LEAN_NUM_THREADS: '2'
-      # JOBS and MEMORY are for the corun1024 build script, which reads them
-      # itself. They do not affect `lake build`.
-      #
-      # MEMORY is in GIGABYTES, not megabytes: scripts/build_pool.py takes
-      # `--memory GB`, and its build.sh header reads `JOBS=8 MEMORY=40`. This
-      # previously said 12000, which would have meant a 12 TB budget — i.e. no
-      # cap at all, on the one build where the cap is the point.
-      JOBS: '2'
+      # Read by build.sh and scripts/build_pool.py. MEMORY is in GIGABYTES.
+      # One module peaks at 20.2 GB (measured, task A1), in a ~26 GB WSL2
+      # share, so do not raise MEMORY; build_pool.py will not co-schedule a
+      # module whose predicted peak breaks this budget.
+      JOBS: '4'
       MEMORY: '20'
 
     steps:
       - uses: actions/checkout@v4
         with:
-          # third_party/ is not needed to build lean/; tasks that need it
-          # check it out themselves.
+          clean: false
           submodules: false
           lfs: false
 
       - name: Runner has what it needs
         run: |
           set -euo pipefail
-          for tool in git git-lfs gcc python3 elan lake; do
+          for tool in git elan lake python3 gcc; do
             command -v "$tool" >/dev/null || { echo "missing: $tool"; exit 1; }
           done
+          python3 -c 'import numpy' || { echo "missing: python3-numpy (certificate generation needs it)"; exit 1; }
           echo "toolchain pin: $(cat lean-toolchain)"
           echo "kernel: $(cat /proc/version)"
-          free -g
-
-          # Under WSL2 this is the distro's configured share, not the host's
-          # 32 GB. WSL2 defaults to about half the host, which is under the
-          # ~20 GB a single corun1024 module can take, so .wslconfig has to
-          # raise it. See .github/RUNNER.md.
+          case "$GITHUB_WORKSPACE" in
+            /mnt/*) echo "workspace is on the Windows filesystem: $GITHUB_WORKSPACE"; exit 1 ;;
+          esac
           total_gb=$(awk '/MemTotal/ {printf "%d", $2/1024/1024}' /proc/meminfo)
           echo "memory visible to this runner: ${total_gb} GB"
-          if [ "$total_gb" -lt 24 ]; then
-            echo "too little memory for this build."
-            if grep -qi microsoft /proc/version; then
-              echo "this is WSL2: raise memory= in %UserProfile%\\.wslconfig,"
-              echo "then 'wsl --shutdown' and start it again."
-            fi
-            exit 1
-          fi
+          [ "$total_gb" -ge 24 ] || { echo "under 24 GB; the base port will not fit"; exit 1; }
+          avail_gb=$(df -BG --output=avail "$GITHUB_WORKSPACE" | tail -1 | tr -dc '0-9')
+          echo "disk available: ${avail_gb} GB"
+          # A cold build needs ~8 GB for the port plus ~5 GB of Mathlib.
+          [ "${avail_gb:-0}" -ge 15 ] || { echo "under 15 GB free; a cold build would fill the disk"; exit 1; }
 
-          # The runner must live in the distro's own filesystem. Working
-          # under /mnt/c crosses the 9p boundary on every file, which is
-          # slow enough to matter for a Mathlib tree.
-          case "$GITHUB_WORKSPACE" in
-            /mnt/*)
-              echo "workspace is on the Windows filesystem: $GITHUB_WORKSPACE"
-              echo "re-register the runner under the distro's home directory."
-              exit 1
-              ;;
-          esac
+      - name: Remove the pre-A2 build directory
+        working-directory: .
+        run: |
+          # Before task A2 the Lake package root was the repository root, so
+          # older runs left a .lake/ there — about 5 GB of Mathlib that
+          # nothing reads any more. clean: false would keep it forever.
+          if [ -d .lake ]; then du -sh .lake; rm -rf .lake; echo "removed"; fi
+
+      - name: Start clean, if asked
+        if: inputs.clean == true
+        run: |
+          rm -rf .lake/build FourColor/Bulk/Cfg FourColor/Mask FourColor/Reduce/All.lean certgen
+          echo "build state removed; this run rebuilds everything"
+
+      - name: Regenerate the certificates when their inputs change
+        run: |
+          set -euo pipefail
+          # FourColor/Bulk/Cfg, FourColor/Mask and FourColor/Reduce/All.lean are
+          # generated from Configurations.lean by scripts/gen_certificates.sh,
+          # and build.sh only regenerates them when they are absent. With the
+          # workspace kept between runs they are never absent, so a change to
+          # the configurations or the generators would otherwise build against
+          # stale certificates. That would fail rather than prove something
+          # wrong — the kernel checks every certificate — but it would fail
+          # confusingly. Hash the inputs and discard the outputs when they move.
+          mkdir -p .lake
+          inputs=$(cat FourColor/Configurations.lean tools/* scripts/gen_certificates.sh \
+                       scripts/gen_*.py scripts/bulkspace.py scripts/certdata.py | sha256sum | cut -d' ' -f1)
+          stamp=.lake/certificate-inputs.sha256
+          if [ -f "$stamp" ] && [ "$(cat "$stamp")" = "$inputs" ]; then
+            echo "certificate inputs unchanged ($inputs)"
+          else
+            echo "certificate inputs changed or unknown; discarding generated modules"
+            rm -rf FourColor/Bulk/Cfg FourColor/Mask FourColor/Reduce/All.lean certgen
+          fi
+          echo "$inputs" > "$stamp.pending"
 
       - name: Install the pinned toolchain
         run: |
           set -euo pipefail
           elan toolchain install "$(cat lean-toolchain)"
-          elan override set "$(cat lean-toolchain)"
           lean --version
 
-      - name: Restore the Mathlib cache
+      - name: Build and verify the base port
         run: |
           set -euo pipefail
-          lake exe cache get
+          start=$(date +%s)
+          /usr/bin/time -v ./build.sh 2>&1 | tee "$RUNNER_TEMP/build.log"
+          echo "base port: $(( $(date +%s) - start )) s"
+          # check.sh (run by build.sh) already fails unless this line appears;
+          # checked again here so the job log states it plainly.
+          grep -q 'THEOREM PROVED: FourColor.fourColorTheorem' "$RUNNER_TEMP/build.log"
+          mv .lake/certificate-inputs.sha256.pending .lake/certificate-inputs.sha256
 
-      - name: Build lean/
+      - name: Build FourCT
         run: |
           set -euo pipefail
-          # No -j: see the LEAN_NUM_THREADS note above.
-          /usr/bin/time -v lake build 2>&1 | tail -60
+          # Safe only while no FourCT module imports FourColor: Lake knows
+          # nothing of build_pool.py's output and would rebuild the whole port
+          # with no memory cap. checks/repo_guardrails.py enforces that.
+          lake build FourCT
 
       - name: Peak memory
         if: always()
-        run: free -g
+        run: |
+          grep -E 'Maximum resident set size|Elapsed \(wall' "$RUNNER_TEMP/build.log" 2>/dev/null || true
+          free -g
+
+      # Cancelling a run does not reliably stop the build: build_pool.py can
+      # exit and leave its lean children compiling, ~13 GB of them on
+      # 2026-09-27. Match on this workspace's package root so nothing else is
+      # touched. Every grep may legitimately match nothing, hence || true.
+      - name: Sweep any orphaned build processes
+        if: always()
+        working-directory: .
+        run: |
+          set -uo pipefail
+          root="$GITHUB_WORKSPACE/lean"
+          pids=$(ps -eo pid,args | grep '[l]ean ' | grep -F -- "-R $root" | awk '{print $1}' || true)
+          # build.sh starts build_pool.py by a relative path, so its arguments
+          # cannot distinguish this workspace's build from any other on the
+          # machine. Its working directory can.
+          pool=""
+          for p in $(pgrep -f 'scripts/build_pool\.py' || true); do
+            [ "$(readlink "/proc/$p/cwd" 2>/dev/null)" = "$root" ] && pool="$pool $p"
+          done
+          pool=${pool# }
+          if [ -n "${pids}${pool}" ]; then
+            echo "killing leftovers: pool=${pool:-none} lean=${pids:-none}"
+            [ -n "$pool" ] && kill -KILL $pool 2>/dev/null
+            [ -n "$pids" ] && kill -KILL $pids 2>/dev/null
+          fi
+          echo "done"

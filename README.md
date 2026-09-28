@@ -37,7 +37,9 @@ Plan of record: the "Four Color Theorem: A Unified Research Program" doc.
 ## Layout
 
 ```
-lean/            Rosetta Stone: one module per reformulation + Transfer tactic
+lean/            the Lake package root; see lean/README.md
+  FourColor/     the base port: corun1024/4ct, on Lean and Mathlib v4.34.1
+  FourCT/        Rosetta Stone: one module per reformulation + Transfer tactic
   Statements/    short human-readable statement files, one per reformulation
 checks/          our own re-implementations of the near-linear proof checks
 data/            configurations, rules, polynomials, foam ranks (Git LFS)

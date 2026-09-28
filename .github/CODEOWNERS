@@ -8,8 +8,10 @@
 /lean/Statements/     @glgmail
 
 # Toolchain pins, licences, CI and the guardrails.
-/lean-toolchain       @glgmail
-/lakefile.toml        @glgmail
+/lean/lean-toolchain     @glgmail
+/lean/lakefile.toml      @glgmail
+/lean/lake-manifest.json @glgmail
+/lean/LICENSES/          @glgmail
 /.gitmodules          @glgmail
 /.gitattributes       @glgmail
 /THIRD_PARTY_NOTICES.md @glgmail
