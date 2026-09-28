@@ -9,11 +9,16 @@ cross-check of the upstream C++ run in task F1, so it was written without
 looking at that code or at any other reimplementation. The **Independence
 log** at the end lists everything that was consulted.
 
-**Status: phase 1.** Lemma A.1, Lemma A.2 and `enumPossibleBadWheels` for
-centre degree 7 are implemented, run and measured. All five phase-1 numbers
-match the published targets. The later steps (the bad-cartwheel enumeration
-and Lemmas A.4-A.6) are transcribed from the pseudocode, but they have only
-been run on samples, for timing. Treat them as drafts.
+**Status: phase 2.** Everything up to and including the bad-cartwheel
+enumeration has been run in full, and all eleven numerical targets match:
+the five of phase 1, the wheel counts for centre degrees 8-11, and the bad
+cartwheels for degrees 7 and 8. No assertion or invariant failed anywhere.
+
+**Lemmas A.4-A.6 (A.10) have not been run in full.** That is Gabriel's
+decision. A.10 is implemented, its new prefilter was verified to change
+nothing on 90 sampled roots, and it was timed on samples of the real
+C_all. It projects to about 1.5 CPU-hours, or roughly 10 minutes on 17
+processes.
 
 ## Phase 1 results
 
@@ -68,6 +73,105 @@ Figures 7 and 8 is by rule sets and counts only.
 Payload sha256 digests (WSL run, `results/phase1/summary.json`):
 A.1 `a91da734…`, A.2 `937b336e…`, degree 7 `cf0f6e83…`.
 
+## Phase 2 results
+
+Run on the same machine, detached, with 17 worker processes. The code was
+at commit dbe6576 for the wheels and 4c4ab0b for the rest. The record is
+in `results/phase2/`:
+
+- `steps.txt`: each step's wall time and its session peak memory, which is
+  the summed RSS of every process in the job, sampled every 2 s;
+- `time-*.txt`: the `/usr/bin/time -v` output of each step. Its "Maximum
+  resident set size" covers only the largest single process;
+- `summary.json`, `timings.json`, `a10-timing-summary.json`: results,
+  timings and payload digests;
+- `files.sha256`: whole-file digests of the full outputs, which stay in WSL
+  at `/home/claude/f2-final/`.
+
+| Check | Observed | Published target | Wall time (17 processes) | Session peak memory |
+| --- | --- | --- | --- | --- |
+| A.9.7 wheels kept, centre degree 8 | **6790** | 6790 | 11 s | 1.1 GB |
+| A.9.7 wheels kept, centre degree 9 | **3285** | 3285 | 35 s | 1.1 GB |
+| A.9.7 wheels kept, centre degree 10 | **626** | 626 | 3.0 min | 1.2 GB |
+| A.9.7 wheels kept, centre degree 11 | **8** | 8 | 14.3 min | 1.8 GB |
+| bad cartwheels with tail ranges, degree 7 | **9366** | 9366 | 31.8 min for all degrees (9.0 CPU-hours) | 1.2 GB |
+| bad cartwheels with tail ranges, degree 8 | **728** | 728 | (same run) | |
+| bad cartwheels, degrees 9, 10, 11 | **0, 0, 0** | (none published; A.9.21 line 8 requires 0) | (same run) | |
+
+Details:
+
+- **Wheels.** Of the 48,915 / 217,045 / 976,887 / 4,438,925 wheels up to
+  rotation, the charge bound prunes 41,833 / 213,321 / 976,043 / 4,438,887
+  and blocking prunes 292 / 439 / 218 / 30.
+- **Bad cartwheels.** Every one of the 16,148 wheels of C0 went through
+  fixInRules and fixOutRules: 5439 / 6790 / 3285 / 626 / 8 for degrees
+  7-11. CPU time per degree was 11,266 / 15,173 / 5,532 / 417 / 2 s. The
+  slowest single wheel took 181 s, and the largest worker used 63 MB.
+- **Failures.** None, on any wheel:
+  - the assertions of A.9.21 lines 7-9: the charge bound is 0, the centre
+    degree is 7 or 8, and some neighbour has degree 7-9;
+  - our C_all invariants: the centre and its neighbours have fixed degrees,
+    every other range is a tail range [k, 9], and no range is empty;
+  - exceptions.
+
+  Failures are recorded per wheel in `bad-wheels.jsonl`; no wheel has any.
+- **Deduplication did not matter.** A.9.21 turns the pairs (cartwheel, rule
+  sets) into a set of cartwheels. There are exactly as many pairs as
+  cartwheels (9,366 and 728), so reading C′ with or without deduplication
+  gives the same counts.
+
+### A.10 (Lemmas A.4-A.6): prefilter check and projection (not run in full)
+
+The sets after `deleteDegreeFromKto9` hold 5,365 cartwheels for A.4, 1,618
+for A.5, and 298 for A.6 (after removing those blocked by T73). The
+*roots*, the cartwheels a check starts from, are:
+
+- A.4: 393. There are 213 in case (i) (a degree-8 neighbour) and 180 in
+  case (iii) (two or more degree-7 neighbours); no root falls in case (ii).
+- A.5: 1,320, those with two consecutive degree-7 neighbours.
+- A.6: 298. There are 23 with one degree-7 neighbour and 275 with two or
+  more.
+
+**The prefilter changes nothing.** 90 roots, 30 per check in strides, were
+run both with and without the prefilter. For all 90, the results are
+identical: the exact structure of every surviving combination, in order,
+the number of assertions, and the failed assertions. None failed. The
+prefilter rejects more than 99% of the identifications (for example
+37,945 of 37,948 for one A.4 root) and cuts the mean time per root as
+follows:
+
+| Check | Mean per root without prefilter | Mean per root with prefilter (same roots) |
+| --- | --- | --- |
+| A.4 | 24.7 s | 7.6 s |
+| A.5 | 7.95 s | 0.18 s |
+| A.6 | 1.41 s | 0.18 s |
+
+**Timing and projection**, with the prefilter. The samples are 120
+strided roots for A.4 and A.5 and the 30 above for A.6. Nothing timed out
+(cap 1500 s) and no assertion failed.
+
+| Check | Roots | Sampled | Mean | Median | Max | Projected CPU |
+| --- | --- | --- | --- | --- | --- | --- |
+| A.4 (Lemma 8.3) | 393 | 120 | 12.7 s | 1.2 s | 120 s | 1.4 h |
+| A.5 (Lemma 8.5) | 1,320 | 120 | 0.25 s | 0.11 s | 5.9 s | 0.09 h |
+| A.6 (Lemma 8.6) | 298 | 30 | 0.18 s | 0.09 s | 0.96 s | 0.015 h |
+| **total** | | | | | | **about 1.5 CPU-hours** |
+
+- **How long the full run should take.** On 17 processes that is about 6
+  minutes of balanced work, plus the slowest root (at least 2 minutes). We
+  expect **10-20 minutes of wall time**. Memory would be about 2.5 GB: 17
+  workers, each holding Ds and C_all. That was the session peak of the
+  sample runs.
+- **What drives the cost.** A.4 is heavy-tailed. The cost follows the number
+  of free images, which runs to 290,000 for one root, because A.4.9 splits
+  tail ranges. The A.4 mean rose from 7.6 s over 30 roots to 12.7 s over
+  120, so allow 1-3 CPU-hours.
+- **Without the prefilter** the same projection gives about 5.7 CPU-hours.
+- **X is exercised.** In the sampled case (iii) roots of A.4, `containX`
+  ran 5 times on surviving combinations and found X each time. The other
+  71 pairs left no combination at all. So our transcription of Figure 12
+  is now also used by, and satisfies, the check it exists for.
+
 ## How to run
 
 ```bash
@@ -77,6 +181,10 @@ python3 checks/f2/run.py a1 [--order reversed]
 python3 checks/f2/run.py a2 [--order reversed] [--literal]
 python3 checks/f2/run.py wheels --degree 7 [--jobs 16] [--literal]
 python3 checks/f2/run.py special
+# phase 2 (use --out DIR for all of these; `bad` reads wheels-7..11.txt there)
+python3 checks/f2/run.py wheels --degree 11 --jobs 17 --out DIR
+python3 checks/f2/run.py bad --jobs 17 --out DIR          # resumable
+python3 checks/f2/run.py a10-sample --compare --count 30 --jobs 17 --out DIR
 # projection helpers (samples; not results):
 python3 checks/f2/run.py sample-wheels --degree 11 --count 2000
 python3 checks/f2/run.py sample-bad --degree 8 --count 40 --pool 12000
@@ -108,6 +216,26 @@ digest.
   < 0) or `blocked` (A.7.1). The survivors are C^d_0.
 - `special.txt`: one line per check, `name <TAB> ok|FAIL <TAB> check <TAB>
   detail`.
+- `call.jsonl` (C_all): one bad cartwheel per line,
+  `{"d", "wheel", "lo", "hi"}`. `d` and `wheel` (the neighbour degrees)
+  rebuild the structure with A.9.6 `generateCartwheel(d, wheel)`, which
+  fixes the vertex numbering: 0 is the centre, 1..d its neighbours
+  clockwise, then the second neighbours in the order A.9.6 creates them.
+  `lo`/`hi` are the degree ranges in that numbering. Lines are ordered by
+  degree, then by the wheel's position in `wheels-<d>.txt`, then in the
+  order A.9.21 produced them.
+- `bad-wheels.jsonl`: one line per C0 wheel, in the same order:
+  `{"d", "wheel", "bad", "pairs", "C_i", "failures"}`. These are the number
+  of bad cartwheels, the number of (cartwheel, rule sets) pairs before
+  deduplication, the size of each C_i in fixInRules, and every failed
+  assertion or invariant (an empty list if none).
+- `bad-progress.jsonl`: the working file of `bad`, one line per finished
+  wheel with its time. It is not a payload, because its order depends on
+  scheduling.
+- `a10-sample` records its per-root rows in `summary.json`. Each row gives
+  the time, the counters (identifications tried, prefiltered, free images,
+  first-step survivors), the assertions, and a signature: the sha256 of the
+  exact structure of every surviving combination, in order.
 - `summary.json` / `timings.json`: one entry per run, keyed by step and
   variant.
 
@@ -132,11 +260,12 @@ of the code.
 | `nl4ct/blocking.py` | A.6.6-A.6.8 `containConf` (indexed, plus a literal version), A.7.1-A.7.2 blocking |
 | `nl4ct/combine.py` | A.8.1-A.8.2 `combineRules` (Lemmas A.1, A.2) |
 | `nl4ct/cartwheel.py` | A.9.1-A.9.7 and A.9.11-A.9.13: cartwheel generation, rule application, charge bounds, pruning, `enumPossibleBadWheels` |
-| `nl4ct/badcartwheels.py` | A.9.8-A.9.10, A.9.14-A.9.22 (**draft**, run only on samples) |
-| `nl4ct/cartcombine.py` | A.10.1-A.10.12, Lemmas A.4-A.6 (**draft, never run**) |
+| `nl4ct/badcartwheels.py` | A.9.8-A.9.10, A.9.14-A.9.22 (run in full in phase 2) |
+| `nl4ct/cartcombine.py` | A.10.1-A.10.12, Lemmas A.4-A.6, organised by roots, with the exact prefilter for A.10.2 (**run on samples only**) |
 | `nl4ct/special.py` | self-consistency checks of the X/T73 transcription |
 | `data/special-configurations.json` | our transcription of X (Figure 12), X+w (Figure 13) and T73 |
 | `results/phase1/` | the record of the phase-1 run on the self-hosted machine: `summary.json` (results and payload digests), `timings.json`, `special.txt`, `samples.json` (projection samples) and the `/usr/bin/time -v` outputs. The payload files themselves are not committed; `run.py` rebuilds them in seconds, and their sha256 is in `summary.json`. |
+| `results/phase2/` | the record of phase 2 (see "Phase 2 results"). The full outputs are not committed; they stay in WSL at `/home/claude/f2-final/`, with their digests in `summary.json` (payloads) and `files.sha256` (whole files). |
 
 ## Representation choices (where the paper leaves one open)
 
@@ -179,8 +308,9 @@ of the code.
 ## Speed-ups, and why they cannot change an answer
 
 Each speed-up only skips calls to Algorithm A.2.1 that A.2.1 would itself
-reject. `--literal` turns all of them off, and the phase-1 payloads are
-byte-identical with and without it.
+reject. `--literal` turns off 1-3, and the phase-1 payloads are
+byte-identical with and without it. Item 4 was checked separately (see
+"Phase 2 results").
 
 1. **Configuration index** (`blocking.ConfIndex`). A.6.6 tries every
    configuration against every target dart whose endpoint degrees equal
@@ -199,6 +329,17 @@ byte-identical with and without it.
 3. **Early exit in A.9.4.** A.9.4 wants the largest charge among the
    combined rules that do not "never apply". We try them in order of
    decreasing charge and stop at the first that sometimes applies.
+4. **Prefilter for A.10.2** (`cartcombine.prefilter_ok`, phase 2). The free
+   combination identifying e with e′ gives a homomorphism φ (Lemma 9.4)
+   with φ(e) = φ(e′). Hence φ(succ^k e) = φ(succ^k e′) and
+   φ(pred^k e) = φ(pred^k e′) wherever both sides are defined, and the
+   heads and tails of those darts are identified. A.4.1 intersects the
+   degree ranges of identified vertices and gives up on an empty
+   intersection. So if the heads, or any such pair of tails, have disjoint
+   ranges, the combination is empty and we skip it. We verified that it
+   changes nothing on 90 sampled roots, with identical exact results.
+   `--literal` does not switch this one off; `run_root(..., prefilter=False)`
+   does.
 
 ## Ambiguities in the paper, and how we read them
 
@@ -232,12 +373,22 @@ byte-identical with and without it.
    We assert it, and the assertion has never fired.
 6. **`gdominant`** (A.9.15): "δ+(v) = ∞ or δ*+(v*) < 9". This is our
    reading of section 11.2.4, confirmed from the MathML of the arXiv HTML.
-7. **Later phases (drafts):**
+7. **Later phases:**
    - A.9.21 line 7, "assert C = 0", is read as "the upper bound of A.9.13
      equals 0". The text of section 11.2 says "We checked that all of them
-     are 0".
+     are 0". It held for every element of C in phase 2.
    - Sets are sets. The final C′ of A.9.21 deduplicates cartwheels with
-     equal degree ranges, which affects the published counts 9366 and 728.
+     equal degree ranges. In phase 2 this turned out not to matter: there
+     are exactly as many pairs as cartwheels.
+   - The assertions of A.9.21 are checked for every element of C, that is,
+     every (cartwheel, rule sets) pair, as line 3 iterates over C, and not
+     only once per deduplicated cartwheel.
+   - A.10.10 line 3 replaces C by the cartwheels not blocked by T73. We use
+     this filtered C both for the roots and as the partner set in
+     A.10.11/A.10.12, as the pseudocode passes it on.
+   - A.10.4 has no root in case (ii) (exactly one degree-7 neighbour and no
+     degree-8 neighbour), so A.10.6 is never exercised on the real C_all.
+     This is an observation, not a choice.
    - A.10.2 line 6 picks "an arbitrary vertex" as the centre for blocking.
      We pick the image of the first cartwheel's centre (see the
      `cartcombine.py` docstring for why this is harmless).
@@ -280,68 +431,43 @@ not show that it is the configuration the authors meant, so a human should
 compare the JSON with Figure 12. X is symmetric under the left-right
 reflection, which is why A.10.8 does not need its mirror.
 
-## Projection of the full run (Python, not run)
+## Cost: phase-1 projection against phase-2 measurement
 
-The projection comes from the measurements above and from samples. The
-per-wheel times come from `timings.json` and `results/phase1/samples.json`.
-Nothing heavy was run.
+| Step | Phase-1 projection | Phase 2, measured (17 processes) |
+| --- | --- | --- |
+| wheels, degrees 8-11 | about 2.2 CPU-hours, about 8 min | 18.1 min wall in all (degree 11: 14.3 min); session peak 1.8 GB |
+| enumBadCartwheels over all of C0 | about 8 CPU-hours (5-15 h), 30-60 min | 9.0 CPU-hours, 31.8 min wall; session peak 1.2 GB |
+| A.10, Lemmas A.4-A.6 | unknown, 1 h to days | **not run**; projected about 1.5 CPU-hours (1-3 h), 10-20 min wall, about 2.5 GB |
 
-| Step | Basis | Projected CPU time | On 18 processes |
-| --- | --- | --- | --- |
-| A.9.7 wheels, d=8, 9, 10, 11 (48,915 / 217,045 / 976,887 / 4,438,925 wheels) | 2,000-wheel samples: 1.14, 1.19, 1.35, 1.41 ms per wheel | 1 min, 4 min, 22 min, 1.7 h; about 2.2 h in all | about 8 min |
-| memory for d=11 | the wheel list is held in memory | about 0.7 GB (main process) | + about 70 MB per worker |
-| enumBadCartwheels (A.9.21) on C0 = 5439 / 6790 / 3285 / 626 / 8 wheels | samples of 40 / 40 / 20 / 10 wheels: mean 1.01 / 2.95 / 1.12 / 0.14 s per wheel, heavy tail (max 32 s) | about 1.5 h + 5.6 h + 1.0 h + 2 min + negligible, so **about 8 h** (sampling error: perhaps 5-15 h) | about 30-60 min |
-| A.10, Lemmas A.4-A.6 | not measurable yet (needs C_all); see below | **unknown**: from about 1 h to days | |
+So the whole pipeline would take about an hour on 17 processes: phase 1 in
+under a minute, the wheels 18 min, the bad cartwheels 32 min, and A.10 an
+estimated 10-20 min. For comparison, the other implementation took about
+70 minutes end to end in optimized C++ on 20 threads. Its slowest step, the
+degree-11 wheel enumeration, took 33 min single-threaded and 12.3 GB. Ours
+took 14.3 min on 17 processes, peaking at 1.8 GB for the whole session and
+0.7 GB for the main process.
 
-For comparison, the other implementation took about 70 minutes end to end
-in optimized C++ on 20 threads. Its slowest step, the degree-11 wheel
-enumeration, took 33 min single-threaded and 12.3 GB. Our projection for
-that step is 1.7 h single-threaded and under 1 GB. The per-step speed ratio
-between the two is therefore not a constant: our exact indexes matter more
-than the language.
-
-**A.10 is the open risk.** A literal A.10.2 tries every pair (cartwheel,
-centre dart) against the root dart, about |C| × 7.5 free combinations per
-root, where |C| is a few thousand after `deleteDegreeFromKto9`. We timed
-free combinations of C0-like cartwheels whose centre and endpoint degrees
-match, on WSL:
-
-- a combination that fails costs about 190 µs;
-- a combination that succeeds can produce hundreds to thousands of free
-  images, because A.4.9 splits the [5,9] tail ranges. The test averaged
-  about 1,370 images per success, at about 85 µs per image and 25 µs per
-  blocking test.
-
-The real C_all cartwheels have many tails already refined, so this figure
-is an upper-side guess, not a measurement. Our recommendation for phase 2:
-
-1. Run the bad-cartwheel enumeration (about 8 h CPU, 30-60 min on 18
-   processes) and **measure A.10 on a sample of C_all** before committing to
-   a full run.
-2. Add an exact prefilter for A.10.2, in the same spirit as the
-   configuration index. The rotations around the two identified centres are
-   both cyclic, so they must have equal length and pairwise intersecting
-   ranges. Also parallelize over roots with `multiprocessing`, which is
-   already used for the wheels.
-3. Only if A.10 still projects to more than several hours on 18 processes:
-   try PyPy first. It needs no code change, and the code is pure Python on
-   lists. Only after that consider a compiled hot spot: A.2.1, A.3.1 and
-   A.4.x. Changing language is Gabriel's decision, and we do not recommend
-   it now.
+Python was enough, with no PyPy and no compiled code. The prefilter was the
+step that made A.10 cheap. Without it, the same sample projects to about
+5.7 CPU-hours.
 
 ## Unfinished, unverified, uncertain
 
-- `badcartwheels.py` and `cartcombine.py` are drafts. The first ran on 110
-  sampled wheels, where no assertion of A.9.21 failed, and the numbers of
-  bad cartwheels per wheel were in line with 9366/5439 and 728/6790. The
-  second has never run. Neither output has been compared with anything.
-- The degree 8-11 wheel counts (6790, 3285, 626, 8) have not been computed.
-  The samples only suggest they are in range: the pool fractions give
-  roughly 6,880, 3,390 and 580 for degrees 8-10.
+- **Lemmas A.4-A.6 have not been run in full**, by instruction. The A.10
+  code has run only on 330 sampled roots: 90 in the comparison run and 240
+  in the timing run. No assertion failed there. The projection has a
+  heavy-tailed error: the slowest A.4 root seen took 120 s.
+- The prefilter's equivalence rests on the argument above and on 90 roots.
+  It has not been checked on every root.
+- `bad` resumes from its progress file, but the full run went straight
+  through, so resuming has only been tested on a small slice.
 - The agreement with Figures 7 and 8 rests on rule sets and counts, not on
   an isomorphism check.
-- The X transcription has passed consistency checks but has not been
-  checked against the figure by a second person.
+- The X transcription passed its consistency checks, and `containX` found X
+  in all 5 sampled cases that reached it. It has still not been compared
+  with Figure 12 by a second person.
+- Nothing has been compared object by object with the F1 outputs. That
+  comparison belongs to the main session.
 
 ## Independence log
 
@@ -380,3 +506,9 @@ and the repository files the brief allows:
   - `/home/claude/f1-artifacts`;
   - the unlicensed reimplementations and `instructions-for-checking-reproducibility`;
   - any web search.
+- **Phase 2: unchanged.** Nothing beyond the list above was consulted. No
+  F1 output was looked at: `/home/claude/f1-artifacts` was not opened, and
+  the phase-2 work in WSL used only `/home/claude/f2-work`,
+  `/home/claude/f2-final`, `/home/claude/f2-phase2`, and two scratch
+  scripts of ours in `/home/claude` that break the A.10 sample down by
+  case.
