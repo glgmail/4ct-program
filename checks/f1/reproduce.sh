@@ -8,7 +8,8 @@
 # Environment:
 #   WORK    scratch directory for the build and the checks' output
 #           (default $HOME/f1-work; must not be under /mnt/)
-#   JOBS    parallel enum_cartwheels jobs (default 8; see checks/f1/README.md)
+#   JOBS    parallel enum_cartwheels jobs (default: nproc, as upstream's
+#           enum_all_bad_cartwheels.sh; each job needs under 30 MB)
 #   RESUME  1 to keep WORK and skip every step that already exited 0
 #
 # Writes WORK/results/: results.txt (published targets, observed values,
@@ -30,7 +31,7 @@ SMOKE=0
 
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
 WORK=${WORK:-$HOME/f1-work}
-JOBS=${JOBS:-8}
+JOBS=${JOBS:-$(nproc)}
 RESUME=${RESUME:-0}
 SUB=third_party/near-linear-4ct/computer-checks
 DATA=$REPO/data/near-linear-4ct
@@ -121,7 +122,9 @@ if grep -rqs -- '-DNDEBUG' build/src/CMakeFiles/*/flags.make; then
   die "the build defines NDEBUG, which disables the assertions A.4-A.6 rely on"
 fi
 grep -h 'CXX_FLAGS\|CXX_DEFINES' build/src/CMakeFiles/main.dir/flags.make > results/compile-flags.txt
-step unit_tests 'ctest --test-dir build > log/unit_tests.log 2>&1'
+# Upstream calls enable_testing() in test/CMakeLists.txt, so ctest must be
+# pointed at build/test; at build/ it finds no tests and still exits 0.
+step unit_tests 'ctest --test-dir build/test > log/unit_tests.log 2>&1'
 
 # --- Lemma A.1 and A.2 ------------------------------------------------------------------
 step A1_combine_rules './build/src/main --combine_rules -R discharging-rules/R -C empty -o combined_rules/all > log/all.log'

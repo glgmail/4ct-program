@@ -47,6 +47,8 @@ TARGETS = [
      ("log", "wheels_d11.log", r"Generated (\d+) wheels\.")),
 ]
 
+SMOKE_LOGS = {"all.log", "non_blocked.log", "wheels_d7.log"}
+
 # Pass/fail checks: (lemma, step name, log, line that must be present)
 CHECKS = [
     ("A.4", "A4_check_deg8", "check_deg8.log", "Finished checking degree 8 vertices."),
@@ -112,6 +114,10 @@ def main() -> int:
                        read(work / "log" / "unit_tests.log"))
     if tests:
         lines.append(f"unit tests: {tests[-1][2]} run, {tests[-1][1]} failed")
+    # ctest exits 0 when it finds no tests at all; that is not a pass.
+    ok &= bool(tests) and int(tests[-1][2]) > 0 and tests[-1][1] == "0"
+    if not tests:
+        lines.append("unit tests: none found")
     lines.append("")
 
     lines.append("## published targets")
@@ -119,8 +125,8 @@ def main() -> int:
     met = 0
     considered = 0
     for lemma, metric, want, how in TARGETS:
-        if smoke and not (lemma in ("A.1", "A.2") or metric.endswith("centre degree 7")
-                          and "wheels" in metric):
+        # --smoke runs A.1, A.2 and the degree-7 wheels only
+        if smoke and not (how[0] == "log" and how[1] in SMOKE_LOGS):
             continue
         considered += 1
         got = observe(work, how)
