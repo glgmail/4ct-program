@@ -445,16 +445,296 @@ def run_sample_bad(out, args):
                 "peak_rss_mb": peak_rss_mb()})
 
 
+# ---------------------------------------------------------------------------
+# the full bad-cartwheel enumeration (A.9.20 / A.9.21)
+# ---------------------------------------------------------------------------
+BAD_TARGETS = {7: 9366, 8: 728}
+
+
+def read_c0(out_dir, d):
+    """C^d_0: the survivors listed in wheels-<d>.txt, in file order."""
+    path = os.path.join(out_dir, f"wheels-{d}.txt")
+    c0 = []
+    with open(path, encoding="utf-8") as fh:
+        for ln in fh:
+            if ln.startswith("#"):
+                continue
+            parts = ln.split()
+            if parts[-1] == "survives":
+                c0.append(tuple(int(x) for x in parts[1:-1]))
+    return c0
+
+
+def _bad_work(task):
+    import traceback
+    from nl4ct import badcartwheels
+    tid, d, degs = task
+    t1 = time.perf_counter()
+    stats = {}
+    rec = {"tid": tid, "d": d, "wheel": list(degs)}
+    try:
+        cw0 = cartwheel.generate_cartwheel(d, degs)
+        bad, failures = badcartwheels.enum_bad_cartwheels(
+            cw0, _W["tables"], _W["index"], stats)
+        rec["bad"] = [[cw.pc.lo, cw.pc.hi] for cw in bad]
+        rec["failures"] = [[str(a), b, [list(c[0]), list(c[1])]] for a, b, c in failures]
+    except Exception:
+        rec["bad"] = []
+        rec["failures"] = [["exception", traceback.format_exc(), None]]
+    rec["pairs"] = stats.get("pairs")
+    rec["C_i"] = stats.get("C_i sizes")
+    rec["seconds"] = round(time.perf_counter() - t1, 3)
+    rec["rss_mb"] = peak_rss_mb()
+    return rec
+
+
+def run_bad(out, args):
+    """enumAllBadCartwheels over every C^d_0 wheel, d = 7..11, in parallel.
+
+    Progress goes to bad-progress.jsonl (one line per finished wheel, with
+    its time), so an interrupted run resumes where it stopped. When every
+    wheel is done, the payloads call.jsonl and bad-wheels.jsonl are written
+    in a fixed order."""
+    t = Timer()
+    degrees = [int(x) for x in args.degrees.split(",")]
+    tasks = []
+    for d in degrees:
+        for degs in read_c0(out.dir, d):
+            tasks.append((len(tasks), d, degs))
+    prog = os.path.join(out.dir, "bad-progress.jsonl")
+    done = {}
+    if os.path.exists(prog):
+        with open(prog, encoding="utf-8") as fh:
+            for ln in fh:
+                if ln.strip():
+                    r = json.loads(ln)
+                    done[r["tid"]] = r
+    for tid, d, degs in tasks:  # the task list must not have changed
+        if tid in done:
+            assert done[tid]["d"] == d and tuple(done[tid]["wheel"]) == degs
+    todo = [x for x in tasks if x[0] not in done]
+    print(f"bad: {len(tasks)} wheels, {len(done)} done before, {len(todo)} to do",
+          flush=True)
+    if todo:
+        with open(prog, "a", encoding="utf-8", newline="\n") as fh:
+            if args.jobs > 1:
+                with _mp_context().Pool(args.jobs, initializer=_init_worker,
+                                        initargs=(args.literal, args.order)) as pool:
+                    for n, rec in enumerate(pool.imap_unordered(_bad_work, todo, chunksize=1)):
+                        fh.write(json.dumps(rec, separators=(",", ":")) + "\n")
+                        fh.flush()
+                        done[rec["tid"]] = rec
+                        if n % 200 == 0:
+                            print(f"  {len(done)}/{len(tasks)} at {t():.0f} s", flush=True)
+            else:
+                _init_worker(args.literal, args.order)
+                for rec in map(_bad_work, todo):
+                    fh.write(json.dumps(rec, separators=(",", ":")) + "\n")
+                    fh.flush()
+                    done[rec["tid"]] = rec
+    recs = [done[tid] for tid, _, _ in tasks]
+    call_lines = []
+    wheel_lines = []
+    per_d = {}
+    for r in recs:
+        for lo, hi in r["bad"]:
+            call_lines.append(json.dumps({"d": r["d"], "wheel": r["wheel"], "lo": lo,
+                                          "hi": hi}, separators=(",", ":")))
+        wheel_lines.append(json.dumps({"d": r["d"], "wheel": r["wheel"],
+                                       "bad": len(r["bad"]), "pairs": r["pairs"],
+                                       "C_i": r["C_i"], "failures": r["failures"]},
+                                      separators=(",", ":")))
+        s = per_d.setdefault(str(r["d"]), {"C0": 0, "bad_cartwheels": 0,
+                                           "pairs_before_dedup": 0,
+                                           "wheels_with_failures": 0,
+                                           "failures": 0, "cpu_s": 0.0,
+                                           "max_wheel_s": 0.0})
+        s["C0"] += 1
+        s["bad_cartwheels"] += len(r["bad"])
+        s["pairs_before_dedup"] += r["pairs"] or 0
+        s["wheels_with_failures"] += 1 if r["failures"] else 0
+        s["failures"] += len(r["failures"])
+        s["cpu_s"] += r["seconds"]
+        s["max_wheel_s"] = max(s["max_wheel_s"], r["seconds"])
+    d_call = out.write("call.jsonl", call_lines)
+    d_wheels = out.write("bad-wheels.jsonl", wheel_lines)
+    result = {"degrees": degrees, "file_call": "call.jsonl", "payload_sha256_call": d_call,
+              "file_per_wheel": "bad-wheels.jsonl",
+              "payload_sha256_per_wheel": d_wheels, "per_degree": {},
+              "all_failures": [dict(d=r["d"], wheel=r["wheel"], failures=r["failures"])
+                               for r in recs if r["failures"]][:200]}
+    timing = {"wall_s": t(), "jobs": args.jobs, "per_degree": {}}
+    for k, s in per_d.items():
+        res = {x: s[x] for x in ("C0", "bad_cartwheels", "pairs_before_dedup",
+                                 "wheels_with_failures", "failures")}
+        if int(k) in BAD_TARGETS:
+            res["target"] = BAD_TARGETS[int(k)]
+            res["matches_target"] = s["bad_cartwheels"] == BAD_TARGETS[int(k)]
+        result["per_degree"][k] = res
+        timing["per_degree"][k] = {"cpu_s": round(s["cpu_s"], 1),
+                                   "max_wheel_s": s["max_wheel_s"]}
+    timing["max_worker_rss_mb"] = max((r.get("rss_mb") or 0) for r in recs) if recs else None
+    out.record("bad", result, timing)
+    for k, v in result["per_degree"].items():
+        print(f"bad d={k}: {v}", flush=True)
+    print(f"call.jsonl payload {d_call[:16]}; bad-wheels.jsonl payload {d_wheels[:16]}; "
+          f"{t():.0f} s", flush=True)
+
+
+# ---------------------------------------------------------------------------
+# A.10 (Lemmas A.4-A.6) on samples of roots
+# ---------------------------------------------------------------------------
+def load_call(out_dir):
+    from nl4ct.pseudo import PC as _PC
+    cws = []
+    with open(os.path.join(out_dir, "call.jsonl"), encoding="utf-8") as fh:
+        for ln in fh:
+            if ln.startswith("#"):
+                continue
+            r = json.loads(ln)
+            cw = cartwheel.generate_cartwheel(r["d"], tuple(r["wheel"]))
+            p = cw.pc
+            assert len(r["lo"]) == p.nv
+            cws.append(cw.with_pc(_PC(p.nv, r["lo"], r["hi"], p.head, p.rev,
+                                      p.succ, p.pred)))
+    return cws
+
+
+def _init_a10(out_dir):
+    from nl4ct import cartcombine
+    ds, ds_index = load_index(False)
+    specs = inputs.read_special(SPECIAL)
+    tpc = specs["T73"][0]
+    t73 = inputs.Conf(tpc, inputs.maximum_degree_dart(tpc), "T73", -1, False)
+    xpc, _, xc = specs["X"]
+    _W["ctx"] = cartcombine.Context(load_call(out_dir), ds_index,
+                                    blocking.ConfIndex(ds + [t73]),
+                                    blocking.ConfIndex([t73]), xpc, xc)
+
+
+class _RootTimeout(Exception):
+    pass
+
+
+def _a10_work(task):
+    import signal
+    import traceback
+    from nl4ct import cartcombine
+    check, n, compare, cap = task
+    out = {"check": check, "root": n}
+
+    def one(prefilter):
+        stats = {}
+
+        def alarm(*_):
+            raise _RootTimeout()
+        old = signal.signal(signal.SIGALRM, alarm) if hasattr(signal, "SIGALRM") else None
+        if old is not None:
+            signal.alarm(cap)
+        t1 = time.perf_counter()
+        try:
+            asserts, sig = cartcombine.run_root(_W["ctx"], check, n, prefilter, stats)
+            r = {"seconds": round(time.perf_counter() - t1, 3), "stats": stats,
+                 "assertions": len(asserts),
+                 "failed": [a for a in asserts if not a[1]], "signature": sig}
+        except _RootTimeout:
+            r = {"seconds": None, "timeout_s": cap, "stats": stats}
+        except Exception:
+            r = {"seconds": None, "exception": traceback.format_exc(), "stats": stats}
+        finally:
+            if old is not None:
+                signal.alarm(0)
+                signal.signal(signal.SIGALRM, old)
+        return r
+
+    out["prefilter"] = one(True)
+    if compare:
+        out["no_prefilter"] = one(False)
+    return out
+
+
+def run_a10_sample(out, args):
+    from nl4ct import cartcombine
+    t = Timer()
+    _init_a10(out.dir)
+    ctx = _W["ctx"]
+    t_init = t()
+    sets = {"A.4": len(ctx.c9), "A.5": len(ctx.c8), "A.6": len(ctx.c7)}
+    tasks = []
+    nroots = {}
+    for check in args.checks.split(","):
+        rs = cartcombine.roots(ctx, check)
+        nroots[check] = len(rs)
+        step = max(1, len(rs) // args.count) if rs else 1
+        for n in rs[::step][:args.count]:
+            tasks.append((check, n, args.compare, args.cap))
+    print(f"a10-sample: sets {sets}, roots {nroots}, {len(tasks)} sampled, "
+          f"init {t_init:.0f} s", flush=True)
+    rows = []
+    if args.jobs > 1:
+        with _mp_context().Pool(args.jobs, initializer=_init_a10,
+                                initargs=(out.dir,)) as pool:
+            for r in pool.imap_unordered(_a10_work, tasks, chunksize=1):
+                rows.append(r)
+                print(json.dumps(r)[:300], flush=True)
+    else:
+        for task in tasks:
+            rows.append(_a10_work(task))
+            print(json.dumps(rows[-1])[:300], flush=True)
+    rows.sort(key=lambda r: (r["check"], r["root"]))
+    summary = {"sets_after_deleteDegreeFromKto9": sets, "roots": nroots,
+               "sampled": len(rows), "compare": args.compare, "cap_s": args.cap,
+               "per_check": {}}
+    for check in nroots:
+        rr = [r for r in rows if r["check"] == check]
+        done = [r["prefilter"]["seconds"] for r in rr if r["prefilter"]["seconds"] is not None]
+        timeouts = sum(1 for r in rr if r["prefilter"].get("timeout_s"))
+        excs = sum(1 for r in rr if r["prefilter"].get("exception"))
+        failed = sum(len(r["prefilter"].get("failed", [])) for r in rr)
+        s = {"sampled": len(rr), "finished": len(done), "timeouts": timeouts,
+             "exceptions": excs, "failed_assertions": failed}
+        if done:
+            mean = sum(done) / len(done)
+            s.update({"mean_s": round(mean, 3), "max_s": max(done),
+                      "median_s": sorted(done)[len(done) // 2],
+                      "projected_cpu_h": round(mean * nroots[check] / 3600, 2)})
+        if args.compare:
+            both = [r for r in rr if r["prefilter"].get("signature")
+                    and r["no_prefilter"].get("signature")]
+            s["compared"] = len(both)
+            s["identical"] = sum(
+                1 for r in both
+                if r["prefilter"]["signature"] == r["no_prefilter"]["signature"]
+                and r["prefilter"]["assertions"] == r["no_prefilter"]["assertions"]
+                and r["prefilter"]["failed"] == r["no_prefilter"]["failed"])
+            nd = [r["no_prefilter"]["seconds"] for r in both]
+            pd = [r["prefilter"]["seconds"] for r in both]
+            if nd:
+                s["mean_s_without_prefilter"] = round(sum(nd) / len(nd), 3)
+                s["mean_s_with_prefilter_same_roots"] = round(sum(pd) / len(pd), 3)
+        summary["per_check"][check] = s
+    tag = "a10-sample" + ("-compare" if args.compare else "")
+    summary["rows"] = rows
+    out.record(tag, summary, {"wall_s": t(), "init_s": t_init, "jobs": args.jobs})
+    for check, s in summary["per_check"].items():
+        print(check, s, flush=True)
+
+
 def main(argv=None):
     argv = sys.argv if argv is None else argv
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("what", choices=["a1", "a2", "wheels", "special", "phase1",
-                                     "sample-wheels", "sample-bad"])
+                                     "sample-wheels", "sample-bad", "bad",
+                                     "a10-sample"])
     ap.add_argument("--degree", type=int, default=7)
     ap.add_argument("--jobs", type=int, default=1)
     ap.add_argument("--count", type=int, default=20)
     ap.add_argument("--pool", type=int, default=0)
+    ap.add_argument("--degrees", default="7,8,9,10,11")
+    ap.add_argument("--checks", default="A.4,A.5,A.6")
+    ap.add_argument("--compare", action="store_true")
+    ap.add_argument("--cap", type=int, default=1800)
     ap.add_argument("--literal", action="store_true")
     ap.add_argument("--order", choices=["given", "reversed"], default="given")
     ap.add_argument("--out", default=os.path.join(HERE, "out"))
@@ -474,6 +754,10 @@ def main(argv=None):
         run_wheels(out, args)
     if args.what == "sample-bad":
         run_sample_bad(out, args)
+    if args.what == "bad":
+        run_bad(out, args)
+    if args.what == "a10-sample":
+        run_a10_sample(out, args)
 
 
 if __name__ == "__main__":

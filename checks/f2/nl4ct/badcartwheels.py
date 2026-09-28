@@ -149,13 +149,34 @@ def centre_darts_by_degree(cw):
 def enum_bad_cartwheels(cw0, tables, index, stats=None):
     """Algorithm A.9.21 for one C^d_0 wheel. Returns (C', failures), where
     C' is the set of cartwheels (deduplicated) and failures lists the
-    assertions of lines 7-9 that did not hold."""
+    assertions of lines 7-9 that did not hold, and violated invariants.
+    The assertions are checked for every element of C (pairs of a cartwheel
+    and its rule sets), as line 3 iterates over C."""
     cd = fix_in_rules(cw0, tables, index, stats)
     c = fix_out_rules(cd, tables, index, stats)
     failures = []
     result = []
     keys = set()
+    if stats is not None:
+        stats["pairs"] = len(c)
     for cw, fixed in c:
+        k = _ckey(cw)
+        if k not in keys:
+            keys.add(k)
+            result.append(cw)
+        # invariants the text states for C_all (section 11.3, A.10): the
+        # centre and its neighbours have fixed degrees, every other range is
+        # a tail range [k, 9], and no range is empty
+        p = cw.pc
+        for v in range(p.nv):
+            if p.lo[v] > p.hi[v]:
+                failures.append(("invariant: empty range", v, _ckey(cw)))
+            elif v <= cw.d and p.lo[v] != p.hi[v]:
+                failures.append(("invariant: centre/neighbour not fixed", v, _ckey(cw)))
+            elif p.lo[v] != p.hi[v] and not (p.hi[v] == 9 and 5 <= p.lo[v] < 9):
+                failures.append(("invariant: range not a tail range", v, _ckey(cw)))
+        if not all(p.lo[v] == p.hi[v] for v in range(cw.d + 1)):
+            continue  # centre_darts_by_degree needs fixed neighbour degrees
         sigma = upper_bound_of_charge(cw, fixed, tables)
         d = cw.pc.lo[0]
         cdarts = centre_darts_by_degree(cw)
@@ -166,8 +187,4 @@ def enum_bad_cartwheels(cw0, tables, index, stats=None):
         if not (len(cdarts.get(7, ())) + len(cdarts.get(8, ()))
                 + len(cdarts.get(9, ())) > 0):
             failures.append(("no neighbour of degree 7-9", None, _ckey(cw)))
-        k = _ckey(cw)
-        if k not in keys:
-            keys.add(k)
-            result.append(cw)
     return result, failures
