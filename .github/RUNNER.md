@@ -126,11 +126,14 @@ ls /mnt                        # should be empty
 ```bash
 sudo apt-get update
 sudo apt-get install -y git git-lfs gcc g++ make cmake curl ca-certificates python3 python3-venv python3-numpy
+sudo apt-get install -y libboost-program-options-dev libboost-thread-dev libspdlog-dev libfmt-dev
 git lfs install
 ```
 
-`cmake`, `g++` and `make` are here for task F1's C++ checks, which now build
-natively. **`python3-numpy` is needed by the corun1024 port**: its
+`cmake`, `g++`, `make` and the four `-dev` packages on the second line are
+for task F1's C++ checks (`checks/f1/`). The upstream CMake build needs
+Boost `program_options` and `thread`, spdlog and fmt, and it downloads
+googletest itself at configure time. **`python3-numpy` is needed by the corun1024 port**: its
 `scripts/bulkspace.py` imports numpy, and without it a build dies during
 certificate generation, several minutes in. `port-build.yml` now checks for
 it up front rather than letting you find out the slow way.

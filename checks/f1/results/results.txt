@@ -1,0 +1,43 @@
+# F1: near-linear computer checks, reproduced with the upstream C++ code
+# upstream: near-linear-4ct/computer-checks @ 6cb85666ce89cf8bd813132e4c5dd56053e367a5
+# data: data/near-linear-4ct/ (reducible-configurations c2ce7a9, discharging-rules d85bfe0)
+# mode: full
+
+## build
+build_configure    exit 0
+build              exit 0
+unit_tests         exit 0
+unit tests: 25 run, 0 failed
+
+## published targets
+lemma  metric                                               published  observed  result
+A.1    size of R*                                                1832      1832  met
+A.1    maximum charge of a combined rule in R*                      8         8  met
+A.2    size of R*-D                                               671       671  met
+A.2    maximum charge of a combined rule in R*-D                    5         5  met
+A.3    bad cartwheels with tail ranges, centre degree 7          9366      9366  met
+A.3    bad cartwheels with tail ranges, centre degree 8           728       728  met
+A.3    wheels from enumPossibleBadWheels, centre degree 7        5439      5439  met
+A.3    wheels from enumPossibleBadWheels, centre degree 8        6790      6790  met
+A.3    wheels from enumPossibleBadWheels, centre degree 9        3285      3285  met
+A.3    wheels from enumPossibleBadWheels, centre degree 10        626       626  met
+A.3    wheels from enumPossibleBadWheels, centre degree 11          8         8  met
+
+## A.3 detail (no published target)
+centre degree  7: 5439 wheel files, 5439 enum_cartwheels jobs, 0 non-zero exits, 9366 bad cartwheels written
+centre degree  8: 6790 wheel files, 6790 enum_cartwheels jobs, 0 non-zero exits, 728 bad cartwheels written
+centre degree  9: 3285 wheel files, 3285 enum_cartwheels jobs, 0 non-zero exits, 0 bad cartwheels written
+centre degree 10: 626 wheel files, 626 enum_cartwheels jobs, 0 non-zero exits, 0 bad cartwheels written
+centre degree 11: 8 wheel files, 8 enum_cartwheels jobs, 0 non-zero exits, 0 bad cartwheels written
+
+## pass/fail checks (no numeric target; a failure aborts via assert)
+A.4    A4_check_deg8                    exit   0    5365 cartwheels checked  passed
+A.5    A5_check_7triangle               exit   0    1618 cartwheels checked  passed
+A.6    A6_check_deg7                    exit   0     298 cartwheels checked  passed
+
+## anti-vacuity controls (the same checks with no configurations; must fail)
+A.4    control_A4_no_configurations     exit 134  assertion fired: yes  as expected
+A.5    control_A5_no_configurations     exit 134  assertion fired: yes  as expected
+A.6    control_A6_no_configurations     exit 134  assertion fired: yes  as expected
+
+verdict: 11 of 11 published targets met; A.4-A.6 passed and their controls failed as they must
