@@ -15,5 +15,6 @@
 /.gitmodules          @glgmail
 /.gitattributes       @glgmail
 /THIRD_PARTY_NOTICES.md @glgmail
+/LICENSE                @glgmail
 /.github/             @glgmail
 /checks/repo_guardrails.py @glgmail

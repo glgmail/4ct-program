@@ -197,6 +197,26 @@ def check_lake_manifest() -> None:
            "" if not rcs else "found: " + ", ".join(rcs))
 
 
+def check_licence() -> None:
+    """The program's own work is Apache 2.0, and says what that does not cover.
+
+    A bare root LICENSE reads as covering the whole repository, including the
+    vendored corun1024 code, which is MIT with a CeCILL-B credit and is not
+    ours to relicense. The README's Licence section draws that line; if it
+    ever disappears, the LICENSE file starts claiming more than it should.
+    """
+    lic = ROOT / "LICENSE"
+    text = lic.read_text(encoding="utf-8") if lic.is_file() else ""
+    report("Apache License" in text[:400] and "Version 2.0" in text[:400],
+           "LICENSE is the Apache License, Version 2.0")
+    readme = ROOT / "README.md"
+    rtext = readme.read_text(encoding="utf-8") if readme.is_file() else ""
+    carved = "## Licence" in rtext and "lean/LICENSES/corun1024-4ct.txt" in rtext
+    report(carved, "README states the licence does not cover the vendored port",
+           "" if carved else "README.md needs a '## Licence' section naming "
+                             "lean/LICENSES/corun1024-4ct.txt")
+
+
 def check_vendored_port() -> None:
     """The base port is vendored under lean/, and must stay attributable."""
     lic = LEAN_ROOT / "LICENSES" / "corun1024-4ct.txt"
@@ -426,6 +446,7 @@ def main() -> int:
     check_toolchain()
     check_lakefile()
     check_lake_manifest()
+    check_licence()
     check_vendored_port()
     check_gitattributes()
     check_notices()

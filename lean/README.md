@@ -99,9 +99,25 @@ translated mechanically from Gonthier and Werner's Coq proof, which is under
 CeCILL-B. The CeCILL-B credit in `LICENSES/corun1024-4ct.txt` **must be
 preserved** in any redistribution, modified or not.
 
-This program's own code (FourCT, Statements) has no licence yet; see the
-repository root. Mathlib's header linter, which corun's
-`weak.linter.mathlibStandardSet` option switches on for the whole package,
-warns on FourCT files for lacking an "Released under Apache 2.0" header line.
-That warning stays until a licence is chosen, because adding the line would
-be choosing one.
+This program's own code (FourCT, Statements) is licensed under **Apache
+2.0**; see `LICENSE` at the repository root, whose README says precisely
+what that covers. The corun tree is not relicensed by it: MIT and the
+CeCILL-B credit still apply to everything that came from corun1024.
+
+Every FourCT and Statements file opens with this header, then its imports,
+then its `/-! ... -/` module doc-string:
+
+```
+/-
+Copyright (c) 2026 the 4ct-program contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: the 4ct-program contributors
+-/
+```
+
+Mathlib's header linter, which corun's `weak.linter.mathlibStandardSet`
+option switches on for the whole package, checks this under `lake build`
+and warns on a file that lacks it or puts the doc-string before the
+imports. A new file without the header builds, but with warnings — copy the
+block above. The linter does not run under a bare `lake env lean`, so check
+with `lake build FourCT`.

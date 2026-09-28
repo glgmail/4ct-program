@@ -34,6 +34,25 @@ Plan of record: the "Four Color Theorem: A Unified Research Program" doc.
   (MIT), corun1024/4ct (MIT, CeCILL-B credit), RBarish-UTokyo port
   (Apache 2.0), math-comp/fourcolor (CeCILL-B).
 
+## Licence
+
+This program's own work is licensed under the **Apache License, Version
+2.0** — see [`LICENSE`](LICENSE). Apache 2.0 matches Mathlib, which this
+program builds on and may one day contribute to.
+
+**That licence does not cover third-party material in this repository**,
+which keeps its own:
+
+| Path | Licence |
+| --- | --- |
+| `lean/FourColor.lean`, `lean/FourColor/`, `lean/scripts/`, `lean/tools/`, `lean/build.sh`, `lean/formalization.yaml`, `lean/UPSTREAM-README.md` | corun1024/4ct: **MIT**, with a **CeCILL-B credit** to Gonthier and Werner that must be preserved — [`lean/LICENSES/corun1024-4ct.txt`](lean/LICENSES/corun1024-4ct.txt) |
+| `third_party/` | each submodule under its own licence; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) |
+| `data/` | per file, as recorded in [`data/MANIFEST.csv`](data/MANIFEST.csv) |
+
+Build configuration under `lean/` (`lakefile.toml`, `lean-toolchain`,
+`lake-manifest.json`) was derived from corun1024's and merged with this
+program's; modifications are listed in `THIRD_PARTY_NOTICES.md`.
+
 ## Layout
 
 ```
