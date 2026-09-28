@@ -104,17 +104,20 @@ This program's own code (FourCT, Statements) is licensed under **Apache
 what that covers. The corun tree is not relicensed by it: MIT and the
 CeCILL-B credit still apply to everything that came from corun1024.
 
-Mathlib's header linter, which corun's `weak.linter.mathlibStandardSet`
-option switches on for the whole package, expects every FourCT and
-Statements file to open with a Mathlib-style header:
+Every FourCT and Statements file opens with this header, then its imports,
+then its `/-! ... -/` module doc-string:
 
 ```
 /-
-Copyright (c) 2026 <copyright holder>. All rights reserved.
+Copyright (c) 2026 the 4ct-program contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: <authors>
+Authors: the 4ct-program contributors
 -/
 ```
 
-Until those headers are added it warns on each such file. It is a warning,
-not an error, and does not fail the build.
+Mathlib's header linter, which corun's `weak.linter.mathlibStandardSet`
+option switches on for the whole package, checks this under `lake build`
+and warns on a file that lacks it or puts the doc-string before the
+imports. A new file without the header builds, but with warnings — copy the
+block above. The linter does not run under a bare `lake env lean`, so check
+with `lake build FourCT`.
