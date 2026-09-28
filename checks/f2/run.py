@@ -351,17 +351,23 @@ def run_special(out, args):
 
 
 def run_sample_bad(out, args):
-    """Time enumBadCartwheels (A.9.21) on a deterministic sample of C^d_0.
-    For the projection only; not a result."""
+    """Time enumBadCartwheels (A.9.21, a draft) on a deterministic sample of
+    C^d_0: the survivors of A.9.7 among a strided pool of --pool wheels
+    (all wheels if --pool 0), then a strided --count of those. For the
+    projection only; not a result."""
     from nl4ct import badcartwheels
     d = args.degree
     t = Timer()
     _init_worker(args.literal, args.order)
     tables, index = _W["tables"], _W["index"]
     arrays = cartwheel.enum_wheel_degrees(d)
+    n_all = len(arrays)
+    if args.pool:
+        arrays = arrays[::max(1, len(arrays) // args.pool)][:args.pool]
     res = cartwheel.enum_possible_bad_wheels(d, tables, index, arrays)
     c0 = [degs for degs, why in res if why is None]
     t_c0 = t()
+    print(f"pool {len(arrays)} of {n_all} wheels, {len(c0)} in C0", flush=True)
     step = max(1, len(c0) // args.count)
     sample = c0[::step][:args.count]
     rows = []
@@ -375,7 +381,9 @@ def run_sample_bad(out, args):
                      "C_i": stats.get("C_i sizes"), "failures": len(failures)})
         print(rows[-1], flush=True)
     tot = sum(r["seconds"] for r in rows)
-    out.record(f"sample-bad-{d}", {"C0": len(c0), "sampled": len(rows), "rows": rows},
+    out.record(f"sample-bad-{d}", {"wheels": n_all, "pool": len(arrays),
+                                   "C0_in_pool": len(c0), "sampled": len(rows),
+                                   "rows": rows},
                {"c0_s": t_c0, "sample_s": round(tot, 3),
                 "mean_s_per_wheel": round(tot / max(1, len(rows)), 3),
                 "peak_rss_mb": peak_rss_mb()})
@@ -390,6 +398,7 @@ def main(argv=None):
     ap.add_argument("--degree", type=int, default=7)
     ap.add_argument("--jobs", type=int, default=1)
     ap.add_argument("--count", type=int, default=20)
+    ap.add_argument("--pool", type=int, default=0)
     ap.add_argument("--literal", action="store_true")
     ap.add_argument("--order", choices=["given", "reversed"], default="given")
     ap.add_argument("--out", default=os.path.join(HERE, "out"))
