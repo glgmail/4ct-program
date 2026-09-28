@@ -107,6 +107,31 @@ class Output:
             fh.write(payload)
         return digest
 
+    def write_stream(self, name, lines):
+        """Like write, for an iterator of lines too large to hold: the
+        payload goes to a temporary file first, then the header with its
+        digest is written in front of it."""
+        h = hashlib.sha256()
+        tmp = os.path.join(self.dir, name + ".partial")
+        with open(tmp, "w", encoding="utf-8", newline="\n") as fh:
+            for ln in lines:
+                b = ln + "\n"
+                h.update(b.encode("utf-8"))
+                fh.write(b)
+        digest = h.hexdigest()
+        with open(os.path.join(self.dir, name), "w", encoding="utf-8",
+                  newline="\n") as fh:
+            fh.write("\n".join(self.head) + "\n")
+            fh.write(f"# payload sha256: {digest}\n")
+            with open(tmp, "r", encoding="utf-8") as src:
+                while True:
+                    block = src.read(1 << 20)
+                    if not block:
+                        break
+                    fh.write(block)
+        os.remove(tmp)
+        return digest
+
     def _dump(self, path, data):
         body = {k: v for k, v in data.items() if k != "header"}
         with open(path, "w", encoding="utf-8", newline="\n") as fh:
@@ -259,6 +284,16 @@ def run_combination(out, args, with_d):
     return combos, rules, index
 
 
+def _mp_context():
+    """forkserver where available (Linux), else the platform default. Workers
+    rebuild their state in _init_worker, so nothing depends on fork."""
+    import multiprocessing as mp
+    try:
+        return mp.get_context("forkserver")
+    except ValueError:
+        return mp.get_context()
+
+
 # worker state (also used in the main process when --jobs 1)
 _W = {}
 
@@ -284,32 +319,53 @@ def run_wheels(out, args):
     if args.sample:
         step = max(1, len(arrays) // args.sample)
         arrays = arrays[::step][:args.sample]
+    n_checked = len(arrays)
     t_setup = None
-    if args.jobs > 1:
-        import concurrent.futures as cf
-        chunks = [(d, arrays[i:i + 100]) for i in range(0, len(arrays), 100)]
-        with cf.ProcessPoolExecutor(args.jobs, initializer=_init_worker,
-                                    initargs=(args.literal, args.order)) as ex:
-            res = [r for part in ex.map(_work, chunks) for r in part]
-    else:
+    counts = {"reasons": {}, "survivors": 0}
+    pool = None
+
+    def results():
+        nonlocal pool
+        if args.jobs > 1:
+            import multiprocessing as mp
+            chunks = ((d, arrays[i:i + 200]) for i in range(0, len(arrays), 200))
+            pool = _mp_context().Pool(
+                args.jobs, initializer=_init_worker,
+                initargs=(args.literal, args.order))
+            for part in pool.imap(_work, chunks, chunksize=1):  # ordered
+                yield from part
+            pool.close()
+            pool.join()
+        else:
+            yield from cartwheel.enum_possible_bad_wheels(
+                d, _W["tables"], _W["index"], arrays)
+
+    def lines():
+        for degs, why in results():
+            k = why or "survives"
+            counts["reasons"][k] = counts["reasons"].get(k, 0) + 1
+            if why is None:
+                counts["survivors"] += 1
+            yield f"{d} " + " ".join(map(str, degs)) + f" {k}"
+
+    if args.jobs <= 1:
         _init_worker(args.literal, args.order)
         t_setup = t()
-        res = cartwheel.enum_possible_bad_wheels(d, _W["tables"], _W["index"], arrays)
-    elapsed = t()
-    survivors = [degs for degs, why in res if why is None]
-    reasons = {}
-    for _, why in res:
-        k = why or "survives"
-        reasons[k] = reasons.get(k, 0) + 1
     tag = f"wheels-{d}" + ("-sample" if args.sample else "") + variant(args)
-    lines = [f"{d} " + " ".join(map(str, degs)) + f" {why or 'survives'}"
-             for degs, why in res]
-    digest = out.write(tag + ".txt", lines)
+    try:
+        digest = out.write_stream(tag + ".txt", lines())
+    finally:
+        if pool is not None:
+            pool.terminate()
+    del arrays
+    elapsed = t()
+    reasons = counts["reasons"]
+    nsurv = counts["survivors"]
     result = {
         "centre_degree": d,
         "wheels_up_to_rotation": total_arrays,
-        "wheels_checked": len(res),
-        "survivors": len(survivors),
+        "wheels_checked": n_checked,
+        "survivors": nsurv,
         "pruned": {k: v for k, v in sorted(reasons.items())},
         "file": tag + ".txt",
         "payload_sha256": digest,
@@ -318,14 +374,14 @@ def run_wheels(out, args):
     }
     if not args.sample:
         result["target"] = TARGETS[f"wheels_{d}"]
-        result["matches_target"] = len(survivors) == TARGETS[f"wheels_{d}"]
+        result["matches_target"] = nsurv == TARGETS[f"wheels_{d}"]
     work = elapsed - (t_setup or 0)
-    timing = {"total_s": elapsed, "jobs": args.jobs, "wheels": len(res),
+    timing = {"total_s": elapsed, "jobs": args.jobs, "wheels": n_checked,
               "setup_s": t_setup,
-              "per_wheel_ms": round(1000 * work / max(1, len(res)), 3),
+              "per_wheel_ms_wall": round(1000 * work / max(1, n_checked), 3),
               "peak_rss_mb_main_process": peak_rss_mb()}
     out.record(tag, result, timing)
-    print(f"{tag}: {len(res)} of {total_arrays} wheels checked, {len(survivors)} survive"
+    print(f"{tag}: {n_checked} of {total_arrays} wheels checked, {nsurv} survive"
           + (f" (target {TARGETS[f'wheels_{d}']})" if not args.sample else "")
           + f"; {reasons}; {elapsed:.1f} s; payload {digest[:16]}", flush=True)
 
