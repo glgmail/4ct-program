@@ -40,10 +40,11 @@ from .pseudo import (G_INCLUDE, NIL, PC, disjoint_union, free_hom_configuration,
                      homomorphism)
 
 
-def delete_degree_from_k_to_9(cws, k):
-    """Algorithm A.10.1."""
+def delete_degree_from_k_to_9(cws, k, keep_index=None):
+    """Algorithm A.10.1. If keep_index is a list, the positions (in cws) of
+    the cartwheels kept are appended to it."""
     out = []
-    for cw in cws:
+    for pos, cw in enumerate(cws):
         lo = cw.pc.lo[:]
         hi = cw.pc.hi[:]
         remove = False
@@ -56,6 +57,8 @@ def delete_degree_from_k_to_9(cws, k):
         if not remove:
             p = cw.pc
             out.append(cw.with_pc(PC(p.nv, lo, hi, p.head, p.rev, p.succ, p.pred)))
+            if keep_index is not None:
+                keep_index.append(pos)
     return out
 
 
@@ -147,10 +150,15 @@ class Context:
     configuration indexes."""
 
     def __init__(self, call, ds_index, k_index, t73_index, x_pc, x_centre):
-        self.c9 = delete_degree_from_k_to_9(call, 9)             # A.10.4 line 1
-        c8 = delete_degree_from_k_to_9(self.c9, 8)                # A.10.9/10 line 2
+        i9, i8 = [], []
+        self.c9 = delete_degree_from_k_to_9(call, 9, i9)          # A.10.4 line 1
+        c8 = delete_degree_from_k_to_9(self.c9, 8, i8)            # A.10.9/10 line 2
         self.c8 = c8
-        self.c7 = [cw for cw in c8 if not blocked(cw.pc, 0, t73_index)]  # A.10.10 l.3
+        keep7 = [n for n, cw in enumerate(c8) if not blocked(cw.pc, 0, t73_index)]
+        self.c7 = [c8[n] for n in keep7]                          # A.10.10 line 3
+        # position in C_all (call.jsonl, 0-based) of each cartwheel of each set
+        self.call_index = {"A.4": i9, "A.5": [i9[n] for n in i8],
+                           "A.6": [i9[i8[n]] for n in keep7]}
         self.ds = ds_index
         self.k = k_index
         self.x_pc = x_pc

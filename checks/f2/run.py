@@ -620,7 +620,7 @@ def _a10_work(task):
     import signal
     import traceback
     from nl4ct import cartcombine
-    check, n, compare, cap = task
+    check, n, compare, cap = task  # compare: True/"both", False/"with", "without"
     out = {"check": check, "root": n}
 
     def one(prefilter):
@@ -635,7 +635,7 @@ def _a10_work(task):
         try:
             asserts, sig = cartcombine.run_root(_W["ctx"], check, n, prefilter, stats)
             r = {"seconds": round(time.perf_counter() - t1, 3), "stats": stats,
-                 "assertions": len(asserts),
+                 "assertions": len(asserts), "results": [list(a) for a in asserts],
                  "failed": [a for a in asserts if not a[1]], "signature": sig}
         except _RootTimeout:
             r = {"seconds": None, "timeout_s": cap, "stats": stats}
@@ -647,9 +647,11 @@ def _a10_work(task):
                 signal.signal(signal.SIGALRM, old)
         return r
 
-    out["prefilter"] = one(True)
-    if compare:
+    if compare != "without":
+        out["prefilter"] = one(True)
+    if compare in (True, "both", "without"):
         out["no_prefilter"] = one(False)
+    out["rss_mb"] = peak_rss_mb()
     return out
 
 
@@ -720,13 +722,178 @@ def run_a10_sample(out, args):
         print(check, s, flush=True)
 
 
+A10_CHECKS = ("A.4", "A.5", "A.6")
+
+
+def _read_jsonl(path):
+    out = []
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as fh:
+            for ln in fh:
+                if ln.strip() and not ln.startswith("#"):
+                    out.append(json.loads(ln))
+    return out
+
+
+def run_a10(out, args):
+    """Lemmas A.4-A.6 in full: every root of A.10.4, A.10.9 and A.10.10,
+    with the prefilter. Progress goes to a10-progress.jsonl (resumable);
+    the payload a10-roots.jsonl has one line per root, in (check, root)
+    order, without timings."""
+    from nl4ct import cartcombine
+    t = Timer()
+    _init_a10(out.dir)
+    ctx = _W["ctx"]
+    tasks = []
+    nroots = {}
+    for check in A10_CHECKS:
+        rs = cartcombine.roots(ctx, check)
+        nroots[check] = len(rs)
+        tasks.extend((check, n, "with", 0) for n in rs)
+    prog = os.path.join(out.dir, "a10-progress.jsonl")
+    done = {(r["check"], r["root"]): r for r in _read_jsonl(prog)}
+    todo = [x for x in tasks if (x[0], x[1]) not in done]
+    print(f"a10: roots {nroots}, {len(done)} done before, {len(todo)} to do",
+          flush=True)
+    if todo:
+        with open(prog, "a", encoding="utf-8", newline="\n") as fh:
+            def record(rec):
+                fh.write(json.dumps(rec, separators=(",", ":")) + "\n")
+                fh.flush()
+                done[(rec["check"], rec["root"])] = rec
+            if args.jobs > 1:
+                with _mp_context().Pool(args.jobs, initializer=_init_a10,
+                                        initargs=(out.dir,)) as pool:
+                    for k, rec in enumerate(pool.imap_unordered(_a10_work, todo,
+                                                                chunksize=1)):
+                        record(rec)
+                        if k % 100 == 0:
+                            print(f"  {len(done)}/{len(tasks)} at {t():.0f} s", flush=True)
+            else:
+                for task in todo:
+                    record(_a10_work(task))
+    lines = []
+    per = {c: {"roots": nroots[c], "assertions": 0, "roots_passed": 0,
+               "roots_failed": [], "exceptions": [], "timeouts": [],
+               "cpu_s": 0.0, "max_root_s": 0.0} for c in A10_CHECKS}
+    for check, n, _, _ in tasks:
+        r = done[(check, n)]
+        p = r["prefilter"]
+        s = per[check]
+        entry = {"check": check, "root": n,
+                 "call_index": ctx.call_index[check][n],
+                 "results": p.get("results"), "failed": p.get("failed"),
+                 "exception": p.get("exception"), "signature": p.get("signature")}
+        lines.append(json.dumps(entry, separators=(",", ":")))
+        if p.get("exception"):
+            s["exceptions"].append(n)
+        elif p.get("timeout_s"):
+            s["timeouts"].append(n)
+        else:
+            s["assertions"] += p["assertions"]
+            if p["failed"]:
+                s["roots_failed"].append({"root": n, "failed": p["failed"]})
+            else:
+                s["roots_passed"] += 1
+            s["cpu_s"] += p["seconds"]
+            s["max_root_s"] = max(s["max_root_s"], p["seconds"])
+    digest = out.write("a10-roots.jsonl", lines)
+    result = {"file": "a10-roots.jsonl", "payload_sha256": digest, "per_check": {}}
+    timing = {"wall_s": t(), "jobs": args.jobs, "per_check": {}}
+    for c, s in per.items():
+        verdict = ("no roots" if s["roots"] == 0 else
+                   "pass" if s["roots_passed"] == s["roots"] else "FAIL")
+        result["per_check"][c] = {
+            "lemma": {"A.4": "Lemma 8.3", "A.5": "Lemma 8.5", "A.6": "Lemma 8.6"}[c],
+            "roots": s["roots"], "roots_passed": s["roots_passed"],
+            "assertions_checked": s["assertions"],
+            "roots_failed": s["roots_failed"], "exceptions": s["exceptions"],
+            "timeouts": s["timeouts"], "verdict": verdict}
+        timing["per_check"][c] = {"cpu_s": round(s["cpu_s"], 1),
+                                  "max_root_s": s["max_root_s"]}
+    timing["max_worker_rss_mb"] = max((r.get("rss_mb") or 0) for r in done.values())
+    out.record("a10", result, timing)
+    for c, v in result["per_check"].items():
+        print(f"{c} ({v['lemma']}): {v['verdict']}: {v['roots_passed']}/{v['roots']} "
+              f"roots pass, {v['assertions_checked']} assertions, "
+              f"{len(v['roots_failed'])} failed, {len(v['exceptions'])} exceptions, "
+              f"{len(v['timeouts'])} timeouts", flush=True)
+    print(f"a10-roots.jsonl payload {digest[:16]}; {t():.0f} s", flush=True)
+
+
+def run_a10_verify(out, args):
+    """Rerun roots of the full A.10 run without the prefilter and require
+    identical results. Roots: the --heaviest slowest A.4 roots of the full
+    run, plus --count strided roots per check, skipping roots already
+    compared by a10-sample --compare."""
+    t = Timer()
+    full = {(r["check"], r["root"]): r
+            for r in _read_jsonl(os.path.join(out.dir, "a10-progress.jsonl"))}
+    before = set()
+    for key in ("a10-sample-compare",):
+        for r in out.summary.get(key, {}).get("rows", []):
+            before.add((r["check"], r["root"]))
+    pick = []
+    a4 = sorted((k for k in full if k[0] == "A.4" and k not in before),
+                key=lambda k: -(full[k]["prefilter"].get("seconds") or 0))
+    pick.extend(a4[:args.heaviest])
+    for check in A10_CHECKS:
+        rs = sorted(k for k in full if k[0] == check and k not in before
+                    and k not in pick)
+        step = max(1, len(rs) // max(1, args.count))
+        pick.extend(rs[::step][:args.count])
+    tasks = [(c, n, "without", 0) for c, n in pick]
+    print(f"a10-verify: {len(tasks)} roots ({args.heaviest} heaviest A.4)", flush=True)
+    rows = []
+    with _mp_context().Pool(args.jobs, initializer=_init_a10,
+                            initargs=(out.dir,)) as pool:
+        for rec in pool.imap_unordered(_a10_work, tasks, chunksize=1):
+            f = full[(rec["check"], rec["root"])]["prefilter"]
+            g = rec["no_prefilter"]
+            same = (f.get("signature") == g.get("signature")
+                    and f.get("results") == g.get("results")
+                    and f.get("failed") == g.get("failed"))
+            rows.append({"check": rec["check"], "root": rec["root"],
+                         "identical": same,
+                         "seconds_with": f.get("seconds"),
+                         "seconds_without": g.get("seconds"),
+                         "exception": g.get("exception")})
+            print(json.dumps(rows[-1]), flush=True)
+    rows.sort(key=lambda r: (r["check"], r["root"]))
+    res = {"roots": len(rows), "identical": sum(r["identical"] for r in rows),
+           "heaviest_a4": args.heaviest, "rows": rows,
+           "per_check": {c: {"roots": sum(1 for r in rows if r["check"] == c),
+                             "identical": sum(1 for r in rows
+                                              if r["check"] == c and r["identical"])}
+                         for c in A10_CHECKS}}
+    out.record("a10-verify", res, {"wall_s": t(), "jobs": args.jobs,
+                                   "cpu_s_without": round(sum(r["seconds_without"] or 0
+                                                              for r in rows), 1)})
+    print(f"a10-verify: {res['identical']}/{res['roots']} identical; {res['per_check']}",
+          flush=True)
+
+
+def run_all(out, args):
+    """The whole pipeline, one step after another, into one --out directory."""
+    t = Timer()
+    run_combination(out, args, False)
+    run_combination(out, args, True)
+    run_special(out, args)
+    for d in (7, 8, 9, 10, 11):
+        args.degree = d
+        run_wheels(out, args)
+    run_bad(out, args)
+    run_a10(out, args)
+    print(f"all: {t():.0f} s", flush=True)
+
+
 def main(argv=None):
     argv = sys.argv if argv is None else argv
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("what", choices=["a1", "a2", "wheels", "special", "phase1",
                                      "sample-wheels", "sample-bad", "bad",
-                                     "a10-sample"])
+                                     "a10-sample", "a10", "a10-verify", "all"])
     ap.add_argument("--degree", type=int, default=7)
     ap.add_argument("--jobs", type=int, default=1)
     ap.add_argument("--count", type=int, default=20)
@@ -735,6 +902,7 @@ def main(argv=None):
     ap.add_argument("--checks", default="A.4,A.5,A.6")
     ap.add_argument("--compare", action="store_true")
     ap.add_argument("--cap", type=int, default=1800)
+    ap.add_argument("--heaviest", type=int, default=20)
     ap.add_argument("--literal", action="store_true")
     ap.add_argument("--order", choices=["given", "reversed"], default="given")
     ap.add_argument("--out", default=os.path.join(HERE, "out"))
@@ -758,6 +926,12 @@ def main(argv=None):
         run_bad(out, args)
     if args.what == "a10-sample":
         run_a10_sample(out, args)
+    if args.what == "a10":
+        run_a10(out, args)
+    if args.what == "a10-verify":
+        run_a10_verify(out, args)
+    if args.what == "all":
+        run_all(out, args)
 
 
 if __name__ == "__main__":
