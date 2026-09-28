@@ -1,0 +1,36 @@
+# F2 independent checks (checks/f2/run.py)
+# paper: arXiv:2603.24880v2 (7 May 2026)
+# repository commit: 52e38a218f91fab3a9968729b95e2380e59ddbb1
+# python: 3.14.4 (CPython)
+# host: Legion
+# platform: Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43
+# command: checks/f2/run.py special --out /home/claude/f2-final
+# payload sha256: 836ae2933514c0080483a9ef19b3ecc17c03a093febf441ba5156c6afb35591f
+X	ok	inner vertices have exactly their degree, boundary vertices fewer neighbours than their degree	[]
+X	ok	one incidence list per vertex (M6)	[]
+X	ok	rotations are consistently oriented: every inner angle closes a triangle (M5)	[]
+X	ok	inner faces are triangles on three distinct vertices	18
+X	ok	V - E + F = 1 (a disc)	"V=17 E=34 F=18"
+X	ok	the boundary is a single cycle through every boundary vertex	["A1", "A2", "TR", "RS", "RR", "RB", "R7", "B2", "B1", "L7", "LB", "LL", "LS", "TL"]
+X	ok	no degree issues (resolveDegreeIssues returns it unchanged)	1
+X	ok	degree multiset	{"5": 12, "7": 2, "8": 3}
+X	ok	centre C is inner, degree 8	8
+X	ok	not blocked by Ds with this centre (X must not contain a reducible configuration, or Lemma 8.3(iii) would not need it)	false
+T73	ok	inner vertices have exactly their degree, boundary vertices fewer neighbours than their degree	[]
+T73	ok	one incidence list per vertex (M6)	[]
+T73	ok	rotations are consistently oriented: every inner angle closes a triangle (M5)	[]
+T73	ok	inner faces are triangles on three distinct vertices	1
+T73	ok	V - E + F = 1 (a disc)	"V=3 E=3 F=1"
+T73	ok	the boundary is a single cycle through every boundary vertex	["a", "b", "c"]
+T73	ok	no degree issues (resolveDegreeIssues returns it unchanged)	1
+T73	ok	degree multiset	{"7": 3}
+Xw	ok	inner vertices have exactly their degree, boundary vertices fewer neighbours than their degree	[]
+Xw	ok	one incidence list per vertex (M6)	[]
+Xw	ok	rotations are consistently oriented: every inner angle closes a triangle (M5)	[]
+Xw	ok	inner faces are triangles on three distinct vertices	19
+Xw	ok	V - E + F = 1 (a disc)	"V=18 E=36 F=19"
+Xw	ok	the boundary is a single cycle through every boundary vertex	["A1", "A2", "TR", "RS", "w", "RR", "RB", "R7", "B2", "B1", "L7", "LB", "LL", "LS", "TL"]
+Xw	ok	no degree issues (resolveDegreeIssues returns it unchanged)	1
+Xw	ok	degree multiset	{"5": 13, "7": 2, "8": 3}
+Xw	ok	centre C is inner, degree 8	8
+Xw	ok	blocked by Ds (Figure 13: contains a reducible configuration of D)	{"configuration": "D1774", "mirror": false, "cut_vertex_extension": -1, "degrees": [5, 5, 5, 5, 5, 5, 7, 8]}

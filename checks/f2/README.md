@@ -18,16 +18,18 @@ been run on samples, for timing. Treat them as drafts.
 ## Phase 1 results
 
 These were run on the self-hosted machine (WSL2 Ubuntu, 20 CPUs, 25 GB,
-Python 3.14.4), one process each, measured with `/usr/bin/time -v`. The
-full record is in `results/phase1/`.
+Python 3.14.4), one process each, measured with `/usr/bin/time -v`, at
+commit 52e38a2. The full record is in `results/phase1/`. The A.2 and
+wheel times include reading the 8,200 configuration files (about 0.4 s)
+and, for the wheels, recomputing R*-D (about 1.5 s).
 
 | Check | Observed | Published target | Wall time | Peak RSS |
 | --- | --- | --- | --- | --- |
-| A.1: size of R* | **1832** | 1832 | 2.2 s | 31 MB |
+| A.1: size of R* | **1832** | 1832 | 2.1 s | 33 MB |
 | A.1: max charge in R* | **8** | 8 | (same run) | |
-| A.2: size of R*-D | **671** | 671 | 1.6 s | 66 MB |
+| A.2: size of R*-D | **671** | 671 | 1.5 s | 67 MB |
 | A.2: max charge in R*-D | **5** | 5 | (same run) | |
-| A.9.7, centre degree 7: wheels kept | **5439** | 5439 | 16.9 s | 68 MB |
+| A.9.7, centre degree 7: wheels kept | **5439** | 5439 | 16.6 s | 70 MB |
 
 Details:
 
@@ -59,7 +61,7 @@ Figures 7 and 8 is by rule sets and counts only.
 | Variation | Effect |
 | --- | --- |
 | `--order reversed`: rules added to A.8.2 in reverse order | A.1 and A.2 give byte-identical payloads. Each payload is the sorted list of canonical forms of the combined rules, so the *sets* of combined rules are identical up to isomorphism, not just their sizes. |
-| `--literal`: no speed-ups (A.6.6 tried over all 19,754 configurations, no prefilters, no early exit) | A.2 and the degree-7 wheels give byte-identical payloads (A.2: 13.6 s; wheels: 87 s on 16 processes). |
+| `--literal`: no speed-ups (A.6.6 tried over all 19,754 configurations, no prefilters, no early exit) | A.2 and the degree-7 wheels give byte-identical payloads (A.2: 12.9 s; wheels: 84 s on 16 processes). |
 | Windows, Python 3.12 vs WSL, Python 3.14 | Identical payload digests for A.1, A.2 and the degree-7 wheels. |
 | `ginclude` read the other way round (a scratch experiment, not in the code; see ambiguity 1) | A.2 gives 889 combinations with max charge 6, and 5439 becomes 6174. The targets therefore discriminate between the two readings, and only the one we use reproduces them. |
 
