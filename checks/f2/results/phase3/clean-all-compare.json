@@ -1,0 +1,70 @@
+{
+ "about": "run.py all --jobs 17 in a fresh clone (/home/claude/f2-clean) against the step-by-step runs in /home/claude/f2-final: payload sha256 per output.",
+ "all_identical": true,
+ "clean_header": [
+  "# F2 independent checks (checks/f2/run.py)",
+  "# paper: arXiv:2603.24880v2 (7 May 2026)",
+  "# repository commit: 7bf9ca7ccfb172f8bd69342f50c0b46d2628b4eb",
+  "# python: 3.14.4 (CPython)",
+  "# host: Legion",
+  "# platform: Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "# command: checks/f2/run.py all --jobs 17 --out /home/claude/f2-clean-out"
+ ],
+ "payloads": {
+  "a1": {
+   "clean_all": "a91da734c4df8ca68b73400a323e35e4aea3b727dcbce1a462d99285c86b48a3",
+   "identical": true,
+   "step_by_step": "a91da734c4df8ca68b73400a323e35e4aea3b727dcbce1a462d99285c86b48a3"
+  },
+  "a10-roots.jsonl": {
+   "clean_all": "aeafff71cf8073c4d7869eb7ff68b9979678c9df49720f57281ce7e3c312adf3",
+   "identical": true,
+   "step_by_step": "aeafff71cf8073c4d7869eb7ff68b9979678c9df49720f57281ce7e3c312adf3"
+  },
+  "a2": {
+   "clean_all": "937b336e8e038ed6042ee619d6f3ef224ff6c754384e3c837fa2d05a93f5c969",
+   "identical": true,
+   "step_by_step": "937b336e8e038ed6042ee619d6f3ef224ff6c754384e3c837fa2d05a93f5c969"
+  },
+  "bad-wheels.jsonl": {
+   "clean_all": "a6575e61b007639ac6a47a24331e532ae759000ca31a1f3d8fb6a23b0bf3d2e8",
+   "identical": true,
+   "step_by_step": "a6575e61b007639ac6a47a24331e532ae759000ca31a1f3d8fb6a23b0bf3d2e8"
+  },
+  "call.jsonl": {
+   "clean_all": "3014ca8337ffa362a530e7af0e00fde8a69dc541a896b5ca7d541c50a03438cc",
+   "identical": true,
+   "step_by_step": "3014ca8337ffa362a530e7af0e00fde8a69dc541a896b5ca7d541c50a03438cc"
+  },
+  "special": {
+   "clean_all": "836ae2933514c0080483a9ef19b3ecc17c03a093febf441ba5156c6afb35591f",
+   "identical": true,
+   "step_by_step": "836ae2933514c0080483a9ef19b3ecc17c03a093febf441ba5156c6afb35591f"
+  },
+  "wheels-10": {
+   "clean_all": "5af13f87b00a4b0b2d7264be99723f8d6c03bb22adc6c21e0865c96bb05cba62",
+   "identical": true,
+   "step_by_step": "5af13f87b00a4b0b2d7264be99723f8d6c03bb22adc6c21e0865c96bb05cba62"
+  },
+  "wheels-11": {
+   "clean_all": "9826b7c12f3c0bd635900e04c190d18bacd9a147df4eec5622570f145b00ba48",
+   "identical": true,
+   "step_by_step": "9826b7c12f3c0bd635900e04c190d18bacd9a147df4eec5622570f145b00ba48"
+  },
+  "wheels-7": {
+   "clean_all": "cf0f6e83c813112cfa0f1146452dcbc269d0caad45dd45d3adce63a8bb994740",
+   "identical": true,
+   "step_by_step": "cf0f6e83c813112cfa0f1146452dcbc269d0caad45dd45d3adce63a8bb994740"
+  },
+  "wheels-8": {
+   "clean_all": "de77d2528bcac145340f47eb4be202939b4381e0ae6c238bd08688b2d52e483e",
+   "identical": true,
+   "step_by_step": "de77d2528bcac145340f47eb4be202939b4381e0ae6c238bd08688b2d52e483e"
+  },
+  "wheels-9": {
+   "clean_all": "30402cb05cf9a22d9b2d16059222c5e8c646c42a85dbe9f21152141bfb77892e",
+   "identical": true,
+   "step_by_step": "30402cb05cf9a22d9b2d16059222c5e8c646c42a85dbe9f21152141bfb77892e"
+  }
+ }
+}

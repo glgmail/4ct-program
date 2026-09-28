@@ -219,9 +219,23 @@ python3 checks/f2/run.py all --jobs 17 --out DIR
 
 It runs A.1, A.2, the X/T73 checks, the wheels for centre degrees 7-11,
 the bad-cartwheel enumeration and Lemmas A.4-A.6, one after another, into
-DIR. On the self-hosted machine with 17 processes it takes about an hour:
-roughly 18 minutes for the wheels, 32 for the bad cartwheels and 5 for
-A.10. It needs about 2.6 GB at its peak. Results are in `DIR/summary.json`.
+DIR. Results are in `DIR/summary.json`.
+
+**Verified from a clean checkout.** On the self-hosted machine we made a
+fresh clone at commit 7bf9ca7 (after `git lfs pull`, which took about 3
+min) and ran `run.py all --jobs 17`.
+
+- **Time:** 54 min of wall time, broken down as follows:
+  - A.1, A.2 and the X checks: under 4 s;
+  - wheels for degrees 7-11: 5 s, 10 s, 34 s, 2.8 min and 14.0 min;
+  - bad cartwheels: 32.0 min;
+  - A.10: 4.5 min.
+- **Memory:** the session peak was 2.6 GB.
+- **Output:** all eleven payloads were byte-identical to the step-by-step
+  runs. Those are A.1, A.2, the X checks, the five wheel files, C_all, the
+  per-wheel bad-cartwheel record and the A.10 per-root record. See
+  `results/phase3/clean-all-compare.json`.
+
 The steps can also be run one by one:
 
 ```bash
@@ -334,7 +348,7 @@ of the code.
 | `data/special-configurations.json` | our transcription of X (Figure 12), X+w (Figure 13) and T73 |
 | `results/phase1/` | the record of the phase-1 run on the self-hosted machine: `summary.json` (results and payload digests), `timings.json`, `special.txt`, `samples.json` (projection samples) and the `/usr/bin/time -v` outputs. The payload files themselves are not committed; `run.py` rebuilds them in seconds, and their sha256 is in `summary.json`. |
 | `results/phase2/` | the record of phase 2 (see "Phase 2 results"). The full outputs are not committed; they stay in WSL at `/home/claude/f2-final/`, with their digests in `summary.json` (payloads) and `files.sha256` (whole files). |
-| `results/phase3/` | the record of phase 3: `summary.json` (including the per-lemma verdicts under `a10` and the equivalence rerun under `a10-verify`), `timings.json`, `steps.txt`, `time-a10*.txt`, and `files.sha256` for every full output, `a10-roots.jsonl` included. |
+| `results/phase3/` | the record of phase 3: `summary.json` (including the per-lemma verdicts under `a10` and the equivalence rerun under `a10-verify`), `timings.json`, `steps.txt`, `time-a10*.txt`, and `files.sha256` for every full output, `a10-roots.jsonl` included. It also holds `clean-all-compare.json` and `time-clean-all.txt`, from the one-command run in a fresh clone. |
 
 ## Representation choices (where the paper leaves one open)
 
