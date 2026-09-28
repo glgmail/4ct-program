@@ -81,7 +81,14 @@ REQUIRED_NOTICES = [
     "CeCILL-B",
     "Apache License, Version 2.0",
     "MIT License",
+    "plantri",
 ]
+
+# plantri has no git repository, so it is vendored unmodified from its
+# release tarball rather than pinned as a submodule. PROVENANCE.md lists
+# every file with its sha256.
+PLANTRI_DIR = ROOT / "third_party" / "plantri"
+PLANTRI_ROW = re.compile(r"^\| `([^`]+)` \| (\d+) \| `([0-9a-f]{64})` \|$", re.MULTILINE)
 
 LFS_POINTER_OID = re.compile(rb"^oid sha256:([0-9a-f]{64})$", re.MULTILINE)
 
@@ -332,6 +339,37 @@ def check_submodules() -> None:
            "" if not bad else "found: " + ", ".join(bad))
 
 
+def check_vendored_plantri() -> None:
+    """third_party/plantri is the release tarball, unmodified.
+
+    Every file must match the digest PROVENANCE.md records for it, and there
+    must be no file that PROVENANCE.md does not list. The licence must be
+    among them.
+    """
+    prov = PLANTRI_DIR / "PROVENANCE.md"
+    if not report(prov.is_file(), "third_party/plantri/PROVENANCE.md exists"):
+        return
+    rows = {m.group(1): (int(m.group(2)), m.group(3))
+            for m in PLANTRI_ROW.finditer(prov.read_text(encoding="utf-8"))}
+    on_disk = sorted(p.name for p in PLANTRI_DIR.iterdir()
+                     if p.is_file() and p.name != "PROVENANCE.md")
+    bad = []
+    for name in sorted(set(rows) | set(on_disk)):
+        path = PLANTRI_DIR / name
+        if name not in rows:
+            bad.append(f"{name}: not in PROVENANCE.md")
+        elif not path.is_file():
+            bad.append(f"{name}: missing")
+        else:
+            data = path.read_bytes()
+            if (len(data), hashlib.sha256(data).hexdigest()) != rows[name]:
+                bad.append(f"{name}: differs from the release tarball")
+    report(not bad and "LICENSE-2.0.txt" in rows,
+           f"third_party/plantri matches its release tarball ({len(rows)} files)",
+           "; ".join(bad[:5]) if bad else ("" if "LICENSE-2.0.txt" in rows
+                                           else "LICENSE-2.0.txt is not listed"))
+
+
 def check_manifest() -> None:
     rows, fieldnames = read_manifest()
     if fieldnames is None:
@@ -500,6 +538,7 @@ def main() -> int:
     check_gitattributes()
     check_notices()
     check_submodules()
+    check_vendored_plantri()
     check_manifest()
     check_config_index()
     check_statements_signoff_note()
