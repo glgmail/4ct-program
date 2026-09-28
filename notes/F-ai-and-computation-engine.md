@@ -10,8 +10,8 @@ clean checkout. Leads, partial arguments and AI-written summaries go under
 
 | Date | Result | Evidence | Tier | PR |
 | --- | --- | --- | --- | --- |
-| 2026-09-27 | **No two of the 8,202 configurations in D are isomorphic, even allowing reflection.** 7,949 are chiral and 253 are not, and no chiral configuration's mirror image is in D: the set lists each configuration once up to reflection. | `search/index/build.py` (canonical codes), confirmed by `search/index/crosscheck.py`: all 8,202 Weisfeiler–Lehman hashes of the free completions are distinct, so no pair is isomorphic; chirality recomputed by oriented isomorphism against each mirror image | F3 | PR_NUMBER |
-| 2026-09-27 | **The configuration index rebuilds byte-identically.** `search/index/configurations.csv`, 8,202 rows, sha256 `7e55964e402792b4e597b54e28b7daf9b23cdedca99aa0861f01be2ebe9b4e89`. | `python3 search/index/build.py --check`, run on Windows and on Linux | F3 | PR_NUMBER |
+| 2026-09-27 | **No two of the 8,202 configurations in D are isomorphic, even allowing reflection.** 7,949 are chiral and 253 are not, and no chiral configuration's mirror image is in D: the set lists each configuration once up to reflection. | `search/index/build.py` (canonical codes), confirmed by `search/index/crosscheck.py`: all 8,202 Weisfeiler–Lehman hashes of the free completions are distinct, so no pair is isomorphic; chirality recomputed by oriented isomorphism against each mirror image | F3 | #29 |
+| 2026-09-27 | **The configuration index rebuilds byte-identically.** `search/index/configurations.csv`, 8,202 rows, sha256 `7e55964e402792b4e597b54e28b7daf9b23cdedca99aa0861f01be2ebe9b4e89`. | `python3 search/index/build.py --check`, run on Windows and on Linux | F3 | #29 |
 
 ## The 8,202 count (F3)
 
