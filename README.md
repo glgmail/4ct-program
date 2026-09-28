@@ -63,6 +63,7 @@ lean/            the Lake package root; see lean/README.md
 checks/          our own re-implementations of the near-linear proof checks
 data/            configurations, rules, polynomials, foam ranks (Git LFS)
 search/          unavoidable-set search, learned discharging, conjecture mining
+  index/         queryable index of the 8,202 reducible configurations
 notes/           per-workstream results log
 third_party/     git submodules pinned to commits; read-only upstreams
 ```

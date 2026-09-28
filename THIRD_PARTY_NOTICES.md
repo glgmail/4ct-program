@@ -57,7 +57,9 @@ SOFTWARE.
 These accompany "The Four Color Theorem with Linearly Many Reducible
 Configurations and Near-Linear Time Coloring". Data imported from
 `reducible-configurations` and `discharging-rules` into `data/` keeps its row
-in `data/MANIFEST.csv`, naming this source and this license.
+in `data/MANIFEST.csv`, naming this source and this license. The import (task
+F3) is in `data/near-linear-4ct/`, unchanged, with each upstream `LICENSE`
+file kept beside its data.
 
 ---
 
