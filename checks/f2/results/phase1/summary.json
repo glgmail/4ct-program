@@ -1,0 +1,414 @@
+{
+ "a1": {
+  "blocking_checks": 0,
+  "calls": 93021,
+  "charge_histogram": {
+   "0": 1,
+   "1": 83,
+   "2": 325,
+   "3": 546,
+   "4": 505,
+   "5": 276,
+   "6": 83,
+   "7": 12,
+   "8": 1
+  },
+  "combinations_at_max_charge": 1,
+  "file": "a1-rstar.jsonl",
+  "literal": false,
+  "matches_target": true,
+  "max_charge": 8,
+  "order": "given",
+  "payload_sha256": "a91da734c4df8ca68b73400a323e35e4aea3b727dcbce1a462d99285c86b48a3",
+  "rules": 84,
+  "rules_in_combinations_at_max": [
+   [
+    "rule001",
+    "rule002_1",
+    "rule002_2",
+    "rule003_1",
+    "rule003_2",
+    "rule004_1",
+    "rule004_2"
+   ]
+  ],
+  "rules_not_giving_one_combination_alone": [],
+  "size_including_R0": 1832,
+  "target_max_charge": 8,
+  "target_size": 1832
+ },
+ "a1-reversed": {
+  "blocking_checks": 0,
+  "calls": 25484,
+  "charge_histogram": {
+   "0": 1,
+   "1": 83,
+   "2": 325,
+   "3": 546,
+   "4": 505,
+   "5": 276,
+   "6": 83,
+   "7": 12,
+   "8": 1
+  },
+  "combinations_at_max_charge": 1,
+  "file": "a1-reversed-rstar.jsonl",
+  "literal": false,
+  "matches_target": true,
+  "max_charge": 8,
+  "order": "reversed",
+  "payload_sha256": "a91da734c4df8ca68b73400a323e35e4aea3b727dcbce1a462d99285c86b48a3",
+  "rules": 84,
+  "rules_in_combinations_at_max": [
+   [
+    "rule001",
+    "rule002_1",
+    "rule002_2",
+    "rule003_1",
+    "rule003_2",
+    "rule004_1",
+    "rule004_2"
+   ]
+  ],
+  "rules_not_giving_one_combination_alone": [],
+  "size_including_R0": 1832,
+  "target_max_charge": 8,
+  "target_size": 1832
+ },
+ "a2": {
+  "Ds": 19754,
+  "Ds_entries_from_cut_vertex_extensions": 6708,
+  "blocking_checks": 1389,
+  "calls": 35296,
+  "charge_histogram": {
+   "0": 1,
+   "1": 83,
+   "2": 227,
+   "3": 248,
+   "4": 102,
+   "5": 10
+  },
+  "combinations_at_max_charge": 10,
+  "file": "a2-rstar-d.jsonl",
+  "literal": false,
+  "matches_target": true,
+  "max_charge": 5,
+  "order": "given",
+  "payload_sha256": "937b336e8e038ed6042ee619d6f3ef224ff6c754384e3c837fa2d05a93f5c969",
+  "rules": 84,
+  "rules_in_combinations_at_max": [
+   [
+    "rule008_2",
+    "rule009_2",
+    "rule011_1",
+    "rule023_2",
+    "rule027_1"
+   ],
+   [
+    "rule008_1",
+    "rule009_1",
+    "rule011_2",
+    "rule023_1",
+    "rule027_2"
+   ],
+   [
+    "rule008_2",
+    "rule009_1",
+    "rule010_1",
+    "rule012_1",
+    "rule018_1"
+   ],
+   [
+    "rule002_1",
+    "rule002_2",
+    "rule003_2",
+    "rule004_1",
+    "rule006_1"
+   ],
+   [
+    "rule008_1",
+    "rule009_2",
+    "rule010_2",
+    "rule012_2",
+    "rule018_2"
+   ],
+   [
+    "rule002_1",
+    "rule002_2",
+    "rule003_1",
+    "rule004_2",
+    "rule006_2"
+   ],
+   [
+    "rule002_1",
+    "rule002_2",
+    "rule003_1",
+    "rule003_2",
+    "rule004_2"
+   ],
+   [
+    "rule002_1",
+    "rule002_2",
+    "rule003_1",
+    "rule003_2",
+    "rule004_1"
+   ],
+   [
+    "rule001",
+    "rule002_1",
+    "rule002_2",
+    "rule003_2"
+   ],
+   [
+    "rule001",
+    "rule002_1",
+    "rule002_2",
+    "rule003_1"
+   ]
+  ],
+  "rules_not_giving_one_combination_alone": [],
+  "size_including_R0": 671,
+  "target_max_charge": 5,
+  "target_size": 671
+ },
+ "a2-literal": {
+  "Ds": 19754,
+  "Ds_entries_from_cut_vertex_extensions": 6708,
+  "blocking_checks": 1389,
+  "calls": 35296,
+  "charge_histogram": {
+   "0": 1,
+   "1": 83,
+   "2": 227,
+   "3": 248,
+   "4": 102,
+   "5": 10
+  },
+  "combinations_at_max_charge": 10,
+  "file": "a2-literal-rstar-d.jsonl",
+  "literal": true,
+  "matches_target": true,
+  "max_charge": 5,
+  "order": "given",
+  "payload_sha256": "937b336e8e038ed6042ee619d6f3ef224ff6c754384e3c837fa2d05a93f5c969",
+  "rules": 84,
+  "rules_in_combinations_at_max": [
+   [
+    "rule008_2",
+    "rule009_2",
+    "rule011_1",
+    "rule023_2",
+    "rule027_1"
+   ],
+   [
+    "rule008_1",
+    "rule009_1",
+    "rule011_2",
+    "rule023_1",
+    "rule027_2"
+   ],
+   [
+    "rule008_2",
+    "rule009_1",
+    "rule010_1",
+    "rule012_1",
+    "rule018_1"
+   ],
+   [
+    "rule002_1",
+    "rule002_2",
+    "rule003_2",
+    "rule004_1",
+    "rule006_1"
+   ],
+   [
+    "rule008_1",
+    "rule009_2",
+    "rule010_2",
+    "rule012_2",
+    "rule018_2"
+   ],
+   [
+    "rule002_1",
+    "rule002_2",
+    "rule003_1",
+    "rule004_2",
+    "rule006_2"
+   ],
+   [
+    "rule002_1",
+    "rule002_2",
+    "rule003_1",
+    "rule003_2",
+    "rule004_2"
+   ],
+   [
+    "rule002_1",
+    "rule002_2",
+    "rule003_1",
+    "rule003_2",
+    "rule004_1"
+   ],
+   [
+    "rule001",
+    "rule002_1",
+    "rule002_2",
+    "rule003_2"
+   ],
+   [
+    "rule001",
+    "rule002_1",
+    "rule002_2",
+    "rule003_1"
+   ]
+  ],
+  "rules_not_giving_one_combination_alone": [],
+  "size_including_R0": 671,
+  "target_max_charge": 5,
+  "target_size": 671
+ },
+ "a2-reversed": {
+  "Ds": 19754,
+  "Ds_entries_from_cut_vertex_extensions": 6708,
+  "blocking_checks": 950,
+  "calls": 10466,
+  "charge_histogram": {
+   "0": 1,
+   "1": 83,
+   "2": 227,
+   "3": 248,
+   "4": 102,
+   "5": 10
+  },
+  "combinations_at_max_charge": 10,
+  "file": "a2-reversed-rstar-d.jsonl",
+  "literal": false,
+  "matches_target": true,
+  "max_charge": 5,
+  "order": "reversed",
+  "payload_sha256": "937b336e8e038ed6042ee619d6f3ef224ff6c754384e3c837fa2d05a93f5c969",
+  "rules": 84,
+  "rules_in_combinations_at_max": [
+   [
+    "rule008_2",
+    "rule009_2",
+    "rule011_1",
+    "rule023_2",
+    "rule027_1"
+   ],
+   [
+    "rule008_1",
+    "rule009_1",
+    "rule011_2",
+    "rule023_1",
+    "rule027_2"
+   ],
+   [
+    "rule008_2",
+    "rule009_1",
+    "rule010_1",
+    "rule012_1",
+    "rule018_1"
+   ],
+   [
+    "rule002_1",
+    "rule002_2",
+    "rule003_2",
+    "rule004_1",
+    "rule006_1"
+   ],
+   [
+    "rule008_1",
+    "rule009_2",
+    "rule010_2",
+    "rule012_2",
+    "rule018_2"
+   ],
+   [
+    "rule002_1",
+    "rule002_2",
+    "rule003_1",
+    "rule004_2",
+    "rule006_2"
+   ],
+   [
+    "rule002_1",
+    "rule002_2",
+    "rule003_1",
+    "rule003_2",
+    "rule004_2"
+   ],
+   [
+    "rule002_1",
+    "rule002_2",
+    "rule003_1",
+    "rule003_2",
+    "rule004_1"
+   ],
+   [
+    "rule001",
+    "rule002_1",
+    "rule002_2",
+    "rule003_2"
+   ],
+   [
+    "rule001",
+    "rule002_1",
+    "rule002_2",
+    "rule003_1"
+   ]
+  ],
+  "rules_not_giving_one_combination_alone": [],
+  "size_including_R0": 671,
+  "target_max_charge": 5,
+  "target_size": 671
+ },
+ "header": [
+  "# F2 independent checks (checks/f2/run.py)",
+  "# paper: arXiv:2603.24880v2 (7 May 2026)",
+  "# repository commit: 52e38a218f91fab3a9968729b95e2380e59ddbb1",
+  "# python: 3.14.4 (CPython)",
+  "# host: Legion",
+  "# platform: Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "# command: checks/f2/run.py wheels --degree 7 --literal --jobs 16 --out /home/claude/f2-final"
+ ],
+ "special": {
+  "all_ok": true,
+  "file": "special.txt",
+  "payload_sha256": "836ae2933514c0080483a9ef19b3ecc17c03a093febf441ba5156c6afb35591f"
+ },
+ "wheels-7": {
+  "centre_degree": 7,
+  "file": "wheels-7.txt",
+  "literal": false,
+  "matches_target": true,
+  "payload_sha256": "cf0f6e83c813112cfa0f1146452dcbc269d0caad45dd45d3adce63a8bb994740",
+  "pruned": {
+   "blocked": 229,
+   "charge": 5497,
+   "survives": 5439
+  },
+  "sample": null,
+  "survivors": 5439,
+  "target": 5439,
+  "wheels_checked": 11165,
+  "wheels_up_to_rotation": 11165
+ },
+ "wheels-7-literal": {
+  "centre_degree": 7,
+  "file": "wheels-7-literal.txt",
+  "literal": true,
+  "matches_target": true,
+  "payload_sha256": "cf0f6e83c813112cfa0f1146452dcbc269d0caad45dd45d3adce63a8bb994740",
+  "pruned": {
+   "blocked": 229,
+   "charge": 5497,
+   "survives": 5439
+  },
+  "sample": null,
+  "survivors": 5439,
+  "target": 5439,
+  "wheels_checked": 11165,
+  "wheels_up_to_rotation": 11165
+ }
+}

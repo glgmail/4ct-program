@@ -30,12 +30,18 @@ runner. The results, their comparison with the eleven published targets and
 the run times are in `notes/F-ai-and-computation-engine.md`; how the run
 works and where it departs from upstream's scripts is in `f1/README.md`.
 
-## 3. Our own re-implementation of the near-linear proof checks
+## 3. Our own re-implementation of the near-linear proof checks — `f2/`
 
-Task F2: an independent implementation written from the paper's pseudocode,
-which must match the published target metrics. It must not be derived from the
-unlicensed reimplementations, and it is a second implementation on purpose —
-every computation in this program has two that agree (task F1 runs the MIT C++
-code; this is the other one).
+Task F2: an independent implementation, in Python, written from the paper's
+pseudocode. It is a second implementation on purpose: every computation in
+this program has two that agree, and F1 runs the MIT C++ code. It was written
+without the C++ and without the unlicensed reimplementations; its
+independence log is in `f2/README.md`. One command runs everything:
+`python3 checks/f2/run.py all --jobs 17 --out DIR`, about an hour on the
+self-hosted runner.
 
-Nothing of it exists yet.
+## 4. F1 against F2 — `f1_vs_f2/`
+
+`f1_vs_f2/compare.py` compares the two implementations' outputs object by
+object, up to isomorphism: the combined rules, the wheels and the bad
+cartwheels. It is neither implementation. See `f1_vs_f2/README.md`.

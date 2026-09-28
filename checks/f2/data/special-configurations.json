@@ -1,0 +1,66 @@
+{
+ "about": [
+  "Configurations transcribed by hand for task F2 from arXiv:2603.24880v2 (7 May 2026).",
+  "X: Figure 12 (the exceptional configuration of Lemma 8.3), read from the figure's SVG on the paper's arXiv HTML page (exception-zero.svg), with degrees read by Heesch's shapes of Figure 2 (filled disc 5, open circle 7, open square 8).",
+  "T73: section 8, 'the single facial triangle, all of whose vertices have degree 7'.",
+  "Format (ours): each vertex has a name, its degree in G, and its neighbours in clockwise order as drawn; '|' marks the gap facing the outside, so a vertex without '|' is an inner vertex and must have as many neighbours as its degree.",
+  "'at' is the vertex's position in the figure as rendered for transcription (x to the right, y downwards, arbitrary units); it is documentation only and is not read by the code.",
+  "Names in X: C is the centre (degree 8); A1, A2 the two top neighbours of C, B1, B2 the bottom ones, L1/R1 the upper left/right, L7/R7 the degree-7 neighbours; LS/RS the outer degree-8 vertices; TL/TR, LL/RR, LB/RB the outer degree-5 vertices at top, side and bottom. X is symmetric under the left-right reflection.",
+  "Xw: Figure 13 (middle): X with an added vertex w of degree 5 adjacent to RS (the vertex v' of the figure) and RR. Lemma 8.4's proof says it contains a reducible configuration of D (Figure 13, right); run.py special checks that it does."
+ ],
+ "configurations": {
+  "X": {
+   "centre": "C",
+   "vertices": [
+    {"name": "C", "degree": 8, "at": [304, 242], "rotation": ["L1", "A1", "A2", "R1", "R7", "B2", "B1", "L7"]},
+    {"name": "A1", "degree": 5, "at": [228, 92], "rotation": ["A2", "C", "L1", "TL", "|"]},
+    {"name": "A2", "degree": 5, "at": [379, 92], "rotation": ["TR", "R1", "C", "A1", "|"]},
+    {"name": "R1", "degree": 5, "at": [454, 167], "rotation": ["A2", "TR", "RS", "R7", "C"]},
+    {"name": "R7", "degree": 7, "at": [454, 299], "rotation": ["B2", "C", "R1", "RS", "RR", "RB", "|"]},
+    {"name": "B2", "degree": 5, "at": [379, 393], "rotation": ["B1", "C", "R7", "|"]},
+    {"name": "B1", "degree": 5, "at": [228, 393], "rotation": ["L7", "C", "B2", "|"]},
+    {"name": "L7", "degree": 7, "at": [152, 299], "rotation": ["LB", "LL", "LS", "L1", "C", "B1", "|"]},
+    {"name": "L1", "degree": 5, "at": [152, 167], "rotation": ["TL", "A1", "C", "L7", "LS"]},
+    {"name": "TL", "degree": 5, "at": [97, 35], "rotation": ["A1", "L1", "LS", "|"]},
+    {"name": "LS", "degree": 8, "at": [60, 205], "rotation": ["TL", "L1", "L7", "LL", "|"]},
+    {"name": "LL", "degree": 5, "at": [41, 337], "rotation": ["LS", "L7", "LB", "|"]},
+    {"name": "LB", "degree": 5, "at": [80, 412], "rotation": ["LL", "L7", "|"]},
+    {"name": "TR", "degree": 5, "at": [512, 35], "rotation": ["RS", "R1", "A2", "|"]},
+    {"name": "RS", "degree": 8, "at": [550, 205], "rotation": ["RR", "R7", "R1", "TR", "|"]},
+    {"name": "RR", "degree": 5, "at": [569, 337], "rotation": ["RB", "R7", "RS", "|"]},
+    {"name": "RB", "degree": 5, "at": [531, 412], "rotation": ["R7", "RR", "|"]}
+   ]
+  },
+  "T73": {
+   "centre": null,
+   "vertices": [
+    {"name": "a", "degree": 7, "rotation": ["b", "c", "|"]},
+    {"name": "b", "degree": 7, "rotation": ["c", "a", "|"]},
+    {"name": "c", "degree": 7, "rotation": ["a", "b", "|"]}
+   ]
+  },
+  "Xw": {
+   "centre": "C",
+   "vertices": [
+    {"name": "C", "degree": 8, "at": [304, 242], "rotation": ["L1", "A1", "A2", "R1", "R7", "B2", "B1", "L7"]},
+    {"name": "A1", "degree": 5, "at": [228, 92], "rotation": ["A2", "C", "L1", "TL", "|"]},
+    {"name": "A2", "degree": 5, "at": [379, 92], "rotation": ["TR", "R1", "C", "A1", "|"]},
+    {"name": "R1", "degree": 5, "at": [454, 167], "rotation": ["A2", "TR", "RS", "R7", "C"]},
+    {"name": "R7", "degree": 7, "at": [454, 299], "rotation": ["B2", "C", "R1", "RS", "RR", "RB", "|"]},
+    {"name": "B2", "degree": 5, "at": [379, 393], "rotation": ["B1", "C", "R7", "|"]},
+    {"name": "B1", "degree": 5, "at": [228, 393], "rotation": ["L7", "C", "B2", "|"]},
+    {"name": "L7", "degree": 7, "at": [152, 299], "rotation": ["LB", "LL", "LS", "L1", "C", "B1", "|"]},
+    {"name": "L1", "degree": 5, "at": [152, 167], "rotation": ["TL", "A1", "C", "L7", "LS"]},
+    {"name": "TL", "degree": 5, "at": [97, 35], "rotation": ["A1", "L1", "LS", "|"]},
+    {"name": "LS", "degree": 8, "at": [60, 205], "rotation": ["TL", "L1", "L7", "LL", "|"]},
+    {"name": "LL", "degree": 5, "at": [41, 337], "rotation": ["LS", "L7", "LB", "|"]},
+    {"name": "LB", "degree": 5, "at": [80, 412], "rotation": ["LL", "L7", "|"]},
+    {"name": "TR", "degree": 5, "at": [512, 35], "rotation": ["RS", "R1", "A2", "|"]},
+    {"name": "RS", "degree": 8, "at": [550, 205], "rotation": ["w", "RR", "R7", "R1", "TR", "|"]},
+    {"name": "RR", "degree": 5, "at": [569, 337], "rotation": ["RB", "R7", "RS", "w", "|"]},
+    {"name": "RB", "degree": 5, "at": [531, 412], "rotation": ["R7", "RR", "|"]},
+    {"name": "w", "degree": 5, "rotation": ["RR", "RS", "|"]}
+   ]
+  }
+ }
+}

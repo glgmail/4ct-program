@@ -1,0 +1,124 @@
+{
+ "a1": {
+  "combine_s": 2.004,
+  "load_s": 0.002,
+  "peak_rss_mb": 32.7,
+  "total_s": 2.05
+ },
+ "a1-reversed": {
+  "combine_s": 0.44,
+  "load_s": 0.002,
+  "peak_rss_mb": 30.3,
+  "total_s": 0.486
+ },
+ "a10-sample-compare": {
+  "init_s": 0.699,
+  "jobs": 17,
+  "wall_s": 135.128
+ },
+ "a2": {
+  "combine_s": 1.079,
+  "load_s": 0.371,
+  "peak_rss_mb": 65.7,
+  "total_s": 1.464
+ },
+ "a2-literal": {
+  "combine_s": 12.525,
+  "load_s": 0.347,
+  "peak_rss_mb": 64.5,
+  "total_s": 12.886
+ },
+ "a2-reversed": {
+  "combine_s": 0.427,
+  "load_s": 0.369,
+  "peak_rss_mb": 65.7,
+  "total_s": 0.811
+ },
+ "bad": {
+  "jobs": 17,
+  "max_worker_rss_mb": 62.9,
+  "per_degree": {
+   "10": {
+    "cpu_s": 416.8,
+    "max_wheel_s": 10.735
+   },
+   "11": {
+    "cpu_s": 2.4,
+    "max_wheel_s": 0.785
+   },
+   "7": {
+    "cpu_s": 11266.4,
+    "max_wheel_s": 151.031
+   },
+   "8": {
+    "cpu_s": 15173.3,
+    "max_wheel_s": 180.777
+   },
+   "9": {
+    "cpu_s": 5532.0,
+    "max_wheel_s": 69.6
+   }
+  },
+  "wall_s": 1910.629
+ },
+ "header": [
+  "# F2 independent checks (checks/f2/run.py)",
+  "# paper: arXiv:2603.24880v2 (7 May 2026)",
+  "# repository commit: 4c4ab0bd05570f0bdebef5b532e3405929c52b94",
+  "# python: 3.14.4 (CPython)",
+  "# host: Legion",
+  "# platform: Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "# command: checks/f2/run.py a10-sample --compare --count 30 --jobs 17 --cap 1500 --out /home/claude/f2-final"
+ ],
+ "special": {
+  "total_s": 0.372
+ },
+ "wheels-10": {
+  "jobs": 17,
+  "peak_rss_mb_main_process": 156.3,
+  "per_wheel_ms_wall": 0.186,
+  "setup_s": null,
+  "total_s": 181.695,
+  "wheels": 976887
+ },
+ "wheels-11": {
+  "jobs": 17,
+  "peak_rss_mb_main_process": 676.2,
+  "per_wheel_ms_wall": 0.193,
+  "setup_s": null,
+  "total_s": 858.165,
+  "wheels": 4438925
+ },
+ "wheels-7": {
+  "jobs": 1,
+  "peak_rss_mb_main_process": 67.9,
+  "per_wheel_ms": 1.343,
+  "setup_s": 1.476,
+  "total_s": 16.475,
+  "wheels": 11165
+ },
+ "wheels-7-literal": {
+  "jobs": 16,
+  "peak_rss_mb_main_process": 30.3,
+  "per_wheel_ms": 7.494,
+  "setup_s": null,
+  "total_s": 83.665,
+  "wheels": 11165
+ },
+ "wheels-8": {
+  "jobs": 17,
+  "peak_rss_mb_main_process": 32.7,
+  "per_wheel_ms_wall": 0.222,
+  "setup_s": null,
+  "total_s": 10.861,
+  "wheels": 48915
+ },
+ "wheels-9": {
+  "jobs": 17,
+  "peak_rss_mb_main_process": 56.8,
+  "per_wheel_ms_wall": 0.159,
+  "setup_s": null,
+  "total_s": 34.573,
+  "wheels": 217045
+ }
+}

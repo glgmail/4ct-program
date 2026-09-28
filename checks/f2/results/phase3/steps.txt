@@ -1,0 +1,11 @@
+start a10-compare 2026-09-28T08:55:15-06:00 4c4ab0b F2: full bad-cartwheel runner (resumable) and A.10 by roots with an exact prefilter
+done a10-compare 2026-09-28T08:57:32-06:00
+start a10-timing 2026-09-28T09:08:24-06:00 4c4ab0b F2: full bad-cartwheel runner (resumable) and A.10 by roots with an exact prefilter
+done a10-timing 2026-09-28T09:10:28-06:00
+start a10 2026-09-28T12:30:46-06:00 7bf9ca7 F2: full A.10 runner (resumable, per-root records), a10-verify, and 'all'
+a10 rc=0 wall=261s session_peak_kb=2537996
+a10-verify rc=0 wall=259s session_peak_kb=2627204
+done a10 2026-09-28T12:39:26-06:00
+start all 2026-09-28T12:43:29-06:00 7bf9ca7 F2: full A.10 runner (resumable, per-root records), a10-verify, and 'all'
+all rc=0 wall=3252s session_peak_kb=2596668
+done all 2026-09-28T13:37:41-06:00

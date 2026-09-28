@@ -1,0 +1,15 @@
+start 2026-09-28T08:04:32-06:00 dbe6576 F2: stream wheel output; multiprocessing pool with ordered results
+wheels-8 rc=0 wall=12s session_peak_kb=1116216
+wheels-9 rc=0 wall=36s session_peak_kb=1140128
+wheels-10 rc=0 wall=183s session_peak_kb=1241892
+wheels-11 rc=0 wall=860s session_peak_kb=1774716
+done wheels 2026-09-28T08:22:43-06:00
+start bad 2026-09-28T08:22:57-06:00 4c4ab0b F2: full bad-cartwheel runner (resumable) and A.10 by roots with an exact prefilter
+bad rc=0 wall=1911s session_peak_kb=1186624
+done bad 2026-09-28T08:54:48-06:00
+start a10-compare 2026-09-28T08:55:15-06:00 4c4ab0b F2: full bad-cartwheel runner (resumable) and A.10 by roots with an exact prefilter
+a10-compare rc=0 wall=137s session_peak_kb=2097200
+done a10-compare 2026-09-28T08:57:32-06:00
+start a10-timing 2026-09-28T09:08:24-06:00 4c4ab0b F2: full bad-cartwheel runner (resumable) and A.10 by roots with an exact prefilter
+a10-timing rc=0 wall=124s session_peak_kb=2502828
+done a10-timing 2026-09-28T09:10:28-06:00

@@ -1,0 +1,60 @@
+{
+ "a1": {
+  "combine_s": 2.004,
+  "load_s": 0.002,
+  "peak_rss_mb": 32.7,
+  "total_s": 2.05
+ },
+ "a1-reversed": {
+  "combine_s": 0.44,
+  "load_s": 0.002,
+  "peak_rss_mb": 30.3,
+  "total_s": 0.486
+ },
+ "a2": {
+  "combine_s": 1.079,
+  "load_s": 0.371,
+  "peak_rss_mb": 65.7,
+  "total_s": 1.464
+ },
+ "a2-literal": {
+  "combine_s": 12.525,
+  "load_s": 0.347,
+  "peak_rss_mb": 64.5,
+  "total_s": 12.886
+ },
+ "a2-reversed": {
+  "combine_s": 0.427,
+  "load_s": 0.369,
+  "peak_rss_mb": 65.7,
+  "total_s": 0.811
+ },
+ "header": [
+  "# F2 independent checks (checks/f2/run.py)",
+  "# paper: arXiv:2603.24880v2 (7 May 2026)",
+  "# repository commit: 52e38a218f91fab3a9968729b95e2380e59ddbb1",
+  "# python: 3.14.4 (CPython)",
+  "# host: Legion",
+  "# platform: Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "# command: checks/f2/run.py wheels --degree 7 --literal --jobs 16 --out /home/claude/f2-final"
+ ],
+ "special": {
+  "total_s": 0.372
+ },
+ "wheels-7": {
+  "jobs": 1,
+  "peak_rss_mb_main_process": 67.9,
+  "per_wheel_ms": 1.343,
+  "setup_s": 1.476,
+  "total_s": 16.475,
+  "wheels": 11165
+ },
+ "wheels-7-literal": {
+  "jobs": 16,
+  "peak_rss_mb_main_process": 30.3,
+  "per_wheel_ms": 7.494,
+  "setup_s": null,
+  "total_s": 83.665,
+  "wheels": 11165
+ }
+}
