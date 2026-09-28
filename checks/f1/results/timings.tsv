@@ -1,0 +1,27 @@
+step	wall_seconds	peak_rss_mb
+A1_combine_rules	0	10
+A2_combine_rules	1	22
+A3_enum_cartwheels_d10	16	22
+A3_enum_cartwheels_d11	0	21
+A3_enum_cartwheels_d7	647	31
+A3_enum_cartwheels_d8	637	48
+A3_enum_cartwheels_d9	160	32
+A3_enum_wheels_d10	435	2542
+A3_enum_wheels_d11	1969	12618
+A3_enum_wheels_d7	34	51
+A3_enum_wheels_d8	41	137
+A3_enum_wheels_d9	95	535
+A4_check_deg8	435	868
+A5_check_7triangle	165	115
+A6_check_deg7	26	145
+build	33	585
+build_configure	2	29
+control_A4_no_configurations	2	1357
+control_A5_no_configurations	3	435
+control_A6_no_configurations	0	136
+unit_tests	0	31
+cartwheel_jobs_d7 (n=5439; sum / max job)	12595 / 115	max 31
+cartwheel_jobs_d8 (n=6790; sum / max job)	12404 / 104	max 48
+cartwheel_jobs_d9 (n=3285; sum / max job)	3147 / 28	max 32
+cartwheel_jobs_d10 (n=626; sum / max job)	314 / 3	max 22
+cartwheel_jobs_d11 (n=8; sum / max job)	1 / 0	max 21

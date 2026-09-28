@@ -22,7 +22,15 @@ python3 checks/repo_guardrails.py
 
 It prints one line per check and exits non-zero on the first failure.
 
-## 2. Our own re-implementation of the near-linear proof checks
+## 2. The upstream checks, reproduced — `f1/`
+
+Task F1: every computer check of the near-linear proof, run with the upstream
+MIT C++ code in one command, `checks/f1/reproduce.sh`, on the self-hosted
+runner. The results, their comparison with the eleven published targets and
+the run times are in `notes/F-ai-and-computation-engine.md`; how the run
+works and where it departs from upstream's scripts is in `f1/README.md`.
+
+## 3. Our own re-implementation of the near-linear proof checks
 
 Task F2: an independent implementation written from the paper's pseudocode,
 which must match the published target metrics. It must not be derived from the
