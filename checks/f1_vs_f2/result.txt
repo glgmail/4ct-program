@@ -1,0 +1,13 @@
+# F1 vs F2, object by object: checks/f1_vs_f2/compare.py
+# F1: WORK outputs of checks/f1/reproduce.sh at 13d13fa (run of 2026-09-28 03:27-04:36 UTC; PR #30)
+# F2: outputs of 'checks/f2/run.py all --jobs 17' from a clean clone at 7bf9ca7; F2 code for generate_cartwheel at 9966628
+# rules: data/near-linear-4ct/discharging-rules/R (84 files)
+A.1 R*: F1 1832 objects (1832 distinct), F2 1832 (1832 distinct): IDENTICAL as multisets
+A.2 R*-D: F1 671 objects (671 distinct), F2 671 (671 distinct): IDENTICAL as multisets
+A.3 C0, centre degree 7: F1 5439 objects (5439 distinct), F2 5439 (5439 distinct): IDENTICAL as multisets
+A.3 C0, centre degree 8: F1 6790 objects (6790 distinct), F2 6790 (6790 distinct): IDENTICAL as multisets
+A.3 C0, centre degree 9: F1 3285 objects (3285 distinct), F2 3285 (3285 distinct): IDENTICAL as multisets
+A.3 C0, centre degree 10: F1 626 objects (626 distinct), F2 626 (626 distinct): IDENTICAL as multisets
+A.3 C0, centre degree 11: F1 8 objects (8 distinct), F2 8 (8 distinct): IDENTICAL as multisets
+A.3 C_all, bad cartwheels: F1 10094 objects (10087 distinct), F2 10094 (10087 distinct): IDENTICAL as multisets
+VERDICT: every object set identical
