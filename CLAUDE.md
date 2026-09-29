@@ -28,12 +28,16 @@ review, decided by Gabriel — not as a fix for a build failure.
 
 ## Building the base port — never with `lake build`
 
-`lean/` is the Lake package root. The base port, the `FourColor` library, is
-built **only** with `cd lean && ./build.sh`. Never run `lake build
-FourColor`, and never make a `FourCT` or `Statements` module import
-`FourColor`: Lake does not recognise the output of `scripts/build_pool.py`,
-so it would rebuild all 821 modules with no job cap and no memory budget, and
-some modules peak at 20 GB. `checks/repo_guardrails.py` fails on the import.
+`lean/` is the Lake package root. Everything in it — the base port
+(`FourColor`) and our own `FourCT` and `Statements`, which import it — is
+built **only** with `cd lean && ./build.sh`, by `scripts/build_pool.py`.
+Never run `lake build` on anything there. Lake does not recognise
+`build_pool.py`'s output, so it would rebuild all 821 FourColor modules with
+no job cap and no memory budget, and some modules peak at 20 GB.
+To check one file quickly, run `lake env lean FourCT/Foo.lean` after
+`./build.sh`. It compiles that file against the existing build. Verification
+is `./build.sh`, which is incremental. `checks/repo_guardrails.py` fails if
+`lean-build` runs `lake build`.
 Read `lean/README.md` before changing anything under `lean/`.
 
 Editing `lean/lakefile.toml`, `lean/lean-toolchain` or
@@ -43,8 +47,8 @@ the pull request.
 
 Do not modify files under `lean/FourColor/`, `lean/scripts/` or
 `lean/tools/` without flagging it: they are vendored from corun1024/4ct,
-byte-identical to upstream today, and every divergence has to be listed in
-`THIRD_PARTY_NOTICES.md`.
+and every divergence has to be listed in `THIRD_PARTY_NOTICES.md`. The only
+divergence so far is in `scripts/build_pool.py` (task A3).
 
 ## What counts as a result
 

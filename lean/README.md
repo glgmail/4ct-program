@@ -7,9 +7,9 @@ and every Lean command runs from here.
 | Path | What | Built by |
 | --- | --- | --- |
 | `FourColor.lean`, `FourColor/` | **The base port** — corun1024/4ct, moved to Lean and Mathlib `v4.34.1` (task A2) | `./build.sh` only |
-| `FourCT.lean`, `FourCT/` | The Rosetta Stone: one module per reformulation, and the Transfer tactic | `lake build FourCT` |
-| `Statements/` | One human-readable statement file per reformulation; each needs Gabriel's written sign-off | `lake build Statements` |
-| `scripts/`, `tools/`, `build.sh` | corun's build and verification tooling, unmodified | — |
+| `FourCT.lean`, `FourCT/` | The Rosetta Stone: one module per reformulation, and the Transfer tactic. `FourCT.Base` imports the base port | `./build.sh` |
+| `Statements/` | One human-readable statement file per reformulation; each needs Gabriel's written sign-off | `./build.sh` |
+| `scripts/`, `tools/`, `build.sh` | corun's build and verification tooling; `scripts/build_pool.py` is modified (see below), the rest unmodified | — |
 | `UPSTREAM-README.md`, `formalization.yaml` | corun's own description of the development, unmodified | — |
 | `LICENSES/corun1024-4ct.txt` | corun's MIT licence **and CeCILL-B credit**, which must travel with this code | — |
 
@@ -17,13 +17,14 @@ and every Lean command runs from here.
 
 ```bash
 cd lean
-JOBS=4 MEMORY=20 ./build.sh     # the base port: ~2 h cold, seconds when nothing changed
-lake build FourCT               # our own library
+JOBS=4 MEMORY=20 ./build.sh     # everything: ~2 h cold, seconds when nothing changed
+lake env lean ../checks/lean/fourct_axioms.lean   # the axioms FourCT's theorems use
 ```
 
 `build.sh` fetches Mathlib from the cache, regenerates the reducibility
 certificates if they are absent (about a core-hour; needs `gcc` and
-`python3-numpy`), builds the 821 FourColor modules, and runs
+`python3-numpy`), builds the 821 FourColor modules and the program's own
+FourCT and Statements modules, and runs
 `scripts/check.sh`. That last step fails unless it can print
 
 ```
@@ -37,27 +38,47 @@ negative controls in `scripts/Audit.lean`.
 `MEMORY` is in **gigabytes**. One module peaks at 20.3 GB; do not raise it
 above 20 on the 26 GB WSL2 runner.
 
-## Never `lake build FourColor`
+## Never `lake build`
 
-The base port is built by `scripts/build_pool.py`, which runs the same `lean`
-invocations Lake would, but never more than `JOBS` at a time and never
+Everything here is built by `scripts/build_pool.py`: the base port, FourColor,
+and since task A3 the program's own FourCT and Statements. It runs the same
+`lean` invocations Lake would, but never more than `JOBS` at a time and never
 admitting a module whose predicted peak would break the `MEMORY` budget. It
 writes **no Lake trace files**, so Lake does not recognise its output. Asking
-Lake to build FourColor — directly, or by building anything that imports it —
-rebuilds all 821 modules with one job per hardware thread and no memory
-budget. With modules that peak at 20 GB, that is how the machine runs out of
-memory.
+Lake to build FourColor, directly or by building anything that imports it
+(and `FourCT.Base` does), rebuilds all 821 modules with one job per hardware
+thread and no memory budget. With modules that peak at 20 GB, that is how the
+machine runs out of memory.
 
-Three things guard against it:
+`build_pool.py` rebuilds a module only when its input changed. Its
+fingerprint of a module covers the module's source, every module it imports,
+transitively, the build options, `lean-toolchain`, `lakefile.toml` and
+`lake-manifest.json`. That is what makes it safe to verify with.
 
-- `defaultTargets` in `lakefile.toml` is `FourCT`, so a bare `lake build`
-  cannot reach the port;
-- `checks/repo_guardrails.py` fails if `defaultTargets` ever includes
-  FourColor;
-- the same script fails if any `FourCT` or `Statements` module imports
-  `FourColor`. **Task A3 will be the first to need that import**, and will
-  have to extend the build (most likely by teaching `build_pool.py` to
-  schedule FourCT modules too) before it can add it.
+**Checking one file at the keyboard:** after `./build.sh`, run
+`lake env lean FourCT/Foo.lean`. It compiles that one file against the
+existing build in seconds, without involving Lake's build logic. Rerun
+`./build.sh` afterwards: it is incremental, rebuilds exactly what depends
+on your change, and is what CI verifies with.
+
+**Not `lake build --old`.** It would accept this build if `build_pool.py`
+also wrote each module's C file, where Lake looks for it. But emitting C made
+the bulk certificate modules (`FourColor.Bulk.Cfg.Grp*`) 23× slower, about 7
+extra hours per cold build, so `build_pool.py` does not. `--old` would not be
+verification anyway: it ignores changes in a module's imports. The
+measurements are on issue #4.
+
+**An editor may try the full rebuild.** Opening a module that imports
+FourColor in an editor runs Lake's `setup-file`, and so will most likely try
+to rebuild the port. This has not been tested.
+
+These guard against a `lake build` reaching the port:
+
+- `defaultTargets` in `lakefile.toml` is `FourCT`; a bare `lake build` would
+  still reach FourColor through `FourCT.Base`, so do not run one;
+- `checks/repo_guardrails.py` fails if `defaultTargets` includes FourColor,
+  if `build_pool.py` stops building FourCT or Statements, if `lean-build`
+  runs `lake build`, or if any workflow uses `--old`.
 
 Also: `scripts/check.sh` calls `build_pool.py` without passing `JOBS` or
 `MEMORY`, so it falls back to machine-derived defaults — 18 jobs and an 18 GB
@@ -116,8 +137,8 @@ Authors: the 4ct-program contributors
 ```
 
 Mathlib's header linter, which corun's `weak.linter.mathlibStandardSet`
-option switches on for the whole package, checks this under `lake build`
-and warns on a file that lacks it or puts the doc-string before the
-imports. A new file without the header builds, but with warnings — copy the
-block above. The linter does not run under a bare `lake env lean`, so check
-with `lake build FourCT`.
+option switches on for the whole package, checks this only under
+`lake build`. `build_pool.py` compiles with plain `lean`, under which it does
+not run. So `checks/repo_guardrails.py` checks the header instead, textually,
+and fails the `checks` status check on a file without it. Copy the block
+above.

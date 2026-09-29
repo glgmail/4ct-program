@@ -116,7 +116,10 @@ configuration:
 - `lake-manifest.json`: re-resolved against Mathlib `v4.34.1`, root package
   renamed;
 - `README.md` and `LICENSE` moved to `lean/UPSTREAM-README.md` and
-  `lean/LICENSES/corun1024-4ct.txt`.
+  `lean/LICENSES/corun1024-4ct.txt`;
+- `scripts/build_pool.py` (task A3) also builds this program's own libraries,
+  FourCT and Statements, so that they can import FourColor. Every change is
+  marked "4ct-program" in the file.
 
 No Lean source file was modified: all 498 are byte-identical to upstream.
 
