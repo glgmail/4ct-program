@@ -10,7 +10,7 @@ clean checkout. Leads, partial arguments and AI-written summaries go under
 
 | Date | Result | Evidence | Tier | PR |
 | --- | --- | --- | --- | --- |
-|  |  |  |  |  |
+| 2026-09-29 | **Boozer's (2019) lower bounds on dim J♭ reproduced exactly with open code, two independent ways.** For the seven non-reducible webs W1–W7, the half-foam counts N, the bounds ℓ (58, 120, 162, 178, 188, 248, 308) and the graded values of his Tables 2–3 all match. The two implementations' half-foam files are byte-identical. New: his bounds are not an artefact of evaluating only a prefix. The full generated list, and each move type alone for the dodecahedron, give the same values. So dim J♭(dodecahedron) is still 58 or 60. | `search/d1/` (implA, implB, compare.py); both rerun byte-identically in minutes | D1 | #45 |
 
 ## Open leads
 

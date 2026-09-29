@@ -1,0 +1,1 @@
+web cube mode STRICT-ALL: sites 96, GEN nodes 552, generation 0.1s, ranks 0.0s, total 0.1s, maxrss self 25 MB, largest child 0 MB, jobs 1

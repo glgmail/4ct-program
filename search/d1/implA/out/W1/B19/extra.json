@@ -1,0 +1,51 @@
+{
+  "avec_branching_events": 0,
+  "avec_max_replications": 0,
+  "circles_created_by_joins": 765,
+  "degenerate_merged_nominal_facets": 0,
+  "direct_pairs_checked": 10000,
+  "ell_by_move_type": {
+    "ih": {
+      "ell": 58,
+      "ell_q": {
+        "-1": 20,
+        "-3": 9,
+        "1": 20,
+        "3": 9
+      }
+    },
+    "saddle": {
+      "ell": 58,
+      "ell_q": {
+        "-1": 20,
+        "-3": 9,
+        "1": 20,
+        "3": 9
+      }
+    },
+    "unzip": {
+      "ell": 58,
+      "ell_q": {
+        "-1": 20,
+        "-3": 9,
+        "1": 20,
+        "3": 9
+      }
+    },
+    "zip": {
+      "ell": 58,
+      "ell_q": {
+        "-1": 20,
+        "-3": 9,
+        "1": 20,
+        "3": 9
+      }
+    }
+  },
+  "halffoams_jsonl_gz_sha256": "72f89d46ce4dd3c3ec5b3164362f9c11cbdc9c737b5d3db2da1d546672c565ee",
+  "mode": "B19",
+  "rebuilds": 4345,
+  "rebuilds_creating_several_circles": 0,
+  "records_built": 8335,
+  "web": "W1"
+}

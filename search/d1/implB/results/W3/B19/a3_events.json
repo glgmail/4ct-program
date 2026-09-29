@@ -1,0 +1,15 @@
+{
+ "boozer_degenerate_bigon": 0,
+ "boozer_degenerate_square": 0,
+ "boozer_degenerate_triangle": 0,
+ "bridge_fail": 0,
+ "component_split": 0,
+ "degenerate_square_merge": 0,
+ "degenerate_triangle_merge": 0,
+ "extra_circle_other": 0,
+ "extra_circle_theta": 2639,
+ "marker_component_vanished": 2639,
+ "marker_loss_fail": 0,
+ "no_eligible_face_fail": 5,
+ "unmarked_component_created": 0
+}
