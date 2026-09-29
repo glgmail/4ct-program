@@ -6,8 +6,8 @@ Plan of record: the "Four Color Theorem: A Unified Research Program" doc.
 ## What counts as a result
 - A result is either a Lean theorem that builds on the pinned toolchain,
   or a script whose output reruns identically from a clean checkout.
-- Every file in lean/Statements/ needs Gabriel's written sign-off in its
-  pull request before merge. The Lean kernel checks proofs; it does not
+- Every file in lean/Statements/ needs Gabriel's sign-off, recorded in its
+  pull request, before merge. The Lean kernel checks proofs; it does not
   check that a statement says what we mean.
 - Every computation has two independent implementations that agree.
 - AI-written arguments, notes and summaries are leads, not results.

@@ -72,6 +72,10 @@ house rules in `claude.yml`. Since Gabriel *is* the sign-off, GitHub was
 never going to check it for him — but the rule is no weaker in substance than
 it was, and it is the rule that matters most in this repository.
 
+Since 2026-09-29 (Gabriel's decision) the sign-off is asked for as a decision
+in the Claude session and recorded in the pull request description, so that
+Gabriel does not have to repeat it on GitHub. See `CLAUDE.md`.
+
 ## Release tags
 
 Ruleset `protect-release-tags`, active, target `tag`, matching
