@@ -242,24 +242,72 @@ def check_vendored_port() -> None:
     report(ok, "corun1024 licence and CeCILL-B credit kept with the vendored port",
            "" if ok else f"missing or incomplete: {lic.relative_to(ROOT).as_posix()}")
 
-    # Tripwire. FourColor is built by build_pool.py, which writes no Lake
-    # traces, so the moment a FourCT or Statements module imports FourColor,
-    # `lake build FourCT` would rebuild the entire port under Lake's own
-    # scheduler — no job cap, no memory budget. Whoever first needs that
-    # import (task A3) has to extend the build first; this makes them notice.
-    offenders = []
+    # FourCT imports FourColor (task A3). FourColor is built by build_pool.py,
+    # which writes no Lake traces, so Lake does not recognise it: any
+    # `lake build` that reaches FourColor rebuilds all 821 modules with no job
+    # cap and no memory budget. So build_pool.py builds our libraries too, and
+    # lean-build never calls `lake build`.
+    pool = LEAN_ROOT / "scripts" / "build_pool.py"
+    m = re.search(r"^LIBRARIES = (.*)$", pool.read_text(encoding="utf-8"), re.MULTILINE) \
+        if pool.is_file() else None
+    libs = set(re.findall(r"\('(\w+)'", m.group(1))) if m else set()
+    report({"FourColor", "FourCT", "Statements"} <= libs,
+           "build_pool.py builds FourColor, FourCT and Statements",
+           "" if m else "no LIBRARIES line in lean/scripts/build_pool.py")
+
+    workflow = ROOT / ".github" / "workflows" / "lean-build.yml"
+    calls = [line.strip() for line in workflow.read_text(encoding="utf-8").splitlines()
+             if re.search(r"\blake build\b", line) and not line.strip().startswith("#")
+             and "--no-build" not in line] if workflow.is_file() else []
+    report(not calls, "lean-build never runs `lake build`",
+           "" if not calls else "found: " + "; ".join(calls))
+
+    # `lake build --old` accepts build_pool.py's output, but it ignores changes
+    # in a module's imports: a stale olean would count as built. Fine at the
+    # keyboard, never as verification.
+    old = []
+    for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+        for line in wf.read_text(encoding="utf-8").splitlines():
+            if "--old" in line and not line.strip().startswith("#"):
+                old.append(f"{wf.name}: {line.strip()}")
+    report(not old, "no workflow relies on `lake build --old`",
+           "" if not old else "; ".join(old))
+
+
+def our_lean_files() -> list[Path]:
+    """The program's own Lean files: FourCT and Statements, not the port."""
+    out = []
     for base in ("FourCT", "Statements"):
-        paths = [LEAN_ROOT / f"{base}.lean"] + sorted((LEAN_ROOT / base).rglob("*.lean"))
-        for path in paths:
-            if path.is_file() and re.search(r"^\s*import\s+FourColor\b",
-                                            path.read_text(encoding="utf-8"), re.MULTILINE):
-                offenders.append(path.relative_to(ROOT).as_posix())
-    report(not offenders,
-           "no FourCT or Statements module imports FourColor yet",
-           "" if not offenders else
-           "found in: " + ", ".join(offenders) +
-           "\n        lake build would rebuild all of FourColor with no memory cap;"
-           "\n        extend the build (scripts/build_pool.py) before adding this import")
+        out += [LEAN_ROOT / f"{base}.lean"] + sorted((LEAN_ROOT / base).rglob("*.lean"))
+    return [p for p in out if p.is_file()]
+
+
+LEAN_HEADER = re.compile(
+    r"\A/-\nCopyright \(c\) \d{4} the 4ct-program contributors\. All rights reserved\.\n"
+    r"Released under Apache 2\.0 license as described in the file LICENSE\.\n"
+    r"Authors: [^\n]+\n-/\n")
+
+
+def check_our_lean() -> None:
+    """FourCT and Statements carry the licence header, and contain no `sorry`.
+
+    build_pool.py compiles them with plain `lean`, under which Mathlib's
+    header linter does not run, so the header is checked here instead. The
+    `sorry` check is textual, as corun's check.sh does for the port, and
+    ignores a `sorry` written as code in backquotes.
+    """
+    files = our_lean_files()
+    bad_header = [p.relative_to(ROOT).as_posix() for p in files
+                  if not LEAN_HEADER.match(p.read_text(encoding="utf-8"))]
+    report(not bad_header, f"FourCT and Statements files carry the licence header ({len(files)} files)",
+           "" if not bad_header else "missing or malformed in: " + ", ".join(bad_header))
+    sorries = []
+    for p in files:
+        for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+            if re.search(r"\bsorry\b", re.sub(r"`[^`]*`", "", line)):
+                sorries.append(f"{p.relative_to(ROOT).as_posix()}:{i}")
+    report(not sorries, "no `sorry` in FourCT or Statements",
+           "" if not sorries else "found at: " + ", ".join(sorries[:10]))
 
 
 def check_gitattributes() -> None:
@@ -535,6 +583,7 @@ def main() -> int:
     check_lake_manifest()
     check_licence()
     check_vendored_port()
+    check_our_lean()
     check_gitattributes()
     check_notices()
     check_submodules()

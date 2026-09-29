@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Build the `FourColor` modules under a job-count and a memory budget.
 
+4ct-program: modified from corun1024/4ct (see THIRD_PARTY_NOTICES.md). It
+also builds the program's own libraries, FourCT and Statements, and writes
+each module's C file. The changes are marked "4ct-program".
+
 Lake starts as many jobs as the machine has hardware threads and offers no way
 to say fewer, which makes a build on many cores memory-bandwidth-bound and a
 build pinned to a few cores thrash.  This runs the same `lean` invocations Lake
@@ -43,6 +47,24 @@ from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 LEAN_OPTS = ['-Dpp.unicode.fun=true', '-DautoImplicit=false', '-DrelaxedAutoImplicit=false',
              '-Dweak.linter.mathlibStandardSet=true', '-DmaxSynthPendingDepth=3']
 
+# 4ct-program (task A3, step 0): the libraries built here. Upstream builds
+# FourColor only. The program's own FourCT and Statements are built the same
+# way, so that a module of ours can import FourColor without handing the
+# build to Lake, which would rebuild every FourColor module with no job cap
+# and no memory budget. Each is (library, root module), where the root is
+# None for a library whose modules are all its files (Statements, `globs`
+# in lakefile.toml).
+LIBRARIES = (('FourColor', 'FourColor'), ('FourCT', 'FourCT'), ('Statements', None))
+
+# 4ct-program (task A3, step 0): also write each module's C file, where
+# Lake's own build puts it. Lake checks for it: with it present,
+# `lake build --old` accepts this script's output as up to date. That is an
+# interactive convenience only, never verification: `--old` ignores changes
+# in a module's imports. The output format is part of the fingerprint, so
+# adding the C files rebuilt everything once.
+IR_DIR = '.lake/build/ir'
+BUILD_FORMAT = 'olean+ilean+c'
+
 FINGERPRINTS = '.lake/build/fourcolor_fingerprints.json'
 PROFILE = 'scripts/module_cost.tsv'
 LOCAL_PROFILE = '.lake/build/module_cost.tsv'
@@ -56,20 +78,38 @@ DRIFT = 1.25           # report a module that exceeded its prediction by this mu
 
 def modules():
     mods = {}
-    for dirpath, _, files in os.walk('FourColor'):
-        for f in files:
-            if f.endswith('.lean'):
-                path = os.path.join(dirpath, f)
-                name = 'FourColor.' + path[len('FourColor/'):-5].replace('/', '.')
-                mods[name] = path
-    mods['FourColor'] = 'FourColor.lean'
+    for lib, root in LIBRARIES:
+        for dirpath, _, files in os.walk(lib):
+            for f in files:
+                if f.endswith('.lean'):
+                    path = os.path.join(dirpath, f)
+                    name = lib + '.' + path[len(lib) + 1:-5].replace(os.sep, '.').replace('/', '.')
+                    mods[name] = path
+        if root is not None and os.path.exists(root + '.lean'):
+            mods[root] = root + '.lean'
     return mods
+
+
+def roots(mods):
+    """Where the build starts: each library's root module, and every module of
+    a library that has no root (Lake's `globs`)."""
+    out = []
+    for lib, root in LIBRARIES:
+        if root is not None:
+            if root in mods:
+                out.append(root)
+        else:
+            out.extend(sorted(m for m in mods if m.startswith(lib + '.')))
+    return out
+
+
+IMPORT_RE = re.compile(r'^import ((?:FourColor|FourCT|Statements)(?:\.[A-Za-z0-9_]+)*)\s*$', re.M)
 
 
 def imports(path):
     with open(path) as fh:
         text = fh.read(200000)
-    return set(re.findall(r'^import (FourColor(?:\.[A-Za-z0-9_]+)*)\s*$', text, re.M))
+    return set(IMPORT_RE.findall(text))
 
 
 def env_fingerprint(opts):
@@ -82,6 +122,7 @@ def env_fingerprint(opts):
     """
     h = hashlib.sha256()
     h.update('\x00'.join(opts).encode())
+    h.update(BUILD_FORMAT.encode())
     for f in ('lean-toolchain', 'lakefile.toml', 'lake-manifest.json'):
         try:
             with open(f, 'rb') as fh:
@@ -142,7 +183,8 @@ def save_fingerprints(path, fps):
 def uptodate(name, recorded, ids):
     """Whether this olean exists and was built from exactly this input."""
     olean = os.path.join('.lake/build/lib/lean', name.replace('.', '/') + '.olean')
-    return os.path.exists(olean) and recorded.get(name) == ids.get(name)
+    cfile = os.path.join(IR_DIR, name.replace('.', '/') + '.c')
+    return os.path.exists(olean) and os.path.exists(cfile) and recorded.get(name) == ids.get(name)
 
 
 def load_profile(paths, warn):
@@ -266,7 +308,7 @@ def main():
     ap.add_argument('--profile', default=PROFILE, help=f'committed cost table [{PROFILE}]')
     ap.add_argument('--save-profile', default=LOCAL_PROFILE, help=f'where to write the updated table [{LOCAL_PROFILE}]')
     ap.add_argument('--assume-mb', type=int, default=ASSUME_MB, help=f'peak assumed for an unprofiled module [{ASSUME_MB}]')
-    ap.add_argument('--clean', action='store_true', help='rebuild every FourColor module')
+    ap.add_argument('--clean', action='store_true', help='rebuild every module of every library')
     ap.add_argument('--dry-run', action='store_true', help='print the plan and stop')
     ap.add_argument('--log', default='build_pool.log')
     args = ap.parse_args()
@@ -288,8 +330,8 @@ def main():
     warn = []
     allmods = modules()
     alldeps = {m: {d for d in imports(p) if d in allmods} for m, p in allmods.items()}
-    # only what the root module reaches: stray files in the tree are not part of the proof
-    reach, stack = set(), ['FourColor']
+    # only what the roots reach: stray files in the tree are not part of the proof
+    reach, stack = set(), roots(allmods)
     while stack:
         m = stack.pop()
         if m in reach:
@@ -327,8 +369,9 @@ def main():
     envfp = env_fingerprint(LEAN_OPTS)
     ids = content_ids(mods, deps, envfp)
     if args.clean and not args.dry_run:
-        subprocess.run(['rm', '-rf', '.lake/build/lib/lean/FourColor', '.lake/build/lib/lean/FourColor.olean',
-                        '.lake/build/lib/lean/FourColor.ilean'])
+        for lib, _ in LIBRARIES:
+            subprocess.run(['rm', '-rf', f'.lake/build/lib/lean/{lib}', f'.lake/build/lib/lean/{lib}.olean',
+                            f'.lake/build/lib/lean/{lib}.ilean', f'{IR_DIR}/{lib}', f'{IR_DIR}/{lib}.c'])
         try:
             os.remove(FINGERPRINTS)
         except OSError:
@@ -364,8 +407,11 @@ def main():
 
     def run(name, path):
         out = os.path.join('.lake/build/lib/lean', name.replace('.', '/'))
+        cout = os.path.join(IR_DIR, name.replace('.', '/') + '.c')
         os.makedirs(os.path.dirname(out), exist_ok=True)
-        cmd = ['lean', '-R', root] + LEAN_OPTS + ['-o', out + '.olean', '-i', out + '.ilean', path]
+        os.makedirs(os.path.dirname(cout), exist_ok=True)
+        cmd = ['lean', '-R', root] + LEAN_OPTS + ['-o', out + '.olean', '-i', out + '.ilean',
+                                                  '-c', cout, path]
         t0 = time.time()
         p = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         text = p.stdout.read()

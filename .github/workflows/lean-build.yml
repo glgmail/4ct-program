@@ -8,7 +8,10 @@
 #      under a memory budget, then scripts/check.sh: no sorry, no
 #      native_decide or other trusted-base escape hatches, the anti-vacuity
 #      negative controls, and a positive "THEOREM PROVED" line;
-#   2. our own library, FourCT, with lake build.
+#   2. our own libraries, FourCT and Statements, built in the same
+#      build_pool.py run (FourCT imports FourColor, and Lake does not
+#      recognise build_pool.py's output; see lean/README.md), then the axioms
+#      their theorems depend on.
 #
 # Runs on Gabriel's self-hosted runner: Linux in WSL2 on a 32 GB Windows
 # host. The base port peaks at 20.2 GB in a single process and will never
@@ -151,13 +154,19 @@ jobs:
           grep -q 'THEOREM PROVED: FourColor.fourColorTheorem' "$RUNNER_TEMP/build.log"
           mv .lake/certificate-inputs.sha256.pending .lake/certificate-inputs.sha256
 
-      - name: Build FourCT
+      - name: Check the program's own libraries
         run: |
           set -euo pipefail
-          # Safe only while no FourCT module imports FourColor: Lake knows
-          # nothing of build_pool.py's output and would rebuild the whole port
-          # with no memory cap. checks/repo_guardrails.py enforces that.
-          lake build FourCT
+          # FourCT and Statements were built by build.sh above, in the same
+          # build_pool.py run as the base port. Never `lake build` them: FourCT
+          # imports FourColor, and Lake would rebuild every FourColor module with
+          # no memory cap. Never `lake build --old` in CI either: it ignores
+          # changes in a module's imports. checks/repo_guardrails.py enforces both.
+          test -f .lake/build/lib/lean/FourCT.olean
+          test -f .lake/build/lib/lean/FourCT/Base.olean
+          out=$(lake env lean ../checks/lean/fourct_axioms.lean 2>&1)
+          echo "$out"
+          echo "$out" | grep -qx "'FourCT.fourColor_base' depends on axioms: \[propext, Classical.choice, Quot.sound\]"
 
       - name: Peak memory
         if: always()
