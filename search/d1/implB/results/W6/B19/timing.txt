@@ -1,0 +1,1 @@
+web W6 mode B19: sites 252, GEN nodes 16429, generation 2.1s, ranks 0.8s, total 3.1s, maxrss self 68 MB, largest child 47 MB, jobs 4

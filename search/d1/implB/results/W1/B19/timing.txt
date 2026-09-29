@@ -1,0 +1,1 @@
+web W1 mode B19: sites 170, GEN nodes 5220, generation 0.3s, ranks 0.1s, total 0.5s, maxrss self 30 MB, largest child 18 MB, jobs 4

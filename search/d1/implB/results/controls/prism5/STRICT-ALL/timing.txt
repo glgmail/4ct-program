@@ -1,0 +1,1 @@
+web prism5 mode STRICT-ALL: sites 130, GEN nodes 960, generation 0.1s, ranks 0.0s, total 0.2s, maxrss self 25 MB, largest child 0 MB, jobs 1

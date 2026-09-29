@@ -1,0 +1,79 @@
+{
+  "avec_branching_events": 0,
+  "avec_max_replications": 0,
+  "circles_created_by_joins": 1407,
+  "degenerate_merged_nominal_facets": 0,
+  "direct_pairs_checked": 10000,
+  "ell_by_move_type": {
+    "ih": {
+      "ell": 120,
+      "ell_q": {
+        "-1": 29,
+        "-2": 6,
+        "-3": 16,
+        "-4": 2,
+        "-5": 3,
+        "0": 8,
+        "1": 29,
+        "2": 6,
+        "3": 16,
+        "4": 2,
+        "5": 3
+      }
+    },
+    "saddle": {
+      "ell": 120,
+      "ell_q": {
+        "-1": 29,
+        "-2": 6,
+        "-3": 16,
+        "-4": 2,
+        "-5": 3,
+        "0": 8,
+        "1": 29,
+        "2": 6,
+        "3": 16,
+        "4": 2,
+        "5": 3
+      }
+    },
+    "unzip": {
+      "ell": 120,
+      "ell_q": {
+        "-1": 29,
+        "-2": 6,
+        "-3": 16,
+        "-4": 2,
+        "-5": 3,
+        "0": 8,
+        "1": 29,
+        "2": 6,
+        "3": 16,
+        "4": 2,
+        "5": 3
+      }
+    },
+    "zip": {
+      "ell": 120,
+      "ell_q": {
+        "-1": 29,
+        "-2": 6,
+        "-3": 16,
+        "-4": 2,
+        "-5": 3,
+        "0": 8,
+        "1": 29,
+        "2": 6,
+        "3": 16,
+        "4": 2,
+        "5": 3
+      }
+    }
+  },
+  "halffoams_jsonl_gz_sha256": "84d6b27fa35576c52badd7eb177db1eef917fed01407262d82ec5357462957e7",
+  "mode": "B19",
+  "rebuilds": 8739,
+  "rebuilds_creating_several_circles": 0,
+  "records_built": 15921,
+  "web": "W2"
+}

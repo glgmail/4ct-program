@@ -1,0 +1,485 @@
+{
+  "W1 B19": {
+    "N": 11160,
+    "N_by_move": {
+      "ih": 2160,
+      "saddle": 3960,
+      "unzip": 3960,
+      "zip": 1080
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 0,
+      "component_splits": 0,
+      "components_vanished_with_marker": 765,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 0,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 765
+    }
+  },
+  "W1 PARTIAL-ALL": {
+    "N": 11880,
+    "N_by_move": {
+      "ih": 2160,
+      "saddle": 4320,
+      "unzip": 4320,
+      "zip": 1080
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 60,
+      "component_splits": 0,
+      "components_vanished_with_marker": 0,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 60,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 810
+    }
+  },
+  "W1 STRICT-ALL": {
+    "N": 11880,
+    "N_by_move": {
+      "ih": 2160,
+      "saddle": 4320,
+      "unzip": 4320,
+      "zip": 1080
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 60,
+      "component_splits": 0,
+      "components_vanished_with_marker": 0,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 60,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 810
+    }
+  },
+  "W2 B19": {
+    "N": 27792,
+    "N_by_move": {
+      "ih": 4896,
+      "saddle": 10224,
+      "unzip": 9864,
+      "zip": 2808
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 0,
+      "component_splits": 0,
+      "components_vanished_with_marker": 1407,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 0,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 1407
+    }
+  },
+  "W2 PARTIAL-ALL": {
+    "N": 30600,
+    "N_by_move": {
+      "ih": 4896,
+      "saddle": 11808,
+      "unzip": 11088,
+      "zip": 2808
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 72,
+      "component_splits": 0,
+      "components_vanished_with_marker": 0,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 72,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 1542
+    }
+  },
+  "W2 STRICT-ALL": {
+    "N": 30600,
+    "N_by_move": {
+      "ih": 4896,
+      "saddle": 11808,
+      "unzip": 11088,
+      "zip": 2808
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 72,
+      "component_splits": 0,
+      "components_vanished_with_marker": 0,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 72,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 1542
+    }
+  },
+  "W3 B19": {
+    "N": 45960,
+    "N_by_move": {
+      "ih": 8100,
+      "saddle": 16800,
+      "unzip": 16872,
+      "zip": 4188
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 0,
+      "component_splits": 0,
+      "components_vanished_with_marker": 2639,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 5,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 2639
+    }
+  },
+  "W3 PARTIAL-ALL": {
+    "N": 48864,
+    "N_by_move": {
+      "ih": 8100,
+      "saddle": 18240,
+      "unzip": 18336,
+      "zip": 4188
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 84,
+      "component_splits": 0,
+      "components_vanished_with_marker": 0,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 90,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 2814
+    }
+  },
+  "W3 STRICT-ALL": {
+    "N": 48864,
+    "N_by_move": {
+      "ih": 8100,
+      "saddle": 18240,
+      "unzip": 18336,
+      "zip": 4188
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 84,
+      "component_splits": 0,
+      "components_vanished_with_marker": 0,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 90,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 2814
+    }
+  },
+  "W4 B19": {
+    "N": 47196,
+    "N_by_move": {
+      "ih": 8496,
+      "saddle": 16956,
+      "unzip": 17496,
+      "zip": 4248
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 0,
+      "component_splits": 0,
+      "components_vanished_with_marker": 2709,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 0,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 2709
+    }
+  },
+  "W4 PARTIAL-ALL": {
+    "N": 50040,
+    "N_by_move": {
+      "ih": 8496,
+      "saddle": 18288,
+      "unzip": 19008,
+      "zip": 4248
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 84,
+      "component_splits": 0,
+      "components_vanished_with_marker": 0,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 84,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 2898
+    }
+  },
+  "W4 STRICT-ALL": {
+    "N": 50040,
+    "N_by_move": {
+      "ih": 8496,
+      "saddle": 18288,
+      "unzip": 19008,
+      "zip": 4248
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 84,
+      "component_splits": 0,
+      "components_vanished_with_marker": 0,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 84,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 2898
+    }
+  },
+  "W5 B19": {
+    "N": 40704,
+    "N_by_move": {
+      "ih": 7344,
+      "saddle": 14832,
+      "unzip": 14784,
+      "zip": 3744
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 0,
+      "component_splits": 0,
+      "components_vanished_with_marker": 2213,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 0,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 2213
+    }
+  },
+  "W5 PARTIAL-ALL": {
+    "N": 43992,
+    "N_by_move": {
+      "ih": 7344,
+      "saddle": 16488,
+      "unzip": 16416,
+      "zip": 3744
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 78,
+      "component_splits": 0,
+      "components_vanished_with_marker": 0,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 78,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 2394
+    }
+  },
+  "W5 STRICT-ALL": {
+    "N": 43992,
+    "N_by_move": {
+      "ih": 7344,
+      "saddle": 16488,
+      "unzip": 16416,
+      "zip": 3744
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 78,
+      "component_splits": 0,
+      "components_vanished_with_marker": 0,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 78,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 2394
+    }
+  },
+  "W6 B19": {
+    "N": 53172,
+    "N_by_move": {
+      "ih": 9996,
+      "saddle": 19068,
+      "unzip": 19404,
+      "zip": 4704
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 0,
+      "component_splits": 0,
+      "components_vanished_with_marker": 2296,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 91,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 2296
+    }
+  },
+  "W6 PARTIAL-ALL": {
+    "N": 58044,
+    "N_by_move": {
+      "ih": 9996,
+      "saddle": 21336,
+      "unzip": 22008,
+      "zip": 4704
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 84,
+      "component_splits": 0,
+      "components_vanished_with_marker": 0,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 196,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 2520
+    }
+  },
+  "W6 STRICT-ALL": {
+    "N": 41664,
+    "N_by_move": {
+      "ih": 6888,
+      "saddle": 17304,
+      "unzip": 13776,
+      "zip": 3696
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 84,
+      "component_splits": 0,
+      "components_vanished_with_marker": 0,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 182,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 2349
+    }
+  },
+  "W7 B19": {
+    "N": 101970,
+    "N_by_move": {
+      "ih": 16074,
+      "saddle": 39564,
+      "unzip": 37296,
+      "zip": 9036
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 4,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 2,
+      "component_splits": 0,
+      "components_vanished_with_marker": 6402,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 57,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 6402
+    }
+  },
+  "W7 PARTIAL-ALL": {
+    "N": 117486,
+    "N_by_move": {
+      "ih": 17226,
+      "saddle": 46584,
+      "unzip": 43488,
+      "zip": 10188
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 102,
+      "component_splits": 0,
+      "components_vanished_with_marker": 0,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 123,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 7242
+    }
+  },
+  "W7 STRICT-ALL": {
+    "N": 116730,
+    "N_by_move": {
+      "ih": 17226,
+      "saddle": 45828,
+      "unzip": 43488,
+      "zip": 10188
+    },
+    "events": {
+      "boozer_distinctness_violations_bigon": 0,
+      "boozer_distinctness_violations_square": 0,
+      "boozer_distinctness_violations_triangle": 0,
+      "bridge_fails": 102,
+      "component_splits": 0,
+      "components_vanished_with_marker": 0,
+      "degenerate_square_merges": 0,
+      "extra_circles": 0,
+      "marker_losses": 0,
+      "no_eligible_face_fails": 123,
+      "split_components_without_outer_dart": 0,
+      "theta_bigon_circles": 7226
+    }
+  }
+}
