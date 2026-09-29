@@ -1,0 +1,131 @@
+{
+ "N_leaves": 566700,
+ "N_retained": 566700,
+ "amendment": 2,
+ "baseline": {
+  "N": 30,
+  "ell": 30,
+  "ell_q": {
+   "-1": 9,
+   "-3": 5,
+   "-5": 1,
+   "1": 9,
+   "3": 5,
+   "5": 1
+  },
+  "r": 30,
+  "r_q": {
+   "-1": 9,
+   "-3": 5,
+   "-5": 1,
+   "1": 9,
+   "3": 5,
+   "5": 1
+  }
+ },
+ "control": "C4",
+ "expanded_nodes": {
+  "0": 1,
+  "1": 100
+ },
+ "family": "C4-prism5",
+ "h_sha256": "8a6e97fec8f0713832d420f80e907566b51f511478fbeb499d3597501a688e87",
+ "leaves_by_degree": {
+  "-1": 75275,
+  "-2": 1610,
+  "-3": 21200,
+  "-4": 15,
+  "-5": 1955,
+  "0": 5155,
+  "1": 136485,
+  "11": 935,
+  "13": 40,
+  "2": 7440,
+  "3": 150870,
+  "4": 6180,
+  "5": 104900,
+  "6": 2635,
+  "7": 42630,
+  "8": 335,
+  "9": 9040
+ },
+ "pass": true,
+ "processed": 566700,
+ "sites": {
+  "1": {
+   "ih": {
+    "bridge": 0,
+    "irreducible": 0,
+    "precond": 0,
+    "reducible": 15
+   },
+   "saddle": {
+    "bridge": 30,
+    "irreducible": 0,
+    "precond": 0,
+    "reducible": 20
+   },
+   "unzip": {
+    "bridge": 0,
+    "irreducible": 0,
+    "precond": 0,
+    "reducible": 50
+   },
+   "zip": {
+    "bridge": 0,
+    "irreducible": 0,
+    "precond": 0,
+    "reducible": 15
+   }
+  },
+  "2": {
+   "ih": {
+    "bridge": 35,
+    "irreducible": 0,
+    "precond": 160,
+    "reducible": 1410
+   },
+   "saddle": {
+    "bridge": 3740,
+    "irreducible": 0,
+    "precond": 0,
+    "reducible": 2435
+   },
+   "unzip": {
+    "bridge": 210,
+    "irreducible": 0,
+    "precond": 0,
+    "reducible": 5965
+   },
+   "zip": {
+    "bridge": 305,
+    "irreducible": 0,
+    "precond": 160,
+    "reducible": 1140
+   }
+  }
+ },
+ "span_violations": 0,
+ "union": {
+  "N": 566730,
+  "ell": 30,
+  "ell_q": {
+   "-1": 9,
+   "-3": 5,
+   "-5": 1,
+   "1": 9,
+   "3": 5,
+   "5": 1
+  },
+  "r": 30,
+  "r_q": {
+   "-1": 9,
+   "-3": 5,
+   "-5": 1,
+   "1": 9,
+   "3": 5,
+   "5": 1
+  }
+ },
+ "web": "prism5"
+}

@@ -175,3 +175,91 @@ was not done.
     needed: pure Python with bit-parallel colour planes runs W7 in about 40 s.
     Colour codes {1,2,3} make the third colour of a seam the XOR of the other
     two.
+
+## Phase 2b (SPEC Amendment 2, branch d1/phase2b, SPEC commit b400a9b)
+
+Amendment 2 was read in full, including §A2.13 (Gabriel's decisions). Only the
+mandatory families (F0, KM, KMd, T2R, T2, T3s) and the §A2.9 controls are run;
+`a2run.py` refuses T3 and T4s. The items below are the points where Amendment 2
+left a choice. Where the choice affects a byte-compared file, it is marked
+**[compared]**; B may have chosen differently, so these need reconciling.
+
+25. **`expanded_nodes` levels [compared].** Level 0 is W1 itself and is
+    counted as `"0": 1` in every tree family, including T3s, where only s0 is
+    taken from W1's sites. So:
+    - F0 `{"0": 1}`, T2R `{"0": 1, "1": 180}`, T2 `{"0": 1, "1": 60}`,
+      T3s `{"0": 1, "1": 1, "2": 87}`.
+    - KM and KMd have `"sites": {}` and `"expanded_nodes": {}`.
+26. **`sites` for T3s level 1 [compared]** counts only s0 (one Unzip site,
+    outcome IRREDUCIBLE). For every other tree family, level 1 counts all 300
+    sites of W1.
+27. **KMd and step 2 [compared].** KMd "retains all degrees", but step 2 (A3
+    check, novelty, stops) is applied only to members whose degree is in RET,
+    i.e. the 20 undotted members. Lemma 2(b) puts only degrees ≤ −3 with
+    d ≡ 3 (mod 6) in A3; applied to degree −1 members, the A3 check would stop
+    KMd at its second member for no mathematical reason. All 58 500 members
+    are still written to `h.jsonl`, counted in `processed`, and used for the
+    ranks. `a3_violations` counts RET members only.
+28. **F0's common keys [compared].** Step 2 does not apply to F0 (it is the
+    start state). F0's `result.json` therefore has `processed` = N = 11 880,
+    `novel` = `aut_novel` = [], `a3_violations` = 0, `stop` = `EXHAUSTED`,
+    and `final` = the start state (dimU 9, ℓ₋₃ 9, ℓ₃ 9, ℓ 58). F0 also gets
+    a `pairsample.tsv`, with i ranging over all F0 members.
+29. **`processed` [compared]** counts the member that triggers a stop. No stop
+    fired, so this was not exercised.
+30. **Pair-sample order [compared].** First the min(1000, N_ret) k-sample lines
+    in k order; then, for each novel member in order, one line per C3 member
+    in C3 order. Duplicate pairs are kept. Aut-closure images are not
+    members, so they are not in `pairsample.tsv`. A still evaluates each novel
+    image directly against every C3 member, using the relabelled half-foam
+    g(H). No novel member occurred, so only the first part is present.
+31. **Aut closure (T3s).** It runs over the novel members of the main pass only
+    (images are not closed again, since g·(g′·a) = (gg′)·a is already among the
+    images), and `aut_novel` records only images that were novel.
+32. **`union.json` [compared] schema, my choice:**
+    - `amendment`, `web`, `family` ("union"), `order`, `novel` (a list of
+      `[family, i, g, deg, dimU, ell_m3]`), `a3_violations`, `start`, `final`,
+      `stop`;
+    - T3s's novel Aut images are included (with their g), after its main-pass
+      novel members.
+33. **Control outputs [compared] schema, my choice.**
+    - C0, C4, C5, C6 and C8 write `result.json` in `<web>/A2/ctl-<name>/`:
+      C4 in `prism5/` and `cube/`, C5 in `W2/` and `W3/`.
+    - C4 and C5 use the tree-family keys plus `baseline`, `combined` (both
+      {N, ell, ell_q, r, r_q}), `span_violations` and `pass`.
+    - Their `pairsample.tsv` takes i over the family members and j over the
+      **baseline** members (1-based), with the same k rule. SPEC defines the
+      sample only for W1 families.
+    - C8 holds `KMd` (alone) and `F0_union_KMd`.
+    - C1, C2 and C3 are checks on the family runs. C3 is asserted inside every
+      run: a count mismatch aborts that run. C1 and C2 are summarised with the
+      ledger in `out/A2-summary.json`, which is not compared.
+34. **Certificates [compared].** No stop fired, so no `certificate.json` was
+    written. The code path exists but is untested by data. My reading of
+    "the same construction" for the ±1 blocks:
+    - rows = the F0₋₁ members, in F0 order, whose p-vectors (β against a
+      greedy GF(4)-independent subset of F0₁) enter an F-span;
+    - columns = the first F0₁ members that raise the column rank.
+35. **Step 3 ℓ₃** uses every F0₃ member (3 150) as a row, not a basis.
+36. **Budget rule.** The "estimate" of a run is the upper end of A's CPU range
+    in §A2.10. The 3× stop is enforced on process CPU time during the main
+    pass. For C4 + C5 I split the 2 h estimate as prism5 20 min, cube 10 min,
+    W2 45 min and W3 45 min.
+37. **Committed files (§A2.13 item 4).** The committed files are:
+    - `result.json`, `pairsample.tsv`, `run.json`, `novel.jsonl` (empty
+      here), `union.json`, `A2-summary.json` and `A2-SHA256SUMS.txt`.
+
+    The `h.jsonl` files are **not** copied into the repository. They stay in
+    WSL (`~/d1A/p2b/…`); their digests are `h_sha256` in each `result.json`
+    and are also listed in `A2-SHA256SUMS.txt`. The Phase 2 files under
+    `out/W*/B19/` (including `halffoams.jsonl.gz`) are left as they were.
+38. **GEN as a tree.** For Phase 2b, GEN_STRICT is built as a tree of
+    reductions (`d1a/tree.py`). Leaf degrees come without foams, and foams
+    are composed only for retained leaves, memoised within one tree.
+    - The F0 run asserts that this reproduces Phase 2's STRICT-ALL `generate`
+      exactly: same sites, chains, degrees and a-vectors, member by member.
+    - No GEN memoisation across webs is used.
+39. **No shared counting code.** The count-only pass of every family is my
+    own code. C3 matches every number in §A2.5 and §A2.9, including T2's
+    per-first-move uniformity and the T3s level-3 counts for
+    `["unzip", 18, 1, 2]`.

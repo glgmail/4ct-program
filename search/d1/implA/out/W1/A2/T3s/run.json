@@ -1,0 +1,23 @@
+{
+ "command": "python3 a2run.py --family T3s",
+ "direct_evaluations": 1000,
+ "end_utc": "2026-09-29T23:37:00Z",
+ "estimate_main_cpu_s": 1800,
+ "git_commit": "unknown",
+ "h_lines": 61927,
+ "implementation": "A",
+ "machine": "Legion Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43 python 3.14.4",
+ "peak_rss_mb": 91.0,
+ "phases": {
+  "count": {
+   "cpu_s": 43.4,
+   "wall_s": 43.4
+  },
+  "main": {
+   "cpu_s": 69.4,
+   "wall_s": 69.4
+  }
+ },
+ "start_utc": "2026-09-29T23:35:07Z",
+ "workers": 1
+}

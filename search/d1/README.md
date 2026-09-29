@@ -64,6 +64,47 @@ artefact of his prefix: these half-foam families cannot close it.
 - W7 is the only web where the generation passes through configurations Boozer's code would abort
   on. They lie under two Saddle sites, and N still matches.
 
-**Next** (Phase 2b, capped at 40 runner-hours): new half-foam families for the dodecahedron, to try
-to lift its bound from 58 to 60. Reaching 60 would prove `dim J♭(W1) = 60 = Tait`. Staying at 58
-proves nothing.
+## Phase 2b: new half-foam families for the dodecahedron (Amendment 2)
+
+`SPEC.md` Amendment 2 targets the one open case.
+- **The target (Lemma 1).** By graded Smith form, degree +3 is already saturated. So
+  `dim J♭(W1) = 60` exactly when some half-foam of degree −3 raises ℓ₋₃ from 9 to 10.
+- **The criterion for 58 (Lemma 3).** If the new degree −3/−9 vectors span 11 dimensions, then
+  `dim J♭(W1) = 58`. Gabriel accepted this as a stop criterion. That conclusion stays a lead until
+  a person reviews Lemmas 1–3.
+- **Where to search (Lemma 4).** Iterated moves help only through the 60 "bigon moves", so the
+  families are a tree through them.
+
+Both implementations implement every mandatory family, and **agree byte for byte**. The result
+files are identical, and each records its half-foam file's SHA-256:
+
+| Family | Leaves | Retained (degree −3) | Novel | ℓ₋₃ / dim U / ℓ |
+| --- | ---: | ---: | ---: | --- |
+| F0 (single moves, all sites) | 11,880 | all degrees | 0 | 9 / 9 / 58 |
+| KM (Kronheimer–Mrowka face-colouring half-foams) | 20 | 20 | 0 | 9 / 9 / 58 |
+| KMd (KM with every placement of up to 3 dots) | 58,500 | all degrees | 0 | 9 / 9 / 58 |
+| T2R (control: two moves, first reducible) | 4,190,400 | 107,430 | 0 | 9 / 9 / 58 |
+| T2 (bigon move, then any move) | 1,499,040 | 50,220 | 0 | 9 / 9 / 58 |
+| T3s (three moves from one bigon site, closed under the 120 symmetries) | 4,085,832 | 61,927 | 0 | 9 / 9 / 58 |
+
+**The outcome is inconclusive, as the specification allows.** No family produced a single novel
+degree −3 vector, and neither stop fired. That decides nothing between 58 and 60: if the answer is
+58 with no hidden structure, no family can ever trigger Lemma 3.
+
+**What it establishes.**
+- These families add nothing beyond Boozer's single moves.
+- Every control holds: T2R adds nothing, 0 vectors fall outside the predicted 20-dimensional space,
+  and prism5, cube, W2 and W3 reach Tait.
+
+**Cost:** about 0.5 runner-hours of the 40-hour cap. The optional larger families, T3 and T4s, are
+Gabriel's decision.
+
+**Commands** (in WSL):
+
+```bash
+cd search/d1/implA && python3 a2run.py --all --jobs 5
+cd search/d1/implB && python3 a2run.py all --jobs 4 --out results
+python3 search/d1/compare.py
+```
+
+The half-foam (`h.jsonl`) files are not committed. Their digests are in each `result.json`.

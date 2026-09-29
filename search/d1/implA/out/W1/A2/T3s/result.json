@@ -1,0 +1,128 @@
+{
+ "N_leaves": 4085832,
+ "N_retained": 61927,
+ "a3_violations": 0,
+ "amendment": 2,
+ "aut_novel": [],
+ "expanded_nodes": {
+  "0": 1,
+  "1": 1,
+  "2": 87
+ },
+ "family": "T3s",
+ "final": {
+  "dimU": 9,
+  "ell": 58,
+  "ell_3": 9,
+  "ell_m3": 9
+ },
+ "h_sha256": "5f31c4db60abf4fc893497544cfcb858a960cb98141864bbdb9302a12f7eedf2",
+ "leaves_by_degree": {
+  "-1": 342725,
+  "-2": 294,
+  "-3": 61927,
+  "0": 1558,
+  "1": 821633,
+  "10": 56,
+  "11": 18368,
+  "13": 360,
+  "2": 3056,
+  "3": 1140024,
+  "4": 3346,
+  "5": 997155,
+  "6": 2138,
+  "7": 536255,
+  "8": 640,
+  "9": 156297
+ },
+ "novel": [],
+ "processed": 61927,
+ "sites": {
+  "1": {
+   "ih": {
+    "bridge": 0,
+    "irreducible": 0,
+    "precond": 0,
+    "reducible": 0
+   },
+   "saddle": {
+    "bridge": 0,
+    "irreducible": 0,
+    "precond": 0,
+    "reducible": 0
+   },
+   "unzip": {
+    "bridge": 0,
+    "irreducible": 1,
+    "precond": 0,
+    "reducible": 0
+   },
+   "zip": {
+    "bridge": 0,
+    "irreducible": 0,
+    "precond": 0,
+    "reducible": 0
+   }
+  },
+  "2": {
+   "ih": {
+    "bridge": 0,
+    "irreducible": 2,
+    "precond": 2,
+    "reducible": 29
+   },
+   "saddle": {
+    "bridge": 69,
+    "irreducible": 6,
+    "precond": 0,
+    "reducible": 68
+   },
+   "unzip": {
+    "bridge": 2,
+    "irreducible": 77,
+    "precond": 0,
+    "reducible": 64
+   },
+   "zip": {
+    "bridge": 0,
+    "irreducible": 2,
+    "precond": 2,
+    "reducible": 29
+   }
+  },
+  "3": {
+   "ih": {
+    "bridge": 8,
+    "irreducible": 311,
+    "precond": 274,
+    "reducible": 2503
+   },
+   "saddle": {
+    "bridge": 6654,
+    "irreducible": 972,
+    "precond": 0,
+    "reducible": 6474
+   },
+   "unzip": {
+    "bridge": 290,
+    "irreducible": 7912,
+    "precond": 0,
+    "reducible": 5898
+   },
+   "zip": {
+    "bridge": 22,
+    "irreducible": 313,
+    "precond": 274,
+    "reducible": 2487
+   }
+  }
+ },
+ "start": {
+  "dimA3": 20,
+  "dimR": 11,
+  "dimU": 9,
+  "ell_m3": 9
+ },
+ "stop": "EXHAUSTED",
+ "web": "W1"
+}

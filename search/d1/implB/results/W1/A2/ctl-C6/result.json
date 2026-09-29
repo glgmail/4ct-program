@@ -1,0 +1,24 @@
+{
+ "F0_3_images_not_in_A3": 0,
+ "F0_m3_images_not_in_U0": 0,
+ "T2_final": {
+  "dimU": 9,
+  "ell": 58,
+  "ell_3": 9,
+  "ell_m3": 9
+ },
+ "T2s0_final": {
+  "dimU": 9,
+  "ell": 58,
+  "ell_3": 9,
+  "ell_m3": 9
+ },
+ "amendment": 2,
+ "beta_invariance_failures": 0,
+ "control": "C6",
+ "identity_first": true,
+ "n_aut": 120,
+ "pass": true,
+ "symmetry_check_same": true,
+ "web": "W1"
+}
