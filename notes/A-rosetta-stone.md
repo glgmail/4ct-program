@@ -123,11 +123,12 @@ In `lean/FourCT/PlaneGraph.lean`, with the worked example in
 - **`PlaneGraph.graph`**: Mathlib's `SimpleGraph` on the vertices, in which
   two distinct vertices are adjacent when an edge joins them. Loops and
   repeated edges are forgotten.
-- **`SimpleGraph.IsPlanar G`**: `G` is a subgraph of the underlying graph of
-  some loopless plane graph. This means its vertices map injectively to the
-  plane graph's vertices, with adjacency preserved. For finite graphs this is
-  the usual notion, because every planar drawing extends to a
-  triangulation. A graph with infinitely many vertices is never `IsPlanar`.
+- **`SimpleGraph.IsPlanar G`**: `G` is contained in the underlying graph of
+  some loopless plane graph (`G ⊑ P.graph`, Mathlib's `IsContained`). Its
+  vertices map injectively to the plane graph's, with adjacency preserved but
+  not necessarily reflected, so this is an ordinary subgraph, not an induced
+  one. For finite graphs this is the usual notion. A graph with infinitely
+  many vertices is never `IsPlanar`.
 
 The theorems, all derived from the base port, with nothing new assumed:
 
@@ -148,9 +149,39 @@ by explicit tables.
 - **K₄ is planar:** its underlying graph contains `K₄` (`k4Embedding`).
 - **The theorem is tight:** `K₄` is not 3-colourable
   (`not_colorable_three_K4`, via Mathlib's `chromaticNumber_top`). So
-  `IsPlanar` is not so narrow as to make the theorem trivial. It cannot be
-  too broad either: the theorem is proved, so no graph needing five colours
-  is `IsPlanar`.
+  `IsPlanar` is not so narrow as to make the theorem trivial.
+- **The tricky cases come out right:** every simple graph on at most four
+  vertices is `IsPlanar` (`isPlanar_of_card_le_four`, as a subgraph of
+  `K₄`). That includes a path, an edgeless graph and a disconnected graph.
+  `K₅` is not planar (`not_isPlanar_K5`), but only as a consequence of the
+  4CT itself, not an independent check.
+
+**How the definition was chosen** (research, 2026-09-29). It was compared
+with the other formal definitions of planarity found:
+
+- **Gonthier's hypermaps, and the base port:** genus 0 by Euler's formula,
+  with components counted.
+- **Isabelle's AFP** (Noschinski, *Planarity_Certificates*): combinatorial
+  maps of Euler genus 0, linked to Kuratowski's theorem.
+- **devin-lai/jsp-000512-lean**, Lean 4: a topological `PlaneDrawing` in ℝ²,
+  also covering infinite graphs by compactness.
+- **abhishan82/Pancyclicity-in-4-connected-planar-graphs**, Lean 4: a
+  rotation system with `V − E + F = 2` and simple face boundaries. That
+  rules out every disconnected graph, and every graph with a cut vertex: a
+  path's single face meets its middle vertex twice.
+
+Mathlib has no definition of planarity.
+
+The combinatorial, component-counting notion was kept. Its first version
+used `G ↪g P.graph`, which in Mathlib is an *induced* embedding, while its
+docstring said "subgraph". Both define the same class of finite graphs, but
+the definition did not say what its gloss said, so it was changed to `⊑`
+(Gabriel's decision). Not formalized here, and recorded as open:
+
+- the equivalence with drawings in the plane, which is classical but needs
+  Jordan–Schoenflies;
+- infinite planar graphs, which are a compactness step away
+  (De Bruijn–Erdős).
 
 Items 3 (Tait) and 4 (flows) come next.
 

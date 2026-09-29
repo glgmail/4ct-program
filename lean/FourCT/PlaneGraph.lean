@@ -5,6 +5,7 @@ Authors: the 4ct-program contributors
 -/
 import FourCT.Base
 import Mathlib.Combinatorics.SimpleGraph.Coloring.Vertex
+import Mathlib.Combinatorics.SimpleGraph.Copy
 
 /-!
 # FourCT.PlaneGraph — plane graphs, and the Four Colour Theorem for them
@@ -33,8 +34,9 @@ foundation was chosen is in `notes/A-rosetta-stone.md` (A3).
 * `FourCT.PlaneGraph`: a plane graph on a finite type of darts.
 * `FourCT.PlaneGraph.Vertex`, `FourCT.PlaneGraph.graph`: its vertices and its
   underlying simple graph.
-* `SimpleGraph.IsPlanar`: a finite simple graph is planar when it is a
-  subgraph of the underlying graph of a loopless plane graph.
+* `SimpleGraph.IsPlanar`: a finite simple graph is planar when it is
+  contained in (Mathlib's `⊑`: a copy of it sits inside) the underlying graph
+  of a loopless plane graph.
 
 ## Main results
 
@@ -164,17 +166,26 @@ namespace SimpleGraph
 
 open FourCT
 
-/-- A finite simple graph is **planar** when it is a subgraph of the underlying
-graph of some loopless plane graph: its vertices map injectively to the plane
-graph's vertices, and adjacent vertices to adjacent vertices.
+/-- A finite simple graph is **planar** when it is contained in the underlying
+graph of some loopless plane graph (`G ⊑ P.graph`, Mathlib's
+`SimpleGraph.IsContained`). Its vertices map injectively to the plane graph's
+vertices, sending adjacent vertices to adjacent vertices. The copy need not
+be induced: non-adjacent vertices may map to adjacent ones.
 
 For finite graphs this is the usual notion. A planar drawing of a simple graph
-extends to a loopless plane graph by adding edges until every face is a
-triangle. Conversely, deleting vertices and edges keeps a drawing planar. A
-graph with infinitely many vertices is never planar in this sense, since plane
-graphs are finite. -/
+is a loopless plane graph, once each isolated vertex is given an edge to a new
+vertex of its own. Conversely, deleting vertices and edges keeps a drawing
+planar. A graph with infinitely many vertices is never planar in this sense,
+since plane graphs are finite. -/
 def IsPlanar {V : Type*} (G : SimpleGraph V) : Prop :=
-  ∃ (D : Type) (_ : Fintype D) (P : PlaneGraph D), P.map.Loopless ∧ Nonempty (G ↪g P.graph)
+  ∃ (D : Type) (_ : Fintype D) (P : PlaneGraph D), P.map.Loopless ∧ G ⊑ P.graph
+
+/-- Planarity passes to everything contained in a planar graph: subgraphs, and
+copies of subgraphs on other vertex types. -/
+theorem IsPlanar.of_isContained {V W : Type*} {G : SimpleGraph V} {H : SimpleGraph W}
+    (h : H.IsPlanar) (hGH : G ⊑ H) : G.IsPlanar := by
+  obtain ⟨D, _, P, hl, hH⟩ := h
+  exact ⟨D, inferInstance, P, hl, hGH.trans hH⟩
 
 /-- **The Four Colour Theorem**: every planar simple graph is 4-colourable. -/
 theorem IsPlanar.colorable_four {V : Type*} {G : SimpleGraph V} (h : G.IsPlanar) :

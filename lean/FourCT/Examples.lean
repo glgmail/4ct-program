@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: the 4ct-program contributors
 -/
 import FourCT.PlaneGraph
+import Mathlib.Combinatorics.SimpleGraph.Hasse
 
 /-!
 # FourCT.Examples — worked examples of the definitions
@@ -21,15 +22,20 @@ What it establishes:
   zero, follows from counting by `decide`: 6 edges, 4 vertices, 4 faces, one
   component, 12 darts, so `2·1 + 12 = 6 + 4 + 4`.
 * Its underlying graph contains `K₄` (`k4Embedding`), so `K₄` is planar in
-  the sense of `SimpleGraph.IsPlanar` (`isPlanar_K4`).
+  the sense of `SimpleGraph.IsPlanar` (`isPlanar_K4`). Hence **every simple
+  graph on at most four vertices is planar** (`isPlanar_of_card_le_four`).
+  That includes paths, graphs with isolated vertices and disconnected
+  graphs, the cases a combinatorial definition of planarity most easily gets
+  wrong.
 * `K₄` is not 3-colourable (`not_colorable_three_K4`). So
   `SimpleGraph.IsPlanar.colorable_four` is tight: a planar graph can need
   all four colours, and the definition of planarity is not so narrow as to
   make the theorem trivial.
 
-The other direction needs no example. The theorem is proved, so no graph
-that needs five colours can be `IsPlanar`: the definition cannot be too broad
-in that way.
+The other direction needs no separate check. The theorem is proved, so no
+graph that needs five colours can be `IsPlanar`; in particular `K₅` is not
+(`not_isPlanar_K5`). That consequence rests on the Four Colour Theorem itself,
+not on an independent argument such as `E ≤ 3V − 6`.
 
 ## Counting tools
 
@@ -200,12 +206,37 @@ def k4Embedding : (⊤ : SimpleGraph (Fin 4)) ↪g tetrahedron.graph where
 
 /-- **`K₄` is planar.** -/
 theorem isPlanar_K4 : (⊤ : SimpleGraph (Fin 4)).IsPlanar :=
-  ⟨Fin 12, inferInstance, tetrahedron, tetraMap_loopless, ⟨k4Embedding⟩⟩
+  ⟨Fin 12, inferInstance, tetrahedron, tetraMap_loopless, ⟨k4Embedding.toCopy⟩⟩
+
+/-- **Every simple graph on at most four vertices is planar**: it is contained
+in `K₄`. -/
+theorem isPlanar_of_card_le_four {V : Type*} [Fintype V] (G : SimpleGraph V)
+    (h : Fintype.card V ≤ 4) : G.IsPlanar := by
+  obtain ⟨e⟩ := Function.Embedding.nonempty_of_card_le (h.trans_eq (Fintype.card_fin 4).symm)
+  refine isPlanar_K4.of_isContained ⟨{ toHom := ⟨e, fun hab => ?_⟩, injective' := e.injective }⟩
+  exact (SimpleGraph.top_adj _ _).2 (e.injective.ne hab.ne)
+
+/-- A path is planar: one face, with a vertex met twice on its boundary. -/
+example : (SimpleGraph.pathGraph 4).IsPlanar := isPlanar_of_card_le_four _ (by simp)
+
+/-- A graph with no edges, so that every vertex is isolated, is planar. -/
+example : (⊥ : SimpleGraph (Fin 3)).IsPlanar := isPlanar_of_card_le_four _ (by simp)
+
+/-- A disconnected graph, two disjoint edges, is planar. -/
+example : (SimpleGraph.fromEdgeSet {s(0, 1), s(2, 3)} : SimpleGraph (Fin 4)).IsPlanar :=
+  isPlanar_of_card_le_four _ (by simp)
 
 /-- **`K₄` needs four colours.** -/
 theorem not_colorable_three_K4 : ¬ (⊤ : SimpleGraph (Fin 4)).Colorable 3 := by
   intro h
   have := h.chromaticNumber_le
+  rw [SimpleGraph.chromaticNumber_top, Fintype.card_fin] at this
+  norm_num at this
+
+/-- **`K₅` is not planar.** This follows from the Four Colour Theorem, since
+`K₅` needs five colours; it is not an independent check of the definition. -/
+theorem not_isPlanar_K5 : ¬ (⊤ : SimpleGraph (Fin 5)).IsPlanar := fun h => by
+  have := h.colorable_four.chromaticNumber_le
   rw [SimpleGraph.chromaticNumber_top, Fintype.card_fin] at this
   norm_num at this
 
