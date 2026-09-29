@@ -66,20 +66,27 @@ writing the second one, do not read the first — an implementation that
 quietly mirrors the original is worth nothing as a cross-check. If you had to
 look, say so in the pull request.
 
-## `lean/Statements/` needs written sign-off
+## `lean/Statements/` needs Gabriel's sign-off
 
-Every file under `lean/Statements/` needs **Gabriel's written sign-off in the
-pull request** before merge. The Lean kernel checks proofs; it does not check
-that a statement says what we mean, and a statement file that builds is not
-yet a result.
+Every file under `lean/Statements/` needs **Gabriel's sign-off, recorded in
+the pull request**, before merge. The Lean kernel checks proofs; it does not
+check that a statement says what we mean, and a statement file that builds is
+not yet a result.
 
 For each such file, the pull request must give: the statement in English
 next to the Lean, what is quantified over and what is assumed, and where it
 differs from the textbook phrasing and why.
 
-This is no longer enforced by branch protection — it needs a second human
-reviewer, and Gabriel is the only collaborator. It is on you to say plainly
-in the pull request that sign-off is outstanding.
+**How to get the sign-off** (Gabriel's rule, 2026-09-29). In an interactive
+session, ask him for it as a decision, showing each statement file's Lean
+next to its English gloss. Then record his answer in the pull request
+description: his words, the date, and which files it covers. That way he
+does not have to repeat it on GitHub. A sign-off he writes on the pull
+request himself also counts. A merge on its own does not record one.
+
+Until a sign-off is recorded, say plainly in the pull request that it is
+outstanding. Branch protection cannot enforce this: it would need a second
+human reviewer, and Gabriel is the only collaborator.
 
 ## Licences
 

@@ -21,7 +21,9 @@ Closes #
      lean/Statements/. -->
 
 This pull request adds or changes files under `lean/Statements/`, which need
-**Gabriel's written sign-off** before merge. For each file:
+**Gabriel's sign-off, recorded here**, before merge. Record it as given in the
+Claude session: his words, the date, and the files it covers. Until then, say
+it is outstanding. For each file:
 
 - the statement in English, next to the Lean;
 - what is quantified over, and what is assumed;

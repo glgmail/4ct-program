@@ -7,9 +7,15 @@ modules under `lean/FourCT/` (`FourCT/Equivalences.lean`).
 
 ## Sign-off rule
 
-**Every file in this directory needs Gabriel's written sign-off in its pull
-request before merge.** The Lean kernel checks proofs; it does not check that a
+**Every file in this directory needs Gabriel's sign-off, recorded in its pull
+request, before merge.** The Lean kernel checks proofs; it does not check that a
 statement says what we mean. A statement file that builds is not yet a result.
+
+The sign-off is asked for as a decision in the Claude session, with each file's
+Lean shown next to its English gloss. His answer goes into the pull request
+description: his words, the date, and the files it covers. A sign-off he writes
+on the pull request himself also counts. A merge on its own does not record
+one. See `CLAUDE.md`.
 
 A pull request touching this directory should carry, for each file:
 
