@@ -1316,3 +1316,77 @@ dart 13):
     16:23,21,10 17:24,10,11 18:25,11,15 19:26,14,12 20:27,12,13 21:28,13,16
     22:29,15,14 23:30,16,24 24:23,17,25 25:24,18,31 26:27,32,19 27:26,20,28
     28:27,21,33 29:31,22,32 30:31,33,23 31:30,25,29 32:33,29,26 33:32,28,30
+
+---
+
+## Amendment 1 (2026-09-29): corrections from Boozer's own program
+
+These notes come from an audit of Boozer's `foams.nb` (dated 27 Jan 2019) and his program notes,
+against this specification. The files were downloaded with Gabriel's approval and are **not** in
+the repository. No code or text from them is reproduced here; there is no stated licence.
+
+**Caveat.** The notebook contains only W1 (the dodecahedron) and no runs of Table 2 or 3. So
+"confirmed" means confirmed against that notebook and its notes. It is not necessarily the code
+behind the published tables.
+
+**Confirmed, no change needed.**
+- The outer face is excluded: his web data lists bounded faces only.
+- Partial square semantics.
+- Greedy reduction order: bigon, then triangle, then square. Variants come in blocks: undotted,
+  then dotted.
+- The four moves, read as in §5.
+- The degrees of Table 1.
+- The Ċ2 dot sits on a bowl half; the first square branch is "a".
+- Zero half-foams still count in N.
+- The closed-foam evaluation: the Khovanov–Robert formula, constant term at E = 0.
+- W1–W7 are isomorphic to Appendix A, with the §8.4 outer faces. For W7 that is the hexagon on the
+  symmetry axis.
+
+**A1. Order of S(K) in B19 mode (replaces the move order in §6.2 for B19 mode only).**
+- Boozer's order of move blocks is **Unzip, then Zip, then Saddle, then IH**.
+- Within each block, sites follow the web's stored face and edge lists.
+- For Unzip and Saddle, the pairs of positions (i, j) on a face of length L satisfy j ≥ i + 2, and
+  (1, L) is skipped, so adjacent pairs are never enumerated. They give nothing in §6 either.
+- Implement this order for B19 mode. STRICT-ALL and PARTIAL-ALL keep §6.2's order. The full-list
+  ranks ℓ, ℓ_q, r and r_q are unaffected by order.
+
+**A2. What to report for B19 comparisons (extends §9.6).**
+- With the A1 order and the per-move counts of §6, B19's evaluated prefix N_e falls inside the
+  Unzip block for W2–W7. For W1 it covers every Unzip and Zip foam and the first 1,687 Saddle foams.
+- For each of W1–W7, report ℓ, ℓ_q, r and r_q for three sets: **(i) the Unzip block alone,
+  (ii) the first N_e half-foams in A1 order, (iii) the full list.**
+- Compare B19 Table 2 with (ii). Treat B19 Table 3 as a **probable lower bound**, not an exact
+  target: it was probably computed on the same prefix.
+- Only W1's site order is fully determined by Boozer's data (`webdodec`). For W2–W7, each face's
+  starting edge and direction in his drawings is not known. So (ii) may differ from his prefix for
+  those webs. Say so in the output rather than forcing agreement.
+
+**A3. Degenerate webs (clarifies §5.4 and §10.10–10.13).**
+Boozer's code *aborts the whole run* on degenerate configurations:
+- a bigon that isn't a theta, without 4 distinct vertices and edges;
+- a triangle without 6 distinct edges;
+- a square without 8 distinct edges and vertices, including a bigon or an outer triangle sitting on
+  a square edge;
+- any invalid output web.
+
+This specification instead handles them: by bridge FAIL, degenerate-square merging, circles from
+joins, and marker loss. Keep the handling, but **count and report, per web in B19 mode, every
+degenerate-square merge, extra circle, bridge FAIL, marker loss and component split** that occurs.
+If any occur for a web, B19 cannot have reached that state, and the N comparison for that web
+must be read with that in mind.
+
+**A4. Outer-face tracking across component splits (replaces §3.7's single-marker rule and §10.6).**
+- If a web splits into components through the outer region, Boozer keeps every component's outward
+  face ineligible.
+- So track a **set** of outer-face darts, one per component, updated through every web change.
+- If a marker is lost, i.e. its face disappears entirely, treat it as a **FAIL** of that branch,
+  not as "stop excluding faces", and count it under A3.
+
+**A5. Theta components (optional).** Boozer removes a theta component in one step, with its six dot
+variants on the two bigon edges. §5.1 puts the 0–2 dots on the third edge instead. Spans and all
+ranks are the same, but the a-vectors and `halffoams.jsonl` differ. **Keep §5.1's convention.**
+
+**A6. Face choice.** Boozer takes the first eligible face in his current face list; §6 takes the
+smallest min dart. N is unaffected. Under partial semantics the span might not be. Keep §6's rule,
+and note it as a difference.
+
