@@ -6,6 +6,8 @@ Authors: the 4ct-program contributors
 import FourCT.Base
 import FourCT.Examples
 import FourCT.PlaneGraph
+import FourCT.Potential
+import FourCT.Tait
 import FourCT.Transfer
 
 /-!

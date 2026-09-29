@@ -10,6 +10,7 @@ clean checkout. Leads, partial arguments and AI-written summaries go under
 
 | Date | Result | Evidence | Tier | PR |
 | --- | --- | --- | --- | --- |
+| 2026-09-29 | **Tait's correspondence, proved without the Four Colour Theorem.** A loopless plane triangulation is vertex 4-colourable (Mathlib's `Colorable 4`) exactly when its cubic dual has a proper 3-edge-colouring (`FourCT.PlaneGraph.tait`). At the hypermap level: a face 4-colouring of a cubic map gives a proper 3-edge-colouring on any surface; on the sphere every proper 3-edge-colouring arises that way; and on a connected map the correspondence is four-to-one. The genus-zero step is a new lemma: an edge labelling in ℤ₂ × ℤ₂ that sums to zero at every vertex is a difference of face labels (`FourCT.exists_facePotential`), proved from Euler's formula by a rank count over ℤ₂. The theta graph on the torus shows that the genus-zero hypothesis is needed. | `lean/FourCT/{Potential,Tait,Examples}.lean`; `lean-build` checks the axioms, and checks that none of these theorems depends on the 4CT (`checks/lean/fourct_independence.lean`, with two controls that must) | A3 | #35 |
 | 2026-09-29 | **Every planar simple graph is 4-colourable, stated in Mathlib's vocabulary** (`SimpleGraph.IsPlanar.colorable_four`). Also the 4CT for loopless plane graphs (`FourCT.PlaneGraph.four_colorable`) and for planar bridgeless hypermaps (`FourCT.hypermap_fourColorable`), all derived from the base port. Worked example: `K₄` is planar and not 3-colourable, so the theorem is tight. Every theorem depends only on `propext`, `Classical.choice`, `Quot.sound`. | `lean/FourCT/{Base,PlaneGraph,Examples}.lean`; `lean-build` checks the axioms of every theorem in `checks/lean/fourct_axioms.lean` | A3 | #34 |
 | 2026-09-27 | **The four colour theorem builds on Lean and Mathlib `v4.34.1`**, the program's pinned toolchain, as `FourColor.fourColorTheorem` in `lean/`. Depends only on `propext`, `Classical.choice`, `Quot.sound`; 115,342 declarations, no sorries, no extra axioms; anti-vacuity controls pass. No Lean source changed from corun1024 `3db71e0`. | `lean/build.sh` on the self-hosted runner; `lean-build` on this PR | A2 | #26 |
 | 2026-09-27 | `RBarish-UTokyo/FourColorTheorem-Lean4` builds clean on its own pinned toolchain, and `FourColor.RealPlane.four_color` depends on no axioms beyond `propext`, `Classical.choice`, `Quot.sound`. | port-build run [36350029344](https://github.com/glgmail/4ct-program/actions/runs/36350029344), artifact `port-build-RBarish-UTokyo` | evidence for A1 | #24 |
@@ -17,7 +18,11 @@ clean checkout. Leads, partial arguments and AI-written summaries go under
 
 ## Open leads
 
-- _(none yet)_
+- **Tait's edge side in Mathlib's vocabulary.** For a simple triangulation
+  with at least four vertices, the dual has no parallel edges, and
+  `EdgeColoring` of the dual should match a proper colouring of the dual's
+  `lineGraph`. Not stated or proved; only needed if A4 wants the edge side
+  stated for `SimpleGraph`s.
 
 ---
 
@@ -183,7 +188,94 @@ the definition did not say what its gloss said, so it was changed to `⊑`
 - infinite planar graphs, which are a compactness step away
   (De Bruijn–Erdős).
 
-Items 3 (Tait) and 4 (flows) come next.
+## Item 3: Tait's correspondence, done
+
+In `lean/FourCT/Potential.lean` and `lean/FourCT/Tait.lean`, with worked
+examples in `lean/FourCT/Examples.lean`.
+
+**It must not use the Four Colour Theorem.** For planar maps both sides of
+Tait's correspondence are true, since the theorem is proved, so an
+equivalence derived from it would be empty. The axiom check cannot see the
+difference: the 4CT itself uses only the three standard axioms. So
+`lean-build` now runs a second check, `checks/lean/fourct_independence.lean`.
+It walks every constant that a theorem's statement and proof mention,
+transitively, and fails if the walk reaches `FourColor.fourColorTheorem`,
+the port's `reducibility`, `exclude5` to `exclude11`,
+`Hypermap.not_minimalCounterExample`, or our `fourColor_base` and
+`hypermap_fourColorable`. Two controls, `IsPlanar.colorable_four` and
+`not_isPlanar_K5`, must reach them, and do, through `reducibility`. Tested
+against a theorem that uses the 4CT (fails as required) and a control that
+does not (fails as required).
+
+**The new definitions**, with English glosses:
+
+- **`FourCT.EdgeColoring G e`**: a proper 3-edge-colouring of the hypermap
+  `G`. Each edge gets one of the three non-zero colours of ℤ₂ × ℤ₂ (both of
+  its darts carry the colour, and it is never `0`), and consecutive darts
+  around a vertex get different colours. At a vertex of degree three, the
+  three edges there get three different colours.
+- **`FourCT.taitEdge G k`**: Tait's rule. From a colouring `k` of the faces,
+  colour each edge by the sum of the colours of the faces on its two sides.
+- **`FourCT.PlaneGraph.IsTriangulation T`**: every face of `T` has exactly
+  three darts, so three edges.
+- **`FourCT.Orbit σ`, `FourCT.inc G σ`**: the orbits of a permutation of the
+  darts, and the ℤ₂ incidence matrix between edges and orbits (the number of
+  shared darts, mod 2). These are proof machinery, not part of any
+  statement A4 will use.
+
+**The theorems:**
+
+| Theorem | Says |
+| --- | --- |
+| `FourCT.edgeColoring_taitEdge` | a face 4-colouring of a plain cubic map gives a proper 3-edge-colouring. Any genus |
+| `FourCT.range_inc_face_eq` | on a plain genus-0 map, the edge labellings over ℤ₂ that are sums of face labels are exactly those summing to zero at every vertex |
+| `FourCT.exists_facePotential` | the same with labels in the Klein four-group `Color` |
+| `FourCT.exists_coloring_of_edgeColoring` | on the sphere, every proper 3-edge-colouring of a cubic map is `taitEdge` of a face 4-colouring |
+| `FourCT.taitEdge_eq_taitEdge_iff_of_connected` | on a connected map, two face colourings give the same edge colouring exactly when they differ by a constant colour: the correspondence is four-to-one |
+| `FourCT.PlaneGraph.tait` | **a loopless plane triangulation is vertex 4-colourable (Mathlib's `Colorable 4`) exactly when its cubic dual has a proper 3-edge-colouring** |
+
+**Where the sphere comes in.** Only in `range_inc_face_eq`, and only through
+Euler's formula, by counting dimensions over ℤ₂:
+
+- The face-sum labellings have dimension `F − C`: adding a constant to the
+  faces of one component changes nothing.
+- The labellings summing to zero at each vertex have dimension `E − V + C`.
+  This is `E` minus the rank of the vertex–edge incidence matrix, which is
+  `V − C`, via `Matrix.rank_transpose`.
+- Every face-sum labelling sums to zero at each vertex: around a vertex,
+  each face is met twice.
+- Genus zero with two darts per edge gives `V − E + F = 2C`, so the two
+  dimensions are equal and the spaces coincide.
+
+The labels in `Color` are handled one bit at a time.
+
+**Worked examples** (`FourCT/Examples.lean`):
+
+- **The tetrahedron** is a triangulation, by `decide`. Colouring vertex `a`
+  with colour `a` gives, by Tait's rule, the colouring of `K₄`'s edges by
+  its three perfect matchings, `01, 23 ↦ c1`, `02, 13 ↦ c2`, `03, 12 ↦ c3`
+  (by `decide`). That is a proper 3-edge-colouring of the dual (by
+  `decide`). `tetrahedron_colorable_of_tait` then gets `K₄`'s
+  4-colourability from the edge colouring alone, without the 4CT.
+- **The theta graph on the torus** (`theta_torus`): two vertices joined by
+  three edges, both turning the same way. Its genus is one, from the orbit
+  counts: 3 edges, 2 vertices, 1 face. It has a proper 3-edge-colouring,
+  but no face 4-colouring, since its single face lies on both sides of every
+  edge. So the genus-zero hypothesis of `exists_coloring_of_edgeColoring`
+  cannot be dropped.
+
+**A departure from the plan above.** The decision section said edge
+colourings would be stated through Mathlib's `lineGraph`. They are stated on
+the hypermap instead. A cubic dual can have parallel edges: two triangles
+sharing two edges, which happens when the triangulation has multiple edges,
+as plane graphs may. A `SimpleGraph` forgets parallel edges, and a proper
+edge colouring must still give them different colours. The vertex side of
+`PlaneGraph.tait` is in Mathlib's vocabulary. The edge side is on the dual
+hypermap, with the gloss above.
+
+Item 4 (flows) comes next. Its core is already here: a nowhere-zero
+ℤ₂ × ℤ₂-flow is an edge labelling with non-zero labels summing to zero at
+every vertex, which is the hypothesis of `exists_facePotential`.
 
 ---
 
