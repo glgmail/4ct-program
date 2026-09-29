@@ -47,3 +47,12 @@ standard ones and nothing else.
 #print axioms FourCT.statements_tait
 #print axioms FourCT.statements_flows
 #print axioms FourCT.Examples.dumbbell_needs_bridgeless
+#print axioms FourCT.prod_levi_of_proper
+#print axioms FourCT.penrose_eq
+#print axioms FourCT.taitCount_ne_zero_iff
+#print axioms FourCT.penrose_iff_tait
+#print axioms FourCT.penrose_iff_vertexForm
+#print axioms FourCT.statements_penrose
+#print axioms FourCT.Examples.thetaSphere_penrose
+#print axioms FourCT.Examples.theta_torus_penrose
+#print axioms FourCT.Examples.tetra_penrose

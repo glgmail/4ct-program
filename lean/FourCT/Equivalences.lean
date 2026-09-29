@@ -5,7 +5,9 @@ Authors: the 4ct-program contributors
 -/
 import Statements.Tait
 import Statements.Flows
+import Statements.Penrose
 import FourCT.Flow
+import FourCT.Penrose
 
 /-!
 # FourCT.Equivalences — the statement files, tied to the Four Colour Theorem
@@ -19,9 +21,9 @@ them would be trivial if they did, since true statements are all equivalent.
 `checks/lean/fourct_independence.lean` checks every one.
 
 ```
-Statements.Tait  ↔  MapForm  ↔  Statements.Flows
-                       ↕
-                  VertexForm   (every planar simple graph is 4-colourable)
+Statements.Penrose  ↔  Statements.Tait  ↔  MapForm  ↔  Statements.Flows
+                                              ↕
+                                         VertexForm   (every planar simple graph is 4-colourable)
 ```
 
 * `VertexForm`: the Four Colour Theorem in Mathlib's vocabulary, the statement
@@ -42,6 +44,8 @@ The steps:
   3-edge-colouring (`FourCT.edgeColoring_iff_nowhereZeroFlow`).
 * **MapForm ↔ VertexForm.** By duality: the vertices of a plane graph are the
   faces of its dual, and loopless graphs have bridgeless duals.
+* **Penrose ↔ Tait.** By Penrose's formula (`FourCT.penrose_eq`), the evaluation
+  is `±` the number of Tait colourings.
 
 Then `VertexForm` holds by the Four Colour Theorem, and so do both statements
 (`statements_tait`, `statements_flows`). Those two do use the theorem.
@@ -169,6 +173,32 @@ form**, without the Four Colour Theorem. -/
 theorem flows_iff_vertexForm : Statements.Flows ↔ VertexForm :=
   tait_iff_flows.symm.trans tait_iff_vertexForm
 
+/-- On a plane cubic map, the Penrose evaluation is non-zero exactly when there
+is a proper 3-edge-colouring (Penrose's formula). -/
+theorem penrose_ne_zero_iff {D : Type} [Fintype D] [DecidableEq D] (P : PlaneGraph D)
+    (hc : P.map.Cubic) : Statements.penrose P.map ≠ 0 ↔ ∃ e, EdgeColoring P.map e := by
+  rw [penrose_eq P.plain hc P.planar, ← taitCount_ne_zero_iff]
+  constructor
+  · intro h h0
+    exact h (by rw [h0, Nat.cast_zero, mul_zero])
+  · intro h
+    exact mul_ne_zero (pow_ne_zero _ (by norm_num)) (by exact_mod_cast h)
+
+/-- **Penrose's statement is equivalent to Tait's**, without the Four Colour
+Theorem. -/
+theorem penrose_iff_tait : Statements.Penrose ↔ Statements.Tait := by
+  constructor
+  · intro h D _ P hb hc
+    classical
+    exact (penrose_ne_zero_iff P hc).1 (h D P hb hc)
+  · intro h D _ _ P hb hc
+    exact (penrose_ne_zero_iff P hc).2 (h D P hb hc)
+
+/-- **Penrose's statement is equivalent to the Four Colour Theorem in its vertex
+form**, without the Four Colour Theorem. -/
+theorem penrose_iff_vertexForm : Statements.Penrose ↔ VertexForm :=
+  penrose_iff_tait.trans tait_iff_vertexForm
+
 /-! ### The statements hold
 
 These use the Four Colour Theorem, through `SimpleGraph.IsPlanar.colorable_four`.
@@ -181,5 +211,8 @@ theorem statements_tait : Statements.Tait := tait_iff_vertexForm.2 vertexForm
 
 /-- **The flow statement holds.** -/
 theorem statements_flows : Statements.Flows := flows_iff_vertexForm.2 vertexForm
+
+/-- **Penrose's statement holds.** -/
+theorem statements_penrose : Statements.Penrose := penrose_iff_vertexForm.2 vertexForm
 
 end FourCT

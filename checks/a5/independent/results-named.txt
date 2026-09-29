@@ -1,0 +1,6 @@
+theta-sphere 2 -6 6
+theta-torus 2 6 6
+K4 4 6 6
+K33-a 6 0 12
+petersen 10 0 0
+wagner8 8 -18 18

@@ -7,6 +7,7 @@ import FourCT.Base
 import FourCT.Equivalences
 import FourCT.Examples
 import FourCT.Flow
+import FourCT.Penrose
 import FourCT.PlaneGraph
 import FourCT.Potential
 import FourCT.Tait

@@ -10,6 +10,7 @@ clean checkout. Leads, partial arguments and AI-written summaries go under
 
 | Date | Result | Evidence | Tier | PR |
 | --- | --- | --- | --- | --- |
+| 2026-09-29 | **Penrose's formula, proved without the Four Colour Theorem.** For a plain cubic map on the sphere, Penrose's contraction of the Levi-Civita tensor is `(-1)^(V/2)` times the number of Tait colourings (`FourCT.penrose_eq`). So `Statements.Penrose` (every bridgeless plane cubic map has a non-zero evaluation) is equivalent to Tait's statement and to the vertex form (`FourCT.penrose_iff_vertexForm`). Two independent implementations agree on all 9,150 plane cubic graphs up to 20 vertices, and the formula holds with its sign on every one. Off the sphere it fails: in sign for the theta graph on the torus, in magnitude for K3,3 (`P = 0`, `T = 12`). | `lean/FourCT/Penrose.lean`, `lean/Statements/Penrose.lean`; `checks/a5/` (reruns identically); `lean-build` checks the axioms and the independence from the 4CT | A5 | #41 |
 | 2026-09-29 | **The first two statement files are tied to the Four Colour Theorem, without using it.** `Statements.Tait` (every bridgeless plane cubic map has a proper 3-edge-colouring) and `Statements.Flows` (every bridgeless plane graph has a nowhere-zero `ZMod 2 × ZMod 2`-flow) are each equivalent to every planar simple graph being 4-colourable (`FourCT.tait_iff_vertexForm`, `FourCT.flows_iff_vertexForm`), and to each other (`FourCT.tait_iff_flows`). Both are then proved from the base port. The dumbbell shows both need "bridgeless". Gabriel signed off on both statement files on 2026-09-29, after the merge; the sign-off is recorded in #37. | `lean/Statements/{Tait,Flows}.lean`, `lean/FourCT/Equivalences.lean`; `lean-build` checks the axioms and the independence from the 4CT | A4 | #37 |
 | 2026-09-29 | **Nowhere-zero ℤ₂ × ℤ₂-flows, proved without the Four Colour Theorem.** On a cubic map, on any surface, the nowhere-zero ℤ₂ × ℤ₂-flows are exactly the proper 3-edge-colourings (`FourCT.edgeColoring_iff_nowhereZeroFlow`). On the sphere, a plain map has a face 4-colouring exactly when it has a nowhere-zero ℤ₂ × ℤ₂-flow, and Tait's rule turns one into the other (`FourCT.fourColorable_iff_nowhereZeroFlow`). In Mathlib's vocabulary, a loopless plane graph is 4-colourable exactly when its dual has such a flow (`FourCT.PlaneGraph.colorable_four_iff_nowhereZeroFlow_dual`). The theta graph on the torus has a flow but no colouring. | `lean/FourCT/{Flow,Examples}.lean`; `lean-build` checks the axioms and the independence from the 4CT | A3 | #36 |
 | 2026-09-29 | **Tait's correspondence, proved without the Four Colour Theorem.** A loopless plane triangulation is vertex 4-colourable (Mathlib's `Colorable 4`) exactly when its cubic dual has a proper 3-edge-colouring (`FourCT.PlaneGraph.tait`). At the hypermap level: a face 4-colouring of a cubic map gives a proper 3-edge-colouring on any surface; on the sphere every proper 3-edge-colouring arises that way; and on a connected map the correspondence is four-to-one. The genus-zero step is a new lemma: an edge labelling in ℤ₂ × ℤ₂ that sums to zero at every vertex is a difference of face labels (`FourCT.exists_facePotential`), proved from Euler's formula by a rank count over ℤ₂. The theta graph on the torus shows that the genus-zero hypothesis is needed. | `lean/FourCT/{Potential,Tait,Examples}.lean`; `lean-build` checks the axioms, and checks that none of these theorems depends on the 4CT (`checks/lean/fourct_independence.lean`, with two controls that must) | A3 | #35 |
@@ -25,6 +26,81 @@ clean checkout. Leads, partial arguments and AI-written summaries go under
   `EdgeColoring` of the dual should match a proper colouring of the dual's
   `lineGraph`. Not stated or proved; only needed if A4 wants the edge side
   stated for `SimpleGraph`s.
+
+---
+
+# A5 — Penrose's formula
+
+Issue #39. Penrose (1971) counted the Tait colourings of a planar cubic graph
+by contracting the Levi-Civita tensor.
+
+**The form chosen: the ε-contraction.**
+- **Definition** (`Statements.penrose`): for a hypermap `G`, sum over every
+  colouring `c` of the edges with `0, 1, 2` (dart colourings constant on
+  edges) of `∏ x, levi (c x) (c (node x)) (c (node (node x)))`.
+  - `levi` is the Levi-Civita symbol, `+1` on the cyclic rotations of
+    `(0, 1, 2)`.
+  - The product runs over darts. In a cubic map each vertex's factor then
+    appears three times, and `levi ∈ {0, ±1}` makes that equal to one factor.
+  - This form needs no choice of a vertex representative.
+- **Why not the state-sum form:** Kauffman's bracket and Jaeger's Penrose
+  polynomial resolve each vertex. That would need a separate definition of
+  states, and the ε-contraction is the object the formula and Workstream C
+  are about.
+
+**The formula** (`FourCT.penrose_eq`): for a plain cubic genus-0 map,
+`penrose G = (-1)^(V/2) · taitCount G`, with `V` the number of vertices. The
+sign was not taken from a source. It was found by computation, then proved,
+and the two implementations confirm it on every plane cubic graph up to 20
+vertices.
+
+**The proof uses no Jordan curve theorem.** It is local counting on top of #35:
+- A term is non-zero only for a Tait colouring, and is then `±1`.
+- On the sphere a Tait colouring comes from a face colouring `k` by Tait's
+  rule (`exists_coloring_of_edgeColoring`, which is where genus zero enters).
+- At each vertex the sign is `(-1)` to the sum over its three darts of a 0/1
+  quantity `tau`, defined from the edge colour and the face colours
+  (`levi_eq_neg_one_pow`). `decide` checks this over all 64 colour triples.
+- Summed over all darts, `tau` counts two things:
+  - the `c2`-darts whose face has high bit `0`. That is one per `c2`-edge,
+    since across a `c2`-edge the high bit changes, so `V/2` of them;
+  - the `c1`-darts with a property that both darts of a `c1`-edge share. That
+    is an even number, by pairing darts with a fixed-point-free involution.
+
+**Off the sphere** (`checks/a5/results-embeddings.txt`):
+- Reversing the rotation at a vertex negates every term at once. So the
+  relative signs of the terms depend only on the graph, and the embedding
+  decides a single global sign.
+- For a planar graph, every embedding has `|P| = T`, but only the genus-0 ones
+  are guaranteed the formula's sign. The theta graph on the torus has
+  `P = +6`, where the formula gives `-6`. That is checked in Lean
+  (`theta_torus_penrose`).
+- K3,3 has `P = 0` and `T = 12` in every embedding, of genus 1 or 2, so there
+  the formula fails in magnitude.
+- The Wagner graph is non-planar, yet `|P| = T`. So non-planarity alone does
+  not break the magnitude.
+
+**The statement** (`Statements/Penrose.lean`): every bridgeless plane cubic map
+has a non-zero Penrose evaluation. It is proved equivalent to `Statements.Tait`
+through the formula (`penrose_iff_tait`), and so to the vertex form, without
+the 4CT, and then proved from the port (`statements_penrose`). "Bridgeless" is
+needed: a cubic map with a bridge has no Tait colouring, so its evaluation is
+`0`, as for the dumbbell.
+
+**Two implementations** (`checks/a5/`), with exact integers:
+- **A** enumerates proper colourings and adds their signs.
+- **B**, written by a separate agent that never read A, contracts the tensor
+  network over all colourings.
+- They agree byte for byte on all 9,150 duals of 3-connected triangulations
+  with 4 to 12 vertices.
+
+**Worked examples in Lean:**
+- the theta graph on the sphere: `P = -6`, `T = 6`, by `decide`;
+- on the torus: `P = +6`;
+- the tetrahedron: `P = T ≠ 0`.
+
+The tetrahedron's exact value, 6, is checked in Python only: `decide` over
+`3^12` dart colourings is too big.
 
 ---
 

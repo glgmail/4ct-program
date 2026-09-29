@@ -1,0 +1,11 @@
+results-plane.txt: A has 9150 lines, B has 9150; identical: True
+results-named.txt: A has 6 lines, B has 6; identical: True
+plane graphs: 9150, N = 4..12, up to 20 vertices
+P = (-1)^(V/2) T on 9150 of 9150; T > 0 on 9150 of 9150
+  theta-sphere: V=2 P=-6 T=6  P=(-1)^(V/2)T: True  |P|=T: True
+  theta-torus: V=2 P=6 T=6  P=(-1)^(V/2)T: False  |P|=T: True
+  K4: V=4 P=6 T=6  P=(-1)^(V/2)T: True  |P|=T: True
+  K33-a: V=6 P=0 T=12  P=(-1)^(V/2)T: False  |P|=T: False
+  petersen: V=10 P=0 T=0  P=(-1)^(V/2)T: True  |P|=T: True
+  wagner8: V=8 P=-18 T=18  P=(-1)^(V/2)T: False  |P|=T: True
+ALL CHECKS PASS

@@ -10,10 +10,10 @@ Run by `lean-build`, from `lean/`, as
 `lake env lean ../checks/lean/fourct_independence.lean`.
 
 Some theorems are only worth having if they are proved **without** the Four
-Colour Theorem. Tait's correspondence, the flow correspondences and the
-equivalences of the statement files are such theorems: for planar maps both of
-their sides are true, because the theorem is proved, so an equivalence derived
-from the theorem would say nothing. The axiom check cannot see this, since the
+Colour Theorem. Tait's correspondence, the flow correspondences, Penrose's
+formula and the equivalences of the statement files are such theorems: for
+planar maps both of their sides are true, because the theorem is proved, so an
+equivalence derived from the theorem would say nothing. The axiom check cannot see this, since the
 Four Colour Theorem uses only the three standard axioms.
 
 `#assert_independent T` walks every constant that `T`'s statement and proof
@@ -102,8 +102,16 @@ end FourCTCheck
 #assert_independent FourCT.tait_iff_vertexForm
 #assert_independent FourCT.flows_iff_vertexForm
 #assert_independent FourCT.Examples.dumbbell_needs_bridgeless
+#assert_independent FourCT.prod_levi_of_proper
+#assert_independent FourCT.penrose_eq
+#assert_independent FourCT.penrose_iff_tait
+#assert_independent FourCT.penrose_iff_vertexForm
+#assert_independent FourCT.Examples.thetaSphere_penrose
+#assert_independent FourCT.Examples.theta_torus_penrose
+#assert_independent FourCT.Examples.tetra_penrose
 
 #assert_dependent SimpleGraph.IsPlanar.colorable_four
 #assert_dependent FourCT.Examples.not_isPlanar_K5
 #assert_dependent FourCT.statements_tait
 #assert_dependent FourCT.statements_flows
+#assert_dependent FourCT.statements_penrose
