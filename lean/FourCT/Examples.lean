@@ -5,6 +5,7 @@ Authors: the 4ct-program contributors
 -/
 import FourCT.PlaneGraph
 import FourCT.Flow
+import Statements.Flows
 import Mathlib.Combinatorics.SimpleGraph.Hasse
 
 /-!
@@ -53,6 +54,11 @@ What it establishes:
     triangle's 4-colourability (`triangle_fourColorable_of_flow`).
   - **Off the sphere:** the theta graph on the torus has a nowhere-zero flow
     but no face 4-colouring (`theta_torus_flow`).
+* **The statements need "bridgeless"** (`dumbbell`). The dumbbell is two loops
+  joined by an edge. It is a plane cubic map with a bridge, and it has
+  neither a proper 3-edge-colouring nor a nowhere-zero flow. So
+  `Statements.Tait` and `Statements.Flows` would be false without their
+  bridgeless hypothesis.
 
 The other direction needs no separate check. The theorem is proved, so no
 graph that needs five colours can be `IsPlanar`; in particular `K₅` is not
@@ -413,5 +419,73 @@ on the torus has a nowhere-zero ℤ₂ × ℤ₂-flow but no face 4-colouring. -
 theorem theta_torus_flow :
     NowhereZeroFlow thetaTorus thetaEdgeColors ∧ ¬ thetaTorus.FourColorable :=
   ⟨by decide, theta_torus.2.1⟩
+
+/-! ### The statements need "bridgeless": the dumbbell
+
+Two vertices `u`, `v`, each with a loop, joined by an edge. Darts `0, 1` are
+the loop at `u`, dart `2` is the end of the joining edge at `u`, darts `3, 4`
+are the loop at `v`, and dart `5` is the end of the joining edge at `v`. -/
+
+/-- `edge` of the dumbbell. -/
+def dumbEdge : Perm (Fin 6) := ⟨![1, 0, 5, 4, 3, 2], ![1, 0, 5, 4, 3, 2], by decide, by decide⟩
+
+/-- `node` of the dumbbell: `0 → 1 → 2` at `u` and `3 → 4 → 5` at `v`. -/
+def dumbNode : Perm (Fin 6) := ⟨![1, 2, 0, 4, 5, 3], ![2, 0, 1, 5, 3, 4], by decide, by decide⟩
+
+/-- `face` of the dumbbell, `node⁻¹ ∘ edge`: the inside of each loop (`0`, `3`)
+and the outside (`1 2 4 5`). -/
+def dumbFace : Perm (Fin 6) := ⟨![0, 2, 4, 3, 5, 1], ![0, 5, 1, 3, 2, 4], by decide, by decide⟩
+
+/-- The dumbbell as a hypermap. -/
+def dumbMap : Hypermap (Fin 6) where
+  edge := dumbEdge
+  node := dumbNode
+  face := dumbFace
+  node_face_edge := by decide
+
+/-- Planar: 3 edges, 2 vertices, 3 faces, one component, 6 darts, so
+`2·1 + 6 = 3 + 2 + 3`. -/
+theorem dumbMap_planar : dumbMap.Planar := by
+  refine planar_of_counts dumbMap (connected_of_reach dumbMap 0 6 (by decide)) ?_
+  simp only [cycleCount_eq_card]
+  decide
+
+/-- **The dumbbell**, as a plane graph. -/
+def dumbbell : PlaneGraph (Fin 6) := ⟨dumbMap, ⟨by decide, by decide⟩, dumbMap_planar⟩
+
+theorem dumbbell_cubic : dumbbell.map.Cubic :=
+  ⟨fun x _ => (by decide : ∀ y, dumbNode (dumbNode (dumbNode y)) = y) x,
+    fun x _ => (by decide : ∀ y, dumbNode y ≠ y) x⟩
+
+/-- The joining edge is a bridge: the outside face is on both of its sides. -/
+theorem dumbbell_not_bridgeless : ¬ dumbbell.map.Bridgeless :=
+  fun h => h 2 ⟨2, by decide⟩
+
+/-- **The dumbbell has no proper 3-edge-colouring**: the two ends of a loop are
+consecutive at their vertex, but carry the same colour. -/
+theorem dumbbell_no_edgeColoring : ¬ ∃ e, EdgeColoring dumbbell.map e := by
+  rintro ⟨e, he⟩
+  have h01 : dumbbell.map.node 0 = dumbbell.map.edge 0 := by decide
+  exact he.node 0 (h01 ▸ he.edge 0)
+
+/-- **The dumbbell has no nowhere-zero flow**: at `u` the loop's two values
+cancel, so the joining edge would have to carry `0`. -/
+theorem dumbbell_no_flow : ¬ ∃ w, Statements.IsNowhereZeroFlow dumbbell w := by
+  rintro ⟨w, hedge, hne, hsum⟩
+  have hS : Finset.univ.filter (fun y => dumbbell.map.node.SameCycle 0 y) = {0, 1, 2} := by
+    decide
+  have h := hsum 0
+  rw [hS, Finset.sum_insert (by decide), Finset.sum_insert (by decide),
+    Finset.sum_singleton, show (1 : Fin 6) = dumbbell.map.edge 0 by decide, hedge,
+    add_neg_cancel_left] at h
+  exact hne 2 h
+
+/-- **Both statements need their bridgeless hypothesis**: the dumbbell is a
+plane cubic map, and it has neither a proper 3-edge-colouring nor a nowhere-zero
+flow. -/
+theorem dumbbell_needs_bridgeless :
+    dumbbell.map.Cubic ∧ ¬ dumbbell.map.Bridgeless ∧
+      (¬ ∃ e, EdgeColoring dumbbell.map e) ∧ ¬ ∃ w, Statements.IsNowhereZeroFlow dumbbell w :=
+  ⟨dumbbell_cubic, dumbbell_not_bridgeless, dumbbell_no_edgeColoring, dumbbell_no_flow⟩
 
 end FourCT.Examples

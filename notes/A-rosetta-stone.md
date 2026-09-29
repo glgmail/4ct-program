@@ -10,6 +10,7 @@ clean checkout. Leads, partial arguments and AI-written summaries go under
 
 | Date | Result | Evidence | Tier | PR |
 | --- | --- | --- | --- | --- |
+| 2026-09-29 | **The first two statement files are tied to the Four Colour Theorem, without using it.** `Statements.Tait` (every bridgeless plane cubic map has a proper 3-edge-colouring) and `Statements.Flows` (every bridgeless plane graph has a nowhere-zero `ZMod 2 × ZMod 2`-flow) are each equivalent to every planar simple graph being 4-colourable (`FourCT.tait_iff_vertexForm`, `FourCT.flows_iff_vertexForm`), and to each other (`FourCT.tait_iff_flows`). Both are then proved from the base port. The dumbbell shows both need "bridgeless". The statement files themselves need Gabriel's sign-off in the pull request. | `lean/Statements/{Tait,Flows}.lean`, `lean/FourCT/Equivalences.lean`; `lean-build` checks the axioms and the independence from the 4CT | A4 | #37 |
 | 2026-09-29 | **Nowhere-zero ℤ₂ × ℤ₂-flows, proved without the Four Colour Theorem.** On a cubic map, on any surface, the nowhere-zero ℤ₂ × ℤ₂-flows are exactly the proper 3-edge-colourings (`FourCT.edgeColoring_iff_nowhereZeroFlow`). On the sphere, a plain map has a face 4-colouring exactly when it has a nowhere-zero ℤ₂ × ℤ₂-flow, and Tait's rule turns one into the other (`FourCT.fourColorable_iff_nowhereZeroFlow`). In Mathlib's vocabulary, a loopless plane graph is 4-colourable exactly when its dual has such a flow (`FourCT.PlaneGraph.colorable_four_iff_nowhereZeroFlow_dual`). The theta graph on the torus has a flow but no colouring. | `lean/FourCT/{Flow,Examples}.lean`; `lean-build` checks the axioms and the independence from the 4CT | A3 | #36 |
 | 2026-09-29 | **Tait's correspondence, proved without the Four Colour Theorem.** A loopless plane triangulation is vertex 4-colourable (Mathlib's `Colorable 4`) exactly when its cubic dual has a proper 3-edge-colouring (`FourCT.PlaneGraph.tait`). At the hypermap level: a face 4-colouring of a cubic map gives a proper 3-edge-colouring on any surface; on the sphere every proper 3-edge-colouring arises that way; and on a connected map the correspondence is four-to-one. The genus-zero step is a new lemma: an edge labelling in ℤ₂ × ℤ₂ that sums to zero at every vertex is a difference of face labels (`FourCT.exists_facePotential`), proved from Euler's formula by a rank count over ℤ₂. The theta graph on the torus shows that the genus-zero hypothesis is needed. | `lean/FourCT/{Potential,Tait,Examples}.lean`; `lean-build` checks the axioms, and checks that none of these theorems depends on the 4CT (`checks/lean/fourct_independence.lean`, with two controls that must) | A3 | #35 |
 | 2026-09-29 | **Every planar simple graph is 4-colourable, stated in Mathlib's vocabulary** (`SimpleGraph.IsPlanar.colorable_four`). Also the 4CT for loopless plane graphs (`FourCT.PlaneGraph.four_colorable`) and for planar bridgeless hypermaps (`FourCT.hypermap_fourColorable`), all derived from the base port. Worked example: `K₄` is planar and not 3-colourable, so the theorem is tight. Every theorem depends only on `propext`, `Classical.choice`, `Quot.sound`. | `lean/FourCT/{Base,PlaneGraph,Examples}.lean`; `lean-build` checks the axioms of every theorem in `checks/lean/fourct_axioms.lean` | A3 | #34 |
@@ -24,6 +25,60 @@ clean checkout. Leads, partial arguments and AI-written summaries go under
   `EdgeColoring` of the dual should match a proper colouring of the dual's
   `lineGraph`. Not stated or proved; only needed if A4 wants the edge side
   stated for `SimpleGraph`s.
+
+---
+
+# A4 — the first statement files
+
+Issue #5 asks for two files in `lean/Statements/`, Tait and flows, each holding
+the definitions it needs and the statement alone.
+
+**Decision (Gabriel, 2026-09-29): the statements are phrased over plane maps**
+(`FourCT.PlaneGraph`), not over Mathlib's `SimpleGraph`. A3's infrastructure
+connects to plane maps, so both statements could be tied to the Four Colour
+Theorem at once. A `SimpleGraph` phrasing would have needed new work first:
+extracting a plane map of exactly `G` from `G ⊑ P.graph`. Parallel edges and
+loops are allowed, as in Tait's and Tutte's original settings.
+
+| Statement | Lean | Assumed |
+| --- | --- | --- |
+| `Statements.Tait` | `∀ D [Fintype D] (P : PlaneGraph D), P.map.Bridgeless → P.map.Cubic → ∃ e, EdgeColoring P.map e` | finite; plain and genus 0 (in `PlaneGraph`); bridgeless; cubic |
+| `Statements.Flows` | `∀ D [Fintype D] [DecidableEq D] (P : PlaneGraph D), P.map.Bridgeless → ∃ w, IsNowhereZeroFlow P w` | finite; plain and genus 0; bridgeless |
+
+The traps #5 names, and where each is handled:
+
+- **Tait needs bridgeless, and so do flows.** The dumbbell is two loops joined
+  by an edge. It is a plane cubic map with a bridge, and it has neither a
+  proper 3-edge-colouring nor a nowhere-zero flow
+  (`FourCT.Examples.dumbbell_needs_bridgeless`).
+- **Which direction Tait's file states.** It states the edge-colouring side,
+  for cubic maps. The equivalence with the vertex form goes through the base
+  port's reduction to cubic maps (`Hypermap.fourColorable_of_no_minimalCounterExample`
+  with `MinimalCounterExample.cubic`), and not through triangulations.
+- **Which side the flow is on.** It is on the graph `P` itself. It corresponds
+  to 4-colourings of `P`'s faces, which are the vertices of the dual.
+- **The orientation convention.** It is the standard one: values on darts,
+  opposite on the two darts of an edge, summing to zero at each vertex. In
+  `ZMod 2 × ZMod 2` every element is its own negative
+  (`FourCT.neg_eq_self_zmod2`), so the statement does not depend on
+  orientation. `FourCT.exists_isNowhereZeroFlow_iff` identifies it with the
+  unoriented `FourCT.NowhereZeroFlow`.
+- **The two statements must be provably equivalent.** They are, by
+  `FourCT.tait_iff_flows`, and each is equivalent to the vertex form
+  (`FourCT.tait_iff_vertexForm`, `FourCT.flows_iff_vertexForm`).
+
+**None of the equivalences uses the Four Colour Theorem.**
+`checks/lean/fourct_independence.lean` checks each one, including the port's
+reduction to cubic maps (`FourCT.mapForm_of_cubic`). Both statements are then
+proved from the port (`FourCT.statements_tait`, `FourCT.statements_flows`),
+which the independence check lists as controls that must depend on the
+theorem. They do.
+
+**No lakefile change was needed.** #5 asked to add `"Statements.+"` to the
+globs, but it has been there since the scaffold, and `build_pool.py` already
+builds every `Statements` module. Editing `lakefile.toml` would have forced
+the two-hour rebuild. `lean/Statements/README.md` was out of date ("must not
+import FourColor", "build with `lake build`") and has been corrected.
 
 ---
 
