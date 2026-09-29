@@ -79,8 +79,10 @@ in the pull request that sign-off is outstanding.
 
 ## Licences
 
-`third_party/` holds read-only upstreams pinned as submodules. Do not edit
-anything under it.
+`third_party/` holds read-only upstreams: submodules pinned to commits, and
+plantri, which has no git repository and is vendored unmodified from its
+release tarball, with every file's digest in `third_party/plantri/PROVENANCE.md`.
+Do not edit anything under it.
 
 Keep every licence and notice intact — see `THIRD_PARTY_NOTICES.md`. In
 particular the CeCILL-B credit in `corun1024/4ct` and the `NOTICE` from

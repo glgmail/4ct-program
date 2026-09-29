@@ -17,3 +17,6 @@ __pycache__/
 # Local run output; anything worth keeping goes in notes/ or data/
 /scratch/
 *.log
+
+# B1 harness default output directory
+search/b1/out/

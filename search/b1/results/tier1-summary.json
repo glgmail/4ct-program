@@ -1,0 +1,238 @@
+{
+ "bounds": {
+  "disc": [
+   4,
+   13
+  ],
+  "sphere": [
+   4,
+   13
+  ],
+  "tier": 1
+ },
+ "candidates": {
+  "BAL1": {
+   "domain": "sphere",
+   "expectation": "Expected false. In a bipyramid (two poles joined to every vertex of a long cycle) the poles' colours are barred from the whole cycle, so some class must stay small.",
+   "family": "balanced colourings",
+   "killed_at": {
+    "ascii": "7 bcdefg,agdc,abd,acbgfe,adf,aedg,afdb",
+    "boundary": null,
+    "counterexamples_at_n": 1,
+    "n": 7,
+    "witness": {
+     "most_balanced_class_sizes": [
+      3,
+      2,
+      1,
+      1
+     ]
+    }
+   },
+   "palette": "shared",
+   "statement": "Every triangulation of the sphere has an equitable proper 4-colouring: the four colour classes differ in size by at most one.",
+   "tested": {
+    "4": 1,
+    "5": 1,
+    "6": 2,
+    "7": 5
+   },
+   "verdict": "killed"
+  },
+  "BAL2": {
+   "domain": "sphere",
+   "expectation": "Positive control: a theorem for all planar graphs with n >= 3 (Kawarabayashi, Yoneda and Yoneda, arXiv:2607.13025, July 2026). If the harness kills it, the harness or the paper is wrong.",
+   "family": "balanced colourings",
+   "palette": "shared",
+   "statement": "Every triangulation of the sphere on n vertices has a proper 4-colouring in which every colour is used on fewer than n/2 vertices.",
+   "tested": {
+    "4": 1,
+    "5": 1,
+    "6": 2,
+    "7": 5,
+    "8": 14,
+    "9": 50,
+    "10": 233,
+    "11": 1249,
+    "12": 7595,
+    "13": 49566
+   },
+   "verdict": "not killed up to n=13"
+  },
+  "FL1": {
+   "domain": "sphere",
+   "expectation": "Known false, but not within reach: this is Tait's conjecture, refuted by Tutte (1946). The smallest counterexamples have 38 dual vertices (Holton and McKay 1988), i.e. triangulations with 21 vertices, beyond the bound. It must survive both tiers, which shows that surviving is not being true.",
+   "family": "flows",
+   "palette": "shared",
+   "statement": "The dual cubic graph of every triangulation of the sphere has a Tait colouring in which two of the colour classes together form a Hamiltonian cycle (equivalently, the dual is Hamiltonian).",
+   "tested": {
+    "4": 1,
+    "5": 1,
+    "6": 2,
+    "7": 5,
+    "8": 14,
+    "9": 50,
+    "10": 233,
+    "11": 1249,
+    "12": 7595,
+    "13": 49566
+   },
+   "verdict": "not killed up to n=13"
+  },
+  "FL2": {
+   "domain": "sphere",
+   "expectation": "Open to us; a strengthening of FL1 and so false eventually, but the question is how early.",
+   "family": "flows",
+   "killed_at": {
+    "ascii": "6 bcde,aefc,abfd,acfe,adfb,bedc",
+    "boundary": null,
+    "counterexamples_at_n": 1,
+    "n": 6,
+    "witness": {
+     "best_hamiltonian_pairs": 2
+    }
+   },
+   "palette": "shared",
+   "statement": "The dual cubic graph of every triangulation of the sphere has a Tait colouring in which every two of the three colour classes together form a Hamiltonian cycle.",
+   "tested": {
+    "4": 1,
+    "5": 1,
+    "6": 2
+   },
+   "verdict": "killed"
+  },
+  "K1": {
+   "domain": "sphere",
+   "expectation": "Open to us. A yes would let an argument move between colourings freely, which is what Kempe's own proof needed. Meyniel proved the analogue for 5-colourings of planar graphs.",
+   "family": "Kempe connectivity",
+   "killed_at": {
+    "ascii": "8 bcde,aefgc,abghd,achfe,adfb,bedhg,bfhc,cgfd",
+    "boundary": null,
+    "counterexamples_at_n": 1,
+    "n": 8,
+    "witness": {
+     "class_sizes": [
+      1,
+      2
+     ],
+     "colouring_in_smallest_class": [
+      0,
+      1,
+      2,
+      3,
+      2,
+      0,
+      3,
+      1
+     ],
+     "kempe_classes": 2
+    }
+   },
+   "palette": "shared",
+   "statement": "For every triangulation of the sphere, any two proper 4-colourings are connected by a sequence of Kempe changes.",
+   "tested": {
+    "4": 1,
+    "5": 1,
+    "6": 2,
+    "7": 5,
+    "8": 14
+   },
+   "verdict": "killed"
+  },
+  "L1": {
+   "domain": "sphere",
+   "expectation": "Rejected up front, never run: planar graphs are not 4-choosable (Voigt 1993). It is here to show the rejection working.",
+   "family": "precolouring extension",
+   "palette": "lists",
+   "reason": "list-style candidate: planar graphs are not 4-choosable (M. Voigt, Discrete Math. 120 (1993) 215-219), so candidates must use the shared four colours",
+   "statement": "Every triangulation of the sphere is 4-choosable: whatever list of four colours each vertex is given, it can be coloured from its lists.",
+   "verdict": "rejected"
+  },
+  "PE1": {
+   "domain": "disc",
+   "expectation": "Control, known false: the wheel with four spokes, a 4-cycle around one vertex, cannot extend a boundary colouring that uses all four colours. The harness must kill it at 5 vertices.",
+   "family": "precolouring extension",
+   "killed_at": {
+    "ascii": "5 bcd,aec,abed,ace,bdc",
+    "boundary": [
+     1,
+     2,
+     5,
+     4
+    ],
+    "counterexamples_at_n": 1,
+    "n": 5,
+    "witness": {
+     "boundary": [
+      1,
+      2,
+      5,
+      4
+     ],
+     "boundary_colouring": [
+      0,
+      1,
+      2,
+      3
+     ]
+    }
+   },
+   "palette": "shared",
+   "statement": "In every triangulation of a disc with a chordless boundary, every proper 4-colouring of the boundary cycle extends to the whole disc.",
+   "tested": {
+    "4": 1,
+    "5": 2
+   },
+   "verdict": "killed"
+  },
+  "PE2": {
+   "domain": "disc",
+   "expectation": "Open to us. Restricting the boundary to three colours is the natural way to rescue PE1, since a 3-coloured boundary leaves a fourth colour free for the inside.",
+   "family": "precolouring extension",
+   "killed_at": {
+    "ascii": "6 bcde,afc,abfd,acfe,adf,bedc",
+    "boundary": [
+     1,
+     2,
+     6,
+     5
+    ],
+    "counterexamples_at_n": 1,
+    "n": 6,
+    "witness": {
+     "boundary": [
+      1,
+      2,
+      6,
+      5
+     ],
+     "boundary_colouring": [
+      0,
+      1,
+      2,
+      1
+     ]
+    }
+   },
+   "palette": "shared",
+   "statement": "In every triangulation of a disc with a chordless boundary, every proper colouring of the boundary cycle that uses at most three colours extends to a proper 4-colouring of the whole disc.",
+   "tested": {
+    "4": 1,
+    "5": 2,
+    "6": 7
+   },
+   "verdict": "killed"
+  }
+ },
+ "header": [
+  "B1 strengthening-search harness (search/b1/run.py)",
+  "repository commit: 9f7a9b99ad215dc8f70421166011dacaa9b7f370",
+  "plantri: 5.8, plantri.c sha256 3f70de5a3cacc78b2ed25b6a257588da94a518d8ae1dae74bcd0bf259cea07e8",
+  "compiler: cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0 (cc -O4)",
+  "python: 3.14.4 (CPython)",
+  "host: Legion",
+  "platform: Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "seed: 20260928 (selfcheck relabelling only; the enumeration is exhaustive)",
+  "command: search/b1/run.py all --jobs 17 --out /home/claude/b1-out"
+ ]
+}

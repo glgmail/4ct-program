@@ -64,8 +64,10 @@ checks/          our own re-implementations of the near-linear proof checks
 data/            configurations, rules, polynomials, foam ranks (Git LFS)
 search/          unavoidable-set search, learned discharging, conjecture mining
   index/         queryable index of the 8,202 reducible configurations
+  b1/            strengthening-search harness over all small triangulations
 notes/           per-workstream results log
-third_party/     git submodules pinned to commits; read-only upstreams
+third_party/     read-only upstreams: git submodules pinned to commits, and
+                 plantri (vendored unmodified; no git repository upstream)
 ```
 
 ## Working in this repository
@@ -81,7 +83,9 @@ third_party/     git submodules pinned to commits; read-only upstreams
   `checks` (repository guardrails, GitHub-hosted).
 - `third_party/` holds git submodules pinned to commits. Clone with
   `git clone --recurse-submodules`, or run `git submodule update --init`
-  after cloning. Nothing in `third_party/` is edited here.
+  after cloning. The exception is `third_party/plantri/`: plantri has no git
+  repository, so its release tarball is vendored unmodified, with every
+  file's digest in `PROVENANCE.md`. Nothing in `third_party/` is edited here.
 - `data/` is stored in Git LFS. Install `git-lfs` before cloning, and keep
   `data/MANIFEST.csv` in step with what is added: every file needs a path,
   a source URL, a license and a sha256.

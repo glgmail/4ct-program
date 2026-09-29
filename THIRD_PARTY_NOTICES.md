@@ -5,6 +5,11 @@ as a git submodule under `third_party/`, at a commit; the upstream `LICENSE`
 and `NOTICE` files travel with the submodule and are not edited there. This
 file collects the notices that must be preserved in any redistribution.
 
+**One project is vendored unmodified, because it has no git repository to
+pin:** plantri, copied from its release tarball into `third_party/plantri/`,
+where `PROVENANCE.md` records the source, the tarball's digest and every
+file's digest. `checks/repo_guardrails.py` fails if any of them change.
+
 **One project is also vendored, with modifications:** corun1024/4ct is copied
 into `lean/` as this program's base port (task A2). Its licence and CeCILL-B
 credit are kept alongside it at `lean/LICENSES/corun1024-4ct.txt`, and its
@@ -21,6 +26,41 @@ copied** are listed at the end.
 | [corun1024/4ct](https://github.com/corun1024/4ct) (Lean) | MIT, with CeCILL-B credit for data translated from Gonthier's proof | Reuse; keep both notices |
 | [RBarish-UTokyo/FourColorTheorem-Lean4](https://github.com/RBarish-UTokyo/FourColorTheorem-Lean4) (Lean) | Apache 2.0 | Reuse; keep license and notices |
 | [math-comp/fourcolor](https://github.com/math-comp/fourcolor) (Rocq) | CeCILL-B | Reference and attribution to Gonthier et al. |
+| [plantri](https://users.cecs.anu.edu.au/~bdm/plantri/) 5.8 (C), Brinkmann and McKay | Apache 2.0 | Vendored unmodified in `third_party/plantri/`; B1's enumerator of triangulations |
+
+---
+
+## plantri
+
+plantri 5.8 (4 March 2026), by Gunnar Brinkmann and Brendan McKay, with
+Heidi Van den Camp: https://users.cecs.anu.edu.au/~bdm/plantri/. The copyright
+statement below is reproduced from Appendix G of
+`third_party/plantri/plantri-guide.txt`. The full licence is
+`third_party/plantri/LICENSE-2.0.txt`.
+
+```
+Copyright is jointly held by the authors
+ Gunnar Brinkmann, University of Gent, gunnar.brinkmann@ugent.be
+ Brendan McKay, Australian National University, brendan.mckay@anu.edu.au
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this software except in compliance with the License.
+A copy of the License is included in the package and you can also
+view it at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
+
+The files in `third_party/plantri/` are byte-identical to the release tarball
+(sha256 in `third_party/plantri/PROVENANCE.md`). `search/b1/run.py` compiles
+`plantri.c` as it is, with `cc -O4`, which is the build the plantri guide
+gives.
 
 ---
 
