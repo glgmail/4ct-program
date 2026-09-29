@@ -10,6 +10,7 @@ clean checkout. Leads, partial arguments and AI-written summaries go under
 
 | Date | Result | Evidence | Tier | PR |
 | --- | --- | --- | --- | --- |
+| 2026-09-29 | **Nowhere-zero ℤ₂ × ℤ₂-flows, proved without the Four Colour Theorem.** On a cubic map, on any surface, the nowhere-zero ℤ₂ × ℤ₂-flows are exactly the proper 3-edge-colourings (`FourCT.edgeColoring_iff_nowhereZeroFlow`). On the sphere, a plain map has a face 4-colouring exactly when it has a nowhere-zero ℤ₂ × ℤ₂-flow, and Tait's rule turns one into the other (`FourCT.fourColorable_iff_nowhereZeroFlow`). In Mathlib's vocabulary, a loopless plane graph is 4-colourable exactly when its dual has such a flow (`FourCT.PlaneGraph.colorable_four_iff_nowhereZeroFlow_dual`). The theta graph on the torus has a flow but no colouring. | `lean/FourCT/{Flow,Examples}.lean`; `lean-build` checks the axioms and the independence from the 4CT | A3 | #36 |
 | 2026-09-29 | **Tait's correspondence, proved without the Four Colour Theorem.** A loopless plane triangulation is vertex 4-colourable (Mathlib's `Colorable 4`) exactly when its cubic dual has a proper 3-edge-colouring (`FourCT.PlaneGraph.tait`). At the hypermap level: a face 4-colouring of a cubic map gives a proper 3-edge-colouring on any surface; on the sphere every proper 3-edge-colouring arises that way; and on a connected map the correspondence is four-to-one. The genus-zero step is a new lemma: an edge labelling in ℤ₂ × ℤ₂ that sums to zero at every vertex is a difference of face labels (`FourCT.exists_facePotential`), proved from Euler's formula by a rank count over ℤ₂. The theta graph on the torus shows that the genus-zero hypothesis is needed. | `lean/FourCT/{Potential,Tait,Examples}.lean`; `lean-build` checks the axioms, and checks that none of these theorems depends on the 4CT (`checks/lean/fourct_independence.lean`, with two controls that must) | A3 | #35 |
 | 2026-09-29 | **Every planar simple graph is 4-colourable, stated in Mathlib's vocabulary** (`SimpleGraph.IsPlanar.colorable_four`). Also the 4CT for loopless plane graphs (`FourCT.PlaneGraph.four_colorable`) and for planar bridgeless hypermaps (`FourCT.hypermap_fourColorable`), all derived from the base port. Worked example: `K₄` is planar and not 3-colourable, so the theorem is tight. Every theorem depends only on `propext`, `Classical.choice`, `Quot.sound`. | `lean/FourCT/{Base,PlaneGraph,Examples}.lean`; `lean-build` checks the axioms of every theorem in `checks/lean/fourct_axioms.lean` | A3 | #34 |
 | 2026-09-27 | **The four colour theorem builds on Lean and Mathlib `v4.34.1`**, the program's pinned toolchain, as `FourColor.fourColorTheorem` in `lean/`. Depends only on `propext`, `Classical.choice`, `Quot.sound`; 115,342 declarations, no sorries, no extra axioms; anti-vacuity controls pass. No Lean source changed from corun1024 `3db71e0`. | `lean/build.sh` on the self-hosted runner; `lean-build` on this PR | A2 | #26 |
@@ -273,9 +274,54 @@ edge colouring must still give them different colours. The vertex side of
 `PlaneGraph.tait` is in Mathlib's vocabulary. The edge side is on the dual
 hypermap, with the gloss above.
 
-Item 4 (flows) comes next. Its core is already here: a nowhere-zero
-ℤ₂ × ℤ₂-flow is an edge labelling with non-zero labels summing to zero at
-every vertex, which is the hypothesis of `exists_facePotential`.
+## Item 4: flows, done
+
+In `lean/FourCT/Flow.lean`, with worked examples in `lean/FourCT/Examples.lean`.
+Like Tait's correspondence it is proved without the Four Colour Theorem, and
+`checks/lean/fourct_independence.lean` checks each theorem.
+
+**The new definition:**
+
+- **`FourCT.NowhereZeroFlow G w`**: each edge of `G` gets a colour of
+  ℤ₂ × ℤ₂ (both of its darts carry it) that is never `0`, and the colours of
+  the darts around each vertex add up to `0`. Every element of ℤ₂ × ℤ₂ is its
+  own negative, so edges need no direction, and a loop contributes `0`. This
+  is the usual nowhere-zero 4-flow with the Klein four-group, the group for
+  which Tutte's duality with 4-colourings holds.
+
+**The theorems:**
+
+| Theorem | Says |
+| --- | --- |
+| `FourCT.edgeColoring_iff_nowhereZeroFlow` | on a cubic map, on any surface, the nowhere-zero flows are exactly the proper 3-edge-colourings: three non-zero colours sum to zero exactly when they are different |
+| `FourCT.nowhereZeroFlow_taitEdge` | Tait's rule turns a face 4-colouring into a nowhere-zero flow, on any surface |
+| `FourCT.exists_coloring_of_nowhereZeroFlow` | on the sphere, every nowhere-zero flow comes from a face 4-colouring by Tait's rule |
+| `FourCT.fourColorable_iff_nowhereZeroFlow` | on the sphere, a plain map is face 4-colourable exactly when it has a nowhere-zero flow (Tutte's duality) |
+| `FourCT.PlaneGraph.colorable_four_iff_nowhereZeroFlow_dual` | **a loopless plane graph is 4-colourable (Mathlib's `Colorable 4`) exactly when its dual has a nowhere-zero ℤ₂ × ℤ₂-flow** |
+
+The sphere enters only through `exists_facePotential`, as in item 3. Item 4
+did not need anything new about it.
+
+**Worked examples:**
+
+- **The tetrahedron:** its edge colouring is a nowhere-zero flow on its dual,
+  checked from the definition by `decide`.
+- **A triangle**, whose vertices have degree two, so the map is not cubic and
+  the general theorem is the one in use. It is planar (3 edges, 3 vertices,
+  2 faces, by `decide`). Colouring every edge `c1` gives a flow. Tait's rule
+  gives that flow from colouring the inside `0` and the outside `c1` (by
+  `decide`). The flow theorem then gives the triangle's 4-colourability.
+- **The theta graph on the torus** has a nowhere-zero flow but no face
+  4-colouring, so the genus-zero hypothesis cannot be dropped here either.
+
+**#4 is complete** with this item:
+- the survey is in this file;
+- every new definition has a gloss and a worked example;
+- both correspondences #4 asks for are lemmas;
+- the bridge to the base port is `PlaneGraph.graphFourColorable_iff` and
+  `fourColorable_dual_iff`.
+
+A4, the statement files, is next. It needs Gabriel's sign-off on each file.
 
 ---
 

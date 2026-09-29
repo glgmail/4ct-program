@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: the 4ct-program contributors
 -/
 import FourCT.PlaneGraph
-import FourCT.Tait
+import FourCT.Flow
 import Mathlib.Combinatorics.SimpleGraph.Hasse
 
 /-!
@@ -44,6 +44,15 @@ What it establishes:
   4-colouring, since the one face meets itself across every edge. So the
   genus-zero hypothesis of `FourCT.exists_coloring_of_edgeColoring` cannot be
   dropped.
+* **Flows.** The tetrahedron's edge colouring is a nowhere-zero
+  ℤ₂ × ℤ₂-flow on its dual (`tetraEdgeColors_flow`, by `decide`).
+  - **A map that is not cubic:** a triangle, with three vertices of degree
+    two. Every edge coloured `c1` is a flow, and it comes by Tait's rule from
+    colouring the inside `0` and the outside `c1`
+    (`taitEdge_triangleFaceColors`). The general flow theorem then gives the
+    triangle's 4-colourability (`triangle_fourColorable_of_flow`).
+  - **Off the sphere:** the theta graph on the torus has a nowhere-zero flow
+    but no face 4-colouring (`theta_torus_flow`).
 
 The other direction needs no separate check. The theorem is proved, so no
 graph that needs five colours can be `IsPlanar`; in particular `K₅` is not
@@ -345,5 +354,64 @@ theorem theta_torus :
     EdgeColoring thetaTorus thetaEdgeColors ∧ ¬ thetaTorus.FourColorable ∧
       thetaTorus.genus = 1 :=
   ⟨by decide, fun h => h.bridgeless 0 ⟨3, by decide⟩, thetaTorus_genus⟩
+
+/-! ### Flows -/
+
+/-- The tetrahedron's edge colouring is a nowhere-zero ℤ₂ × ℤ₂-flow on its dual,
+checked directly from the definition. -/
+theorem tetraEdgeColors_flow : NowhereZeroFlow tetraMap.dual tetraEdgeColors := by decide
+
+/-! A triangle, whose vertices have degree two, so the map is not cubic.
+Vertices `a, b, c`; darts `0, 1` are the ends of `ab` at `a` and `b`, darts
+`2, 3` the ends of `bc` at `b` and `c`, darts `4, 5` the ends of `ca` at `c`
+and `a`. The two faces are the inside and the outside. -/
+
+/-- `edge` of the triangle. -/
+def triEdge : Perm (Fin 6) := ⟨![1, 0, 3, 2, 5, 4], ![1, 0, 3, 2, 5, 4], by decide, by decide⟩
+
+/-- `node` of the triangle: the two darts at each vertex. -/
+def triNode : Perm (Fin 6) := ⟨![5, 2, 1, 4, 3, 0], ![5, 2, 1, 4, 3, 0], by decide, by decide⟩
+
+/-- `face` of the triangle, `node⁻¹ ∘ edge`: the cycles `0 2 4` and `1 5 3`. -/
+def triFace : Perm (Fin 6) := ⟨![2, 5, 4, 1, 0, 3], ![4, 3, 0, 5, 2, 1], by decide, by decide⟩
+
+/-- The triangle as a hypermap. -/
+def triMap : Hypermap (Fin 6) where
+  edge := triEdge
+  node := triNode
+  face := triFace
+  node_face_edge := by decide
+
+theorem triMap_plain : triMap.Plain := ⟨by decide, by decide⟩
+
+/-- Planar: 3 edges, 3 vertices, 2 faces, one component, 6 darts, so
+`2·1 + 6 = 3 + 3 + 2`. -/
+theorem triMap_planar : triMap.Planar := by
+  refine planar_of_counts triMap (connected_of_reach triMap 0 6 (by decide)) ?_
+  simp only [cycleCount_eq_card]
+  decide
+
+/-- Every edge coloured `c1`. -/
+def triFlow : Fin 6 → Color := fun _ => .c1
+
+/-- It is a nowhere-zero flow: each vertex has two edges, and `c1 + c1 = 0`. -/
+theorem triFlow_flow : NowhereZeroFlow triMap triFlow := by decide
+
+/-- The inside (darts `0, 2, 4`) coloured `0`, the outside coloured `c1`. -/
+def triangleFaceColors : Fin 6 → Color := ![.c0, .c1, .c0, .c1, .c0, .c1]
+
+/-- Tait's rule turns that face colouring into the flow. -/
+theorem taitEdge_triangleFaceColors : taitEdge triMap triangleFaceColors = triFlow := by
+  decide
+
+/-- The flow alone shows that the triangle's faces are 4-colourable. -/
+theorem triangle_fourColorable_of_flow : triMap.FourColorable :=
+  (fourColorable_iff_nowhereZeroFlow triMap_plain triMap_planar).2 ⟨_, triFlow_flow⟩
+
+/-- **Off the sphere, a flow need not come from a colouring.** The theta graph
+on the torus has a nowhere-zero ℤ₂ × ℤ₂-flow but no face 4-colouring. -/
+theorem theta_torus_flow :
+    NowhereZeroFlow thetaTorus thetaEdgeColors ∧ ¬ thetaTorus.FourColorable :=
+  ⟨by decide, theta_torus.2.1⟩
 
 end FourCT.Examples

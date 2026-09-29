@@ -255,8 +255,8 @@ theorem finrank_ker_inc (hG : G.Plain) {σ : Perm D} (hσ : σ = G.node ∨ σ =
       (LinearMap.funLeft_injective_of_surjective _ _ π hπ),
     Module.finrank_fintype_fun_eq_card, Hypermap.compCount, Nat.card_eq_fintype_card]
 
-/-- Reindexing a sum over an orbit by `σ⁻¹`. -/
-private theorem sum_orbit_inv (σ : Perm D) (x : D) {M : Type*} [AddCommMonoid M] (g : D → M) :
+/-- Reindexing a sum over an orbit by `σ⁻¹`, which permutes the orbit. -/
+theorem sum_sameCycle_inv (σ : Perm D) (x : D) {M : Type*} [AddCommMonoid M] (g : D → M) :
     ∑ y ∈ Finset.univ.filter (fun y => σ.SameCycle x y), g (σ⁻¹ y) =
       ∑ y ∈ Finset.univ.filter (fun y => σ.SameCycle x y), g y := by
   refine Finset.sum_nbij' (fun y => σ⁻¹ y) (fun y => σ y) (fun y hy => ?_) (fun y hy => ?_) (fun y _ => by simp)
@@ -280,7 +280,7 @@ theorem inc_node_transpose_mulVec_inc_face (hG : G.Plain) (k : Orbit G.face → 
     have hF : ∀ y, orbit G.face (G.edge y) = orbit G.face (G.node⁻¹ y) := fun y => by
       rw [← Perm.eq_inv_iff_eq.2 (G.edgeK y), orbit_apply]
     simp only [hF, Finset.sum_add_distrib]
-    rw [sum_orbit_inv G.node x (fun y => k (orbit G.face y)), zmod2_add_self]
+    rw [sum_sameCycle_inv G.node x (fun y => k (orbit G.face y)), zmod2_add_self]
 
 /-- **On the sphere, the edge labellings over `ℤ₂` that sum to zero at every
 vertex are exactly the sums of face labels.** `G` is a plain hypermap of
