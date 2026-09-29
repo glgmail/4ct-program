@@ -102,6 +102,10 @@ needed: a cubic map with a bridge has no Tait colouring, so its evaluation is
 The tetrahedron's exact value, 6, is checked in Python only: `decide` over
 `3^12` dart colourings is too big.
 
+**Sign-off.** Gabriel signed off on `Statements/Penrose.lean` on 2026-09-29, in
+the Claude session, before merge. The sign-off is recorded in #41's
+description.
+
 ---
 
 # A4 — the first statement files
