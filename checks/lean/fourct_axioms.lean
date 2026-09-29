@@ -38,3 +38,12 @@ standard ones and nothing else.
 #print axioms FourCT.Examples.taitEdge_triangleFaceColors
 #print axioms FourCT.Examples.triangle_fourColorable_of_flow
 #print axioms FourCT.Examples.theta_torus_flow
+#print axioms FourCT.exists_isNowhereZeroFlow_iff
+#print axioms FourCT.mapForm_of_cubic
+#print axioms FourCT.tait_iff_flows
+#print axioms FourCT.tait_iff_mapForm
+#print axioms FourCT.tait_iff_vertexForm
+#print axioms FourCT.flows_iff_vertexForm
+#print axioms FourCT.statements_tait
+#print axioms FourCT.statements_flows
+#print axioms FourCT.Examples.dumbbell_needs_bridgeless

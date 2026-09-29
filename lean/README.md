@@ -91,7 +91,7 @@ half-built tree.
 `build_pool.py` fingerprints every FourColor module against the **whole** of
 `lakefile.toml`, `lean-toolchain` and `lake-manifest.json`. Any edit to any of
 them — even a comment — invalidates all 821 oleans: a full two-hour rebuild on
-the next CI run. The `Statements` library is declared before it has any files
+the next CI run. The `Statements` library was declared before it had any files
 for exactly this reason. Batch lakefile changes, and expect the cost.
 
 Adding or editing FourCT or Statements modules does not touch this.
