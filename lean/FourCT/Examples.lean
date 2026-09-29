@@ -6,6 +6,7 @@ Authors: the 4ct-program contributors
 import FourCT.PlaneGraph
 import FourCT.Flow
 import Statements.Flows
+import FourCT.Penrose
 import Mathlib.Combinatorics.SimpleGraph.Hasse
 
 /-!
@@ -54,6 +55,14 @@ What it establishes:
     triangle's 4-colourability (`triangle_fourColorable_of_flow`).
   - **Off the sphere:** the theta graph on the torus has a nowhere-zero flow
     but no face 4-colouring (`theta_torus_flow`).
+* **Penrose's formula** (`FourCT.penrose_eq`).
+  - **The theta graph drawn on the sphere** (`thetaSphere`): evaluation `-6`,
+    with 6 Tait colourings and 2 vertices. That is the formula's
+    `(-1) ^ (2 / 2) · 6`, and both numbers are computed by `decide`.
+  - **The same graph on the torus** (`theta_torus_penrose`): the evaluation is
+    `+6`, so the formula's sign fails in genus one.
+  - **The tetrahedron:** its evaluation equals its Tait count, which is not
+    zero (`tetra_penrose`).
 * **The statements need "bridgeless"** (`dumbbell`). The dumbbell is two loops
   joined by an edge. It is a plane cubic map with a bridge, and it has
   neither a proper 3-edge-colouring nor a nowhere-zero flow. So
@@ -419,6 +428,59 @@ on the torus has a nowhere-zero ℤ₂ × ℤ₂-flow but no face 4-colouring. -
 theorem theta_torus_flow :
     NowhereZeroFlow thetaTorus thetaEdgeColors ∧ ¬ thetaTorus.FourColorable :=
   ⟨by decide, theta_torus.2.1⟩
+
+/-! ### Penrose's formula on examples
+
+The theta graph drawn on the sphere: as `thetaTorus`, but vertex `v` turns the
+other way, `a → c → b`. -/
+
+/-- `node` of the theta graph on the sphere. -/
+def thetaSphereNode : Perm (Fin 6) :=
+  ⟨![1, 2, 0, 5, 3, 4], ![2, 0, 1, 4, 5, 3], by decide, by decide⟩
+
+/-- `face` of the theta graph on the sphere, `node⁻¹ ∘ edge`: three faces of two
+darts each. -/
+def thetaSphereFace : Perm (Fin 6) :=
+  ⟨![4, 5, 3, 2, 0, 1], ![4, 5, 3, 2, 0, 1], by decide, by decide⟩
+
+/-- The theta graph on the sphere, as a hypermap. -/
+def thetaSphere : Hypermap (Fin 6) where
+  edge := thetaEdge
+  node := thetaSphereNode
+  face := thetaSphereFace
+  node_face_edge := by decide
+
+/-- Planar: 3 edges, 2 vertices, 3 faces, one component, 6 darts, so
+`2·1 + 6 = 3 + 2 + 3`. -/
+theorem thetaSphere_planar : thetaSphere.Planar := by
+  refine planar_of_counts thetaSphere (connected_of_reach thetaSphere 0 6 (by decide)) ?_
+  simp only [cycleCount_eq_card]
+  decide
+
+/-- **The theta graph on the sphere has Penrose evaluation `-6`**, with 6 Tait
+colourings: Penrose's formula with `V = 2`. -/
+theorem thetaSphere_penrose : Statements.penrose thetaSphere = -6 ∧ taitCount thetaSphere = 6 := by
+  decide
+
+/-- **Off the sphere the sign of Penrose's formula fails.** The theta graph on
+the torus has evaluation `+6` and 6 Tait colourings, where the formula would
+give `(-1) ^ (2 / 2) · 6 = -6`. -/
+theorem theta_torus_penrose :
+    Statements.penrose thetaTorus = 6 ∧ taitCount thetaTorus = 6 ∧ thetaTorus.genus = 1 :=
+  ⟨by decide, by decide, thetaTorus_genus⟩
+
+theorem tetraMap_cubic : tetraMap.Cubic :=
+  ⟨fun x _ => (by decide : ∀ y, tetraNode (tetraNode (tetraNode y)) = y) x,
+    fun x _ => (by decide : ∀ y, tetraNode y ≠ y) x⟩
+
+/-- **The tetrahedron's Penrose evaluation equals its Tait count**, since it has
+4 vertices, and the count is not zero. The value, 6, is checked numerically in
+`checks/a5/`. -/
+theorem tetra_penrose : Statements.penrose tetraMap = taitCount tetraMap ∧ taitCount tetraMap ≠ 0 := by
+  refine ⟨?_, (taitCount_ne_zero_iff _).2 ⟨tetraEdgeColors, by decide⟩⟩
+  rw [penrose_eq tetraMap_plain tetraMap_cubic tetraMap_planar,
+    show Fintype.card (Orbit tetraMap.node) = 4 by decide,
+    show (-1 : ℤ) ^ (4 / 2) = 1 by norm_num, one_mul]
 
 /-! ### The statements need "bridgeless": the dumbbell
 

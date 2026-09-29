@@ -44,11 +44,12 @@ run `lake env lean Statements/Foo.lean` from `lean/` after `./build.sh`.
 | --- | --- | --- |
 | `Tait.lean` | every bridgeless plane cubic map has a proper 3-edge-colouring | `FourCT.tait_iff_vertexForm` |
 | `Flows.lean` | every bridgeless plane graph has a nowhere-zero `ZMod 2 × ZMod 2`-flow | `FourCT.flows_iff_vertexForm` |
+| `Penrose.lean` | every bridgeless plane cubic map has a non-zero Penrose evaluation | `FourCT.penrose_iff_vertexForm` |
 
 Both equivalences are proved without the Four Colour Theorem, and
-`checks/lean/fourct_independence.lean` checks that in CI. Both statements are
+`checks/lean/fourct_independence.lean` checks that in CI. Every statement is
 then proved from the base port (`FourCT.statements_tait`,
-`FourCT.statements_flows`).
+`FourCT.statements_flows`, `FourCT.statements_penrose`).
 
-The remaining reformulations (Wagner, Kauffman, Bar-Natan, Penrose,
-Diophantine) follow.
+The remaining reformulations (Wagner, Kauffman, Bar-Natan, Diophantine)
+follow.
