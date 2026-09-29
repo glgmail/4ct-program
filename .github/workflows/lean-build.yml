@@ -164,7 +164,8 @@ jobs:
           # changes in a module's imports. checks/repo_guardrails.py enforces both.
           test -f .lake/build/lib/lean/FourCT.olean
           test -f .lake/build/lib/lean/FourCT/Base.olean
-          out=$(lake env lean ../checks/lean/fourct_axioms.lean 2>&1)
+          # On failure, show Lean's output before failing the step.
+          out=$(lake env lean ../checks/lean/fourct_axioms.lean 2>&1) || { echo "$out"; exit 1; }
           echo "$out"
           # Every theorem listed in the check file must depend on exactly the
           # three standard axioms: one such line per `#print axioms`, and no
@@ -174,6 +175,19 @@ jobs:
           lines=$(echo "$out" | grep -c . || true)
           echo "theorems checked: $want; with exactly the standard axioms: $good; output lines: $lines"
           [ "$want" -ge 1 ] && [ "$good" -eq "$want" ] && [ "$lines" -eq "$want" ]
+          # The theorems marked independent must not depend on the Four Colour
+          # Theorem, and the controls must: one such line per command, and no
+          # other output at all.
+          out=$(lake env lean ../checks/lean/fourct_independence.lean 2>&1) || { echo "$out"; exit 1; }
+          echo "$out"
+          ind=$(grep -c '^#assert_independent ' ../checks/lean/fourct_independence.lean)
+          dep=$(grep -c '^#assert_dependent ' ../checks/lean/fourct_independence.lean)
+          good_ind=$(echo "$out" | grep -cx "'[^']*' does not depend on the Four Colour Theorem" || true)
+          good_dep=$(echo "$out" | grep -cx "'[^']*' depends on the Four Colour Theorem, through '[^']*' (control)" || true)
+          lines=$(echo "$out" | grep -c . || true)
+          echo "independent: $good_ind of $ind; controls: $good_dep of $dep; output lines: $lines"
+          [ "$ind" -ge 1 ] && [ "$dep" -ge 1 ] && [ "$good_ind" -eq "$ind" ] \
+            && [ "$good_dep" -eq "$dep" ] && [ "$lines" -eq $((ind + dep)) ]
 
       - name: Peak memory
         if: always()

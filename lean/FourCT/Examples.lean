@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: the 4ct-program contributors
 -/
 import FourCT.PlaneGraph
+import FourCT.Tait
 import Mathlib.Combinatorics.SimpleGraph.Hasse
 
 /-!
@@ -31,6 +32,18 @@ What it establishes:
   `SimpleGraph.IsPlanar.colorable_four` is tight: a planar graph can need
   all four colours, and the definition of planarity is not so narrow as to
   make the theorem trivial.
+* **Tait's correspondence on the tetrahedron.** It is a triangulation
+  (`tetrahedron_isTriangulation`). Colouring its vertices `0, c1, c2, c3`
+  gives, by Tait's rule, the edge colouring by the three perfect matchings of
+  `K₄` (`taitEdge_tetraVertexColors`), which is a proper 3-edge-colouring of
+  the dual (`tetraEdgeColors_edgeColoring`). Tait's theorem then gives the
+  4-colourability of `K₄` without the Four Colour Theorem.
+* **The sphere is needed** (`theta_torus`). The theta graph (two vertices
+  joined by three edges) drawn on the torus has a single face, of genus one.
+  Its edges have a proper 3-edge-colouring, but its faces have no
+  4-colouring, since the one face meets itself across every edge. So the
+  genus-zero hypothesis of `FourCT.exists_coloring_of_edgeColoring` cannot be
+  dropped.
 
 The other direction needs no separate check. The theorem is proved, so no
 graph that needs five colours can be `IsPlanar`; in particular `K₅` is not
@@ -56,15 +69,9 @@ section Counting
 
 variable {D : Type} [Fintype D] [DecidableEq D]
 
-/-- The orbit relation of a permutation of a finite type is decidable, via
-Mathlib's `Equiv.Perm.instDecidableRelSameCycle` (at most `card D`
-iterations). -/
-instance instDecidableRelSetoidSameCycle (f : Perm D) :
-    DecidableRel (SameCycle.setoid f).r :=
-  fun x y => instDecidableRelSameCycle f x y
-
 /-- The number of orbits of a permutation, as a `Fintype.card` that `decide`
-can evaluate. -/
+can evaluate. The orbit relation is decided by
+`FourCT.instDecidableRelSetoidSameCycle`, at most `card D` iterations. -/
 theorem cycleCount_eq_card (f : Perm D) :
     cycleCount f = Fintype.card (Quotient (SameCycle.setoid f)) :=
   Nat.card_eq_fintype_card
@@ -244,5 +251,99 @@ theorem not_isPlanar_K5 : ¬ (⊤ : SimpleGraph (Fin 5)).IsPlanar := fun h => by
 best possible bound for planar graphs. -/
 example : (⊤ : SimpleGraph (Fin 4)).Colorable 4 ∧ ¬ (⊤ : SimpleGraph (Fin 4)).Colorable 3 :=
   ⟨isPlanar_K4.colorable_four, not_colorable_three_K4⟩
+
+/-! ### Tait's correspondence on the tetrahedron
+
+The tetrahedron is its own dual, and `K₄`'s six edges split into three
+perfect matchings: `01, 23`, `02, 13` and `03, 12`. -/
+
+/-- **The tetrahedron is a triangulation**: every face has three darts. -/
+theorem tetrahedron_isTriangulation : tetrahedron.IsTriangulation := by decide
+
+/-- Vertex `a` gets colour `a`: the darts `3a`, `3a + 1`, `3a + 2` are at
+vertex `a`. -/
+def tetraVertexColors : Fin 12 → Color :=
+  ![.c0, .c0, .c0, .c1, .c1, .c1, .c2, .c2, .c2, .c3, .c3, .c3]
+
+/-- It is a proper vertex colouring. -/
+theorem tetraVertexColors_graphColoring : tetraMap.GraphColoring tetraVertexColors := by
+  decide
+
+/-- The three perfect matchings in three colours: `01, 23 ↦ c1`, `02, 13 ↦ c2`,
+`03, 12 ↦ c3`. -/
+def tetraEdgeColors : Fin 12 → Color :=
+  ![.c1, .c2, .c3, .c1, .c2, .c3, .c2, .c3, .c1, .c3, .c1, .c2]
+
+/-- It is a proper 3-edge-colouring of the dual: the three edges of every
+triangle get three different colours. -/
+theorem tetraEdgeColors_edgeColoring : EdgeColoring tetraMap.dual tetraEdgeColors := by
+  decide
+
+/-- Tait's rule turns the vertex colouring into that edge colouring: the edge
+`ab` gets `a + b`. -/
+theorem taitEdge_tetraVertexColors :
+    taitEdge tetraMap.dual tetraVertexColors = tetraEdgeColors := by
+  decide
+
+/-- Tait's theorem, used backwards: the edge colouring alone shows that the
+tetrahedron's graph `K₄` is 4-colourable. -/
+theorem tetrahedron_colorable_of_tait : tetrahedron.graph.Colorable 4 :=
+  (PlaneGraph.tait tetrahedron tetraMap_loopless tetrahedron_isTriangulation).2
+    ⟨_, tetraEdgeColors_edgeColoring⟩
+
+/-! ### The sphere is needed: the theta graph on the torus
+
+Two vertices `u`, `v` joined by three edges `a`, `b`, `c`. Darts `0, 1, 2` are
+the ends of `a, b, c` at `u`, and darts `3, 4, 5` their ends at `v`. Both
+vertices turn the same way, `a → b → c`. Drawn in the plane, one vertex would
+turn the other way; turning the same way needs a handle, and the drawing has
+a single face. -/
+
+/-- `edge` of the theta graph. -/
+def thetaEdge : Perm (Fin 6) := ⟨![3, 4, 5, 0, 1, 2], ![3, 4, 5, 0, 1, 2], by decide, by decide⟩
+
+/-- `node` of the theta graph: `a → b → c` at both vertices. -/
+def thetaNode : Perm (Fin 6) := ⟨![1, 2, 0, 4, 5, 3], ![2, 0, 1, 5, 3, 4], by decide, by decide⟩
+
+/-- `face` of the theta graph, `node⁻¹ ∘ edge`: a single cycle through all six
+darts. -/
+def thetaFace : Perm (Fin 6) := ⟨![5, 3, 4, 2, 0, 1], ![4, 5, 3, 1, 2, 0], by decide, by decide⟩
+
+/-- The theta graph on the torus, as a hypermap. -/
+def thetaTorus : Hypermap (Fin 6) where
+  edge := thetaEdge
+  node := thetaNode
+  face := thetaFace
+  node_face_edge := by decide
+
+theorem thetaTorus_plain : thetaTorus.Plain := ⟨by decide, by decide⟩
+
+theorem thetaTorus_cubic : thetaTorus.Cubic :=
+  ⟨fun x _ => (by decide : ∀ y, thetaNode (thetaNode (thetaNode y)) = y) x,
+    fun x _ => (by decide : ∀ y, thetaNode y ≠ y) x⟩
+
+/-- **Genus one**: 3 edges, 2 vertices, 1 face, one component and 6 darts, so
+`2·1 + 6 = 3 + 2 + 1 + 2·1`. -/
+theorem thetaTorus_genus : thetaTorus.genus = 1 := by
+  have hc : thetaTorus.compCount = 1 := connected_of_reach thetaTorus 0 6 (by decide)
+  have hcounts : cycleCount thetaTorus.edge = 3 ∧ cycleCount thetaTorus.node = 2 ∧
+      cycleCount thetaTorus.face = 1 := by
+    simp only [cycleCount_eq_card]
+    decide
+  obtain ⟨he, hn, hf⟩ := hcounts
+  simp only [Hypermap.genus, Hypermap.EulerLhs, Hypermap.EulerRhs, hc, he, hn, hf,
+    Nat.card_eq_fintype_card, Fintype.card_fin]
+
+/-- Each edge in its own colour. -/
+def thetaEdgeColors : Fin 6 → Color := ![.c1, .c2, .c3, .c1, .c2, .c3]
+
+/-- **The theta graph on the torus has a proper 3-edge-colouring but no face
+4-colouring.** Its one face lies on both sides of every edge. So Tait's
+converse fails in genus one, and `FourCT.exists_coloring_of_edgeColoring`
+needs its genus-zero hypothesis. -/
+theorem theta_torus :
+    EdgeColoring thetaTorus thetaEdgeColors ∧ ¬ thetaTorus.FourColorable ∧
+      thetaTorus.genus = 1 :=
+  ⟨by decide, fun h => h.bridgeless 0 ⟨3, by decide⟩, thetaTorus_genus⟩
 
 end FourCT.Examples
