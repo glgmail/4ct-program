@@ -1,0 +1,317 @@
+{
+ "header": [
+  "B1 strengthening-search harness (search/b1/run.py)",
+  "repository commit: 9f7a9b99ad215dc8f70421166011dacaa9b7f370",
+  "plantri: 5.8, plantri.c sha256 3f70de5a3cacc78b2ed25b6a257588da94a518d8ae1dae74bcd0bf259cea07e8",
+  "compiler: cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0 (cc -O4)",
+  "python: 3.14.4 (CPython)",
+  "host: Legion",
+  "platform: Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "seed: 20260928 (selfcheck relabelling only; the enumeration is exhaustive)",
+  "command: search/b1/run.py all --jobs 17 --out /home/claude/b1-out"
+ ],
+ "ok": true,
+ "checks": [
+  {
+   "check": "sphere count n=4 matches OEIS",
+   "ok": true,
+   "detail": "1 vs 1"
+  },
+  {
+   "check": "sphere count n=5 matches OEIS",
+   "ok": true,
+   "detail": "1 vs 1"
+  },
+  {
+   "check": "sphere count n=6 matches OEIS",
+   "ok": true,
+   "detail": "2 vs 2"
+  },
+  {
+   "check": "sphere count n=7 matches OEIS",
+   "ok": true,
+   "detail": "5 vs 5"
+  },
+  {
+   "check": "sphere count n=8 matches OEIS",
+   "ok": true,
+   "detail": "14 vs 14"
+  },
+  {
+   "check": "sphere count n=9 matches OEIS",
+   "ok": true,
+   "detail": "50 vs 50"
+  },
+  {
+   "check": "sphere count n=10 matches OEIS",
+   "ok": true,
+   "detail": "233 vs 233"
+  },
+  {
+   "check": "sphere count n=11 matches OEIS",
+   "ok": true,
+   "detail": "1249 vs 1249"
+  },
+  {
+   "check": "sphere count n=12 matches OEIS",
+   "ok": true,
+   "detail": "7595 vs 7595"
+  },
+  {
+   "check": "disc count n=4 matches OEIS",
+   "ok": true,
+   "detail": "1 vs 1"
+  },
+  {
+   "check": "disc count n=5 matches OEIS",
+   "ok": true,
+   "detail": "2 vs 2"
+  },
+  {
+   "check": "disc count n=6 matches OEIS",
+   "ok": true,
+   "detail": "7 vs 7"
+  },
+  {
+   "check": "disc count n=7 matches OEIS",
+   "ok": true,
+   "detail": "27 vs 27"
+  },
+  {
+   "check": "disc count n=8 matches OEIS",
+   "ok": true,
+   "detail": "132 vs 132"
+  },
+  {
+   "check": "disc count n=9 matches OEIS",
+   "ok": true,
+   "detail": "773 vs 773"
+  },
+  {
+   "check": "disc count n=10 matches OEIS",
+   "ok": true,
+   "detail": "5017 vs 5017"
+  },
+  {
+   "check": "disc count n=11 matches OEIS",
+   "ok": true,
+   "detail": "34861 vs 34861"
+  },
+  {
+   "check": "disc n=4: traced boundary = requested size, summed over sizes = OEIS",
+   "ok": true,
+   "detail": "1 discs, 0 wrong"
+  },
+  {
+   "check": "disc n=5: traced boundary = requested size, summed over sizes = OEIS",
+   "ok": true,
+   "detail": "2 discs, 0 wrong"
+  },
+  {
+   "check": "disc n=6: traced boundary = requested size, summed over sizes = OEIS",
+   "ok": true,
+   "detail": "7 discs, 0 wrong"
+  },
+  {
+   "check": "disc n=7: traced boundary = requested size, summed over sizes = OEIS",
+   "ok": true,
+   "detail": "27 discs, 0 wrong"
+  },
+  {
+   "check": "disc n=8: traced boundary = requested size, summed over sizes = OEIS",
+   "ok": true,
+   "detail": "132 discs, 0 wrong"
+  },
+  {
+   "check": "disc n=9: traced boundary = requested size, summed over sizes = OEIS",
+   "ok": true,
+   "detail": "773 discs, 0 wrong"
+  },
+  {
+   "check": "disc n=10: traced boundary = requested size, summed over sizes = OEIS",
+   "ok": true,
+   "detail": "5017 discs, 0 wrong"
+  },
+  {
+   "check": "sphere n=4: vertex colourings = Tait colourings, all positive",
+   "ok": true,
+   "detail": "1 graphs, 0 bad, colourings per graph 1..1"
+  },
+  {
+   "check": "sphere n=5: vertex colourings = Tait colourings, all positive",
+   "ok": true,
+   "detail": "1 graphs, 0 bad, colourings per graph 1..1"
+  },
+  {
+   "check": "sphere n=6: vertex colourings = Tait colourings, all positive",
+   "ok": true,
+   "detail": "2 graphs, 0 bad, colourings per graph 1..4"
+  },
+  {
+   "check": "sphere n=7: vertex colourings = Tait colourings, all positive",
+   "ok": true,
+   "detail": "5 graphs, 0 bad, colourings per graph 1..5"
+  },
+  {
+   "check": "sphere n=8: vertex colourings = Tait colourings, all positive",
+   "ok": true,
+   "detail": "14 graphs, 0 bad, colourings per graph 1..12"
+  },
+  {
+   "check": "sphere n=9: vertex colourings = Tait colourings, all positive",
+   "ok": true,
+   "detail": "50 graphs, 0 bad, colourings per graph 1..21"
+  },
+  {
+   "check": "sphere n=10: vertex colourings = Tait colourings, all positive",
+   "ok": true,
+   "detail": "233 graphs, 0 bad, colourings per graph 1..44"
+  },
+  {
+   "check": "sphere n=11: vertex colourings = Tait colourings, all positive",
+   "ok": true,
+   "detail": "1249 graphs, 0 bad, colourings per graph 1..85"
+  },
+  {
+   "check": "sphere n=4: dual Hamiltonian cycles by search = by Tait colourings",
+   "ok": true,
+   "detail": "0 disagree, 3 Hamiltonian cycles in all"
+  },
+  {
+   "check": "sphere n=5: dual Hamiltonian cycles by search = by Tait colourings",
+   "ok": true,
+   "detail": "0 disagree, 3 Hamiltonian cycles in all"
+  },
+  {
+   "check": "sphere n=6: dual Hamiltonian cycles by search = by Tait colourings",
+   "ok": true,
+   "detail": "0 disagree, 9 Hamiltonian cycles in all"
+  },
+  {
+   "check": "sphere n=7: dual Hamiltonian cycles by search = by Tait colourings",
+   "ok": true,
+   "detail": "0 disagree, 20 Hamiltonian cycles in all"
+  },
+  {
+   "check": "sphere n=8: dual Hamiltonian cycles by search = by Tait colourings",
+   "ok": true,
+   "detail": "0 disagree, 65 Hamiltonian cycles in all"
+  },
+  {
+   "check": "sphere n=9: dual Hamiltonian cycles by search = by Tait colourings",
+   "ok": true,
+   "detail": "0 disagree, 237 Hamiltonian cycles in all"
+  },
+  {
+   "check": "sphere n=10: dual Hamiltonian cycles by search = by Tait colourings",
+   "ok": true,
+   "detail": "0 disagree, 1218 Hamiltonian cycles in all"
+  },
+  {
+   "check": "sphere n=11: dual Hamiltonian cycles by search = by Tait colourings",
+   "ok": true,
+   "detail": "0 disagree, 6972 Hamiltonian cycles in all"
+  },
+  {
+   "check": "sphere n=4: canonical codes distinct and invariant",
+   "ok": true,
+   "detail": "1 codes for 1 graphs, 0 not invariant"
+  },
+  {
+   "check": "sphere n=5: canonical codes distinct and invariant",
+   "ok": true,
+   "detail": "1 codes for 1 graphs, 0 not invariant"
+  },
+  {
+   "check": "sphere n=6: canonical codes distinct and invariant",
+   "ok": true,
+   "detail": "2 codes for 2 graphs, 0 not invariant"
+  },
+  {
+   "check": "sphere n=7: canonical codes distinct and invariant",
+   "ok": true,
+   "detail": "5 codes for 5 graphs, 0 not invariant"
+  },
+  {
+   "check": "sphere n=8: canonical codes distinct and invariant",
+   "ok": true,
+   "detail": "14 codes for 14 graphs, 0 not invariant"
+  },
+  {
+   "check": "sphere n=9: canonical codes distinct and invariant",
+   "ok": true,
+   "detail": "50 codes for 50 graphs, 0 not invariant"
+  },
+  {
+   "check": "sphere n=10: canonical codes distinct and invariant",
+   "ok": true,
+   "detail": "233 codes for 233 graphs, 0 not invariant"
+  },
+  {
+   "check": "sphere n=11: canonical codes distinct and invariant",
+   "ok": true,
+   "detail": "1249 codes for 1249 graphs, 0 not invariant"
+  },
+  {
+   "check": "disc n=4: canonical codes distinct and invariant",
+   "ok": true,
+   "detail": "1 codes for 1 graphs, 0 not invariant"
+  },
+  {
+   "check": "disc n=5: canonical codes distinct and invariant",
+   "ok": true,
+   "detail": "2 codes for 2 graphs, 0 not invariant"
+  },
+  {
+   "check": "disc n=6: canonical codes distinct and invariant",
+   "ok": true,
+   "detail": "7 codes for 7 graphs, 0 not invariant"
+  },
+  {
+   "check": "disc n=7: canonical codes distinct and invariant",
+   "ok": true,
+   "detail": "27 codes for 27 graphs, 0 not invariant"
+  },
+  {
+   "check": "disc n=8: canonical codes distinct and invariant",
+   "ok": true,
+   "detail": "132 codes for 132 graphs, 0 not invariant"
+  },
+  {
+   "check": "disc n=9: canonical codes distinct and invariant",
+   "ok": true,
+   "detail": "773 codes for 773 graphs, 0 not invariant"
+  },
+  {
+   "check": "disc n=10: canonical codes distinct and invariant",
+   "ok": true,
+   "detail": "5017 codes for 5017 graphs, 0 not invariant"
+  },
+  {
+   "check": "disc n=4: boundary extensions = brute force",
+   "ok": true,
+   "detail": "0 disagree"
+  },
+  {
+   "check": "disc n=5: boundary extensions = brute force",
+   "ok": true,
+   "detail": "0 disagree"
+  },
+  {
+   "check": "disc n=6: boundary extensions = brute force",
+   "ok": true,
+   "detail": "0 disagree"
+  },
+  {
+   "check": "disc n=7: boundary extensions = brute force",
+   "ok": true,
+   "detail": "0 disagree"
+  },
+  {
+   "check": "disc n=8: boundary extensions = brute force",
+   "ok": true,
+   "detail": "0 disagree"
+  }
+ ],
+ "wall_s": 5.5
+}

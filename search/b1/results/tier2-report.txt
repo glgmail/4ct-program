@@ -1,0 +1,52 @@
+# B1 strengthening-search harness (search/b1/run.py)
+# repository commit: 9f7a9b99ad215dc8f70421166011dacaa9b7f370
+# plantri: 5.8, plantri.c sha256 3f70de5a3cacc78b2ed25b6a257588da94a518d8ae1dae74bcd0bf259cea07e8
+# compiler: cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0 (cc -O4)
+# python: 3.14.4 (CPython)
+# host: Legion
+# platform: Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43
+# seed: 20260928 (selfcheck relabelling only; the enumeration is exhaustive)
+# command: search/b1/run.py all --jobs 17 --out /home/claude/b1-out
+
+## PE1 (precolouring extension, disc)
+statement: In every triangulation of a disc with a chordless boundary, every proper 4-colouring of the boundary cycle extends to the whole disc.
+expectation: Control, known false: the wheel with four spokes, a 4-cycle around one vertex, cannot extend a boundary colouring that uses all four colours. The harness must kill it at 5 vertices.
+VERDICT: not run in this step
+
+## PE2 (precolouring extension, disc)
+statement: In every triangulation of a disc with a chordless boundary, every proper colouring of the boundary cycle that uses at most three colours extends to a proper 4-colouring of the whole disc.
+expectation: Open to us. Restricting the boundary to three colours is the natural way to rescue PE1, since a 3-coloured boundary leaves a fourth colour free for the inside.
+VERDICT: not run in this step
+
+## K1 (Kempe connectivity, sphere)
+statement: For every triangulation of the sphere, any two proper 4-colourings are connected by a sequence of Kempe changes.
+expectation: Open to us. A yes would let an argument move between colourings freely, which is what Kempe's own proof needed. Meyniel proved the analogue for 5-colourings of planar graphs.
+VERDICT: not run in this step
+
+## BAL1 (balanced colourings, sphere)
+statement: Every triangulation of the sphere has an equitable proper 4-colouring: the four colour classes differ in size by at most one.
+expectation: Expected false. In a bipyramid (two poles joined to every vertex of a long cycle) the poles' colours are barred from the whole cycle, so some class must stay small.
+VERDICT: not run in this step
+
+## BAL2 (balanced colourings, sphere)
+statement: Every triangulation of the sphere on n vertices has a proper 4-colouring in which every colour is used on fewer than n/2 vertices.
+expectation: Positive control: a theorem for all planar graphs with n >= 3 (Kawarabayashi, Yoneda and Yoneda, arXiv:2607.13025, July 2026). If the harness kills it, the harness or the paper is wrong.
+tested: n=14: 339,722, n=15: 2,406,841, n=16: 17,490,241
+VERDICT: not killed up to 16 vertices. This is a survivor, not a theorem.
+
+## FL1 (flows, sphere)
+statement: The dual cubic graph of every triangulation of the sphere has a Tait colouring in which two of the colour classes together form a Hamiltonian cycle (equivalently, the dual is Hamiltonian).
+expectation: Known false, but not within reach: this is Tait's conjecture, refuted by Tutte (1946). The smallest counterexamples have 38 dual vertices (Holton and McKay 1988), i.e. triangulations with 21 vertices, beyond the bound. It must survive both tiers, which shows that surviving is not being true.
+tested: n=14: 339,722, n=15: 2,406,841, n=16: 17,490,241
+VERDICT: not killed up to 16 vertices. This is a survivor, not a theorem.
+
+## FL2 (flows, sphere)
+statement: The dual cubic graph of every triangulation of the sphere has a Tait colouring in which every two of the three colour classes together form a Hamiltonian cycle.
+expectation: Open to us; a strengthening of FL1 and so false eventually, but the question is how early.
+VERDICT: not run in this step
+
+## L1 (precolouring extension, sphere)
+statement: Every triangulation of the sphere is 4-choosable: whatever list of four colours each vertex is given, it can be coloured from its lists.
+expectation: Rejected up front, never run: planar graphs are not 4-choosable (Voigt 1993). It is here to show the rejection working.
+VERDICT: rejected before running - list-style candidate: planar graphs are not 4-choosable (M. Voigt, Discrete Math. 120 (1993) 215-219), so candidates must use the shared four colours
+

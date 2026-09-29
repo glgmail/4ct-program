@@ -1,0 +1,35 @@
+[
+ {
+  "domain": "sphere",
+  "n": 14,
+  "graphs": 339722,
+  "candidates": [
+   "BAL2",
+   "FL1"
+  ],
+  "wall_s": 11.57,
+  "cpu_s": 190.23
+ },
+ {
+  "domain": "sphere",
+  "n": 15,
+  "graphs": 2406841,
+  "candidates": [
+   "BAL2",
+   "FL1"
+  ],
+  "wall_s": 145.08,
+  "cpu_s": 2444.15
+ },
+ {
+  "domain": "sphere",
+  "n": 16,
+  "graphs": 17490241,
+  "candidates": [
+   "BAL2",
+   "FL1"
+  ],
+  "wall_s": 1868.39,
+  "cpu_s": 31642.91
+ }
+]

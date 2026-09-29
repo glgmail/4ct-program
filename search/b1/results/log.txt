@@ -1,0 +1,79 @@
+[16:54:56] step all, jobs 17, out /home/claude/b1-out
+[16:54:56] ok   sphere count n=4 matches OEIS 1 vs 1
+[16:54:56] ok   sphere count n=5 matches OEIS 1 vs 1
+[16:54:56] ok   sphere count n=6 matches OEIS 2 vs 2
+[16:54:56] ok   sphere count n=7 matches OEIS 5 vs 5
+[16:54:56] ok   sphere count n=8 matches OEIS 14 vs 14
+[16:54:56] ok   sphere count n=9 matches OEIS 50 vs 50
+[16:54:56] ok   sphere count n=10 matches OEIS 233 vs 233
+[16:54:56] ok   sphere count n=11 matches OEIS 1249 vs 1249
+[16:54:56] ok   sphere count n=12 matches OEIS 7595 vs 7595
+[16:54:56] ok   disc count n=4 matches OEIS 1 vs 1
+[16:54:56] ok   disc count n=5 matches OEIS 2 vs 2
+[16:54:56] ok   disc count n=6 matches OEIS 7 vs 7
+[16:54:56] ok   disc count n=7 matches OEIS 27 vs 27
+[16:54:56] ok   disc count n=8 matches OEIS 132 vs 132
+[16:54:56] ok   disc count n=9 matches OEIS 773 vs 773
+[16:54:56] ok   disc count n=10 matches OEIS 5017 vs 5017
+[16:54:57] ok   disc count n=11 matches OEIS 34861 vs 34861
+[16:54:57] ok   disc n=4: traced boundary = requested size, summed over sizes = OEIS 1 discs, 0 wrong
+[16:54:57] ok   disc n=5: traced boundary = requested size, summed over sizes = OEIS 2 discs, 0 wrong
+[16:54:57] ok   disc n=6: traced boundary = requested size, summed over sizes = OEIS 7 discs, 0 wrong
+[16:54:57] ok   disc n=7: traced boundary = requested size, summed over sizes = OEIS 27 discs, 0 wrong
+[16:54:57] ok   disc n=8: traced boundary = requested size, summed over sizes = OEIS 132 discs, 0 wrong
+[16:54:57] ok   disc n=9: traced boundary = requested size, summed over sizes = OEIS 773 discs, 0 wrong
+[16:54:57] ok   disc n=10: traced boundary = requested size, summed over sizes = OEIS 5017 discs, 0 wrong
+[16:54:57] ok   sphere n=4: vertex colourings = Tait colourings, all positive 1 graphs, 0 bad, colourings per graph 1..1
+[16:54:57] ok   sphere n=5: vertex colourings = Tait colourings, all positive 1 graphs, 0 bad, colourings per graph 1..1
+[16:54:57] ok   sphere n=6: vertex colourings = Tait colourings, all positive 2 graphs, 0 bad, colourings per graph 1..4
+[16:54:57] ok   sphere n=7: vertex colourings = Tait colourings, all positive 5 graphs, 0 bad, colourings per graph 1..5
+[16:54:57] ok   sphere n=8: vertex colourings = Tait colourings, all positive 14 graphs, 0 bad, colourings per graph 1..12
+[16:54:57] ok   sphere n=9: vertex colourings = Tait colourings, all positive 50 graphs, 0 bad, colourings per graph 1..21
+[16:54:57] ok   sphere n=10: vertex colourings = Tait colourings, all positive 233 graphs, 0 bad, colourings per graph 1..44
+[16:54:57] ok   sphere n=11: vertex colourings = Tait colourings, all positive 1249 graphs, 0 bad, colourings per graph 1..85
+[16:54:57] ok   sphere n=4: dual Hamiltonian cycles by search = by Tait colourings 0 disagree, 3 Hamiltonian cycles in all
+[16:54:57] ok   sphere n=5: dual Hamiltonian cycles by search = by Tait colourings 0 disagree, 3 Hamiltonian cycles in all
+[16:54:57] ok   sphere n=6: dual Hamiltonian cycles by search = by Tait colourings 0 disagree, 9 Hamiltonian cycles in all
+[16:54:57] ok   sphere n=7: dual Hamiltonian cycles by search = by Tait colourings 0 disagree, 20 Hamiltonian cycles in all
+[16:54:57] ok   sphere n=8: dual Hamiltonian cycles by search = by Tait colourings 0 disagree, 65 Hamiltonian cycles in all
+[16:54:57] ok   sphere n=9: dual Hamiltonian cycles by search = by Tait colourings 0 disagree, 237 Hamiltonian cycles in all
+[16:54:57] ok   sphere n=10: dual Hamiltonian cycles by search = by Tait colourings 0 disagree, 1218 Hamiltonian cycles in all
+[16:54:58] ok   sphere n=11: dual Hamiltonian cycles by search = by Tait colourings 0 disagree, 6972 Hamiltonian cycles in all
+[16:54:58] ok   sphere n=4: canonical codes distinct and invariant 1 codes for 1 graphs, 0 not invariant
+[16:54:58] ok   sphere n=5: canonical codes distinct and invariant 1 codes for 1 graphs, 0 not invariant
+[16:54:58] ok   sphere n=6: canonical codes distinct and invariant 2 codes for 2 graphs, 0 not invariant
+[16:54:58] ok   sphere n=7: canonical codes distinct and invariant 5 codes for 5 graphs, 0 not invariant
+[16:54:58] ok   sphere n=8: canonical codes distinct and invariant 14 codes for 14 graphs, 0 not invariant
+[16:54:59] ok   sphere n=9: canonical codes distinct and invariant 50 codes for 50 graphs, 0 not invariant
+[16:54:59] ok   sphere n=10: canonical codes distinct and invariant 233 codes for 233 graphs, 0 not invariant
+[16:54:59] ok   sphere n=11: canonical codes distinct and invariant 1249 codes for 1249 graphs, 0 not invariant
+[16:54:59] ok   disc n=4: canonical codes distinct and invariant 1 codes for 1 graphs, 0 not invariant
+[16:54:59] ok   disc n=5: canonical codes distinct and invariant 2 codes for 2 graphs, 0 not invariant
+[16:54:59] ok   disc n=6: canonical codes distinct and invariant 7 codes for 7 graphs, 0 not invariant
+[16:54:59] ok   disc n=7: canonical codes distinct and invariant 27 codes for 27 graphs, 0 not invariant
+[16:54:59] ok   disc n=8: canonical codes distinct and invariant 132 codes for 132 graphs, 0 not invariant
+[16:54:59] ok   disc n=9: canonical codes distinct and invariant 773 codes for 773 graphs, 0 not invariant
+[16:55:00] ok   disc n=10: canonical codes distinct and invariant 5017 codes for 5017 graphs, 0 not invariant
+[16:55:00] ok   disc n=4: boundary extensions = brute force 0 disagree
+[16:55:00] ok   disc n=5: boundary extensions = brute force 0 disagree
+[16:55:00] ok   disc n=6: boundary extensions = brute force 0 disagree
+[16:55:00] ok   disc n=7: boundary extensions = brute force 0 disagree
+[16:55:01] ok   disc n=8: boundary extensions = brute force 0 disagree
+[16:55:01] sphere n= 4:          1 graphs, 5 candidates,     0.0 s wall,      0.0 s CPU
+[16:55:01] disc   n= 4:          1 graphs, 2 candidates,     0.0 s wall,      0.0 s CPU
+[16:55:01] sphere n= 5:          1 graphs, 5 candidates,     0.0 s wall,      0.0 s CPU
+[16:55:01] disc   n= 5:          2 graphs, 2 candidates,     0.0 s wall,      0.0 s CPU
+[16:55:01] sphere n= 6:          2 graphs, 5 candidates,     0.0 s wall,      0.0 s CPU
+[16:55:01] disc   n= 6:          7 graphs, 1 candidates,     0.0 s wall,      0.0 s CPU
+[16:55:01] sphere n= 7:          5 graphs, 4 candidates,     0.0 s wall,      0.0 s CPU
+[16:55:01] sphere n= 8:         14 graphs, 3 candidates,     0.0 s wall,      0.0 s CPU
+[16:55:01] sphere n= 9:         50 graphs, 2 candidates,     0.0 s wall,      0.0 s CPU
+[16:55:01] sphere n=10:        233 graphs, 2 candidates,     0.0 s wall,      0.0 s CPU
+[16:55:01] sphere n=11:      1,249 graphs, 2 candidates,     0.0 s wall,      0.3 s CPU
+[16:55:01] sphere n=12:      7,595 graphs, 2 candidates,     0.1 s wall,      1.7 s CPU
+[16:55:02] sphere n=13:     49,566 graphs, 2 candidates,     1.1 s wall,     17.2 s CPU
+[16:55:02] tier 2 candidates: BAL2, FL1
+[16:55:14] sphere n=14:    339,722 graphs, 2 candidates,    11.6 s wall,    190.2 s CPU
+[16:57:39] sphere n=15:  2,406,841 graphs, 2 candidates,   145.1 s wall,   2444.1 s CPU
+[17:28:47] sphere n=16: 17,490,241 graphs, 2 candidates,  1868.4 s wall,  31642.9 s CPU
+[17:28:47] done

@@ -1,0 +1,156 @@
+[
+ {
+  "domain": "sphere",
+  "n": 4,
+  "graphs": 1,
+  "candidates": [
+   "BAL1",
+   "BAL2",
+   "FL1",
+   "FL2",
+   "K1"
+  ],
+  "wall_s": 0.0,
+  "cpu_s": 0.0
+ },
+ {
+  "domain": "disc",
+  "n": 4,
+  "graphs": 1,
+  "candidates": [
+   "PE1",
+   "PE2"
+  ],
+  "wall_s": 0.0,
+  "cpu_s": 0.0
+ },
+ {
+  "domain": "sphere",
+  "n": 5,
+  "graphs": 1,
+  "candidates": [
+   "BAL1",
+   "BAL2",
+   "FL1",
+   "FL2",
+   "K1"
+  ],
+  "wall_s": 0.0,
+  "cpu_s": 0.0
+ },
+ {
+  "domain": "disc",
+  "n": 5,
+  "graphs": 2,
+  "candidates": [
+   "PE1",
+   "PE2"
+  ],
+  "wall_s": 0.0,
+  "cpu_s": 0.0
+ },
+ {
+  "domain": "sphere",
+  "n": 6,
+  "graphs": 2,
+  "candidates": [
+   "BAL1",
+   "BAL2",
+   "FL1",
+   "FL2",
+   "K1"
+  ],
+  "wall_s": 0.0,
+  "cpu_s": 0.0
+ },
+ {
+  "domain": "disc",
+  "n": 6,
+  "graphs": 7,
+  "candidates": [
+   "PE2"
+  ],
+  "wall_s": 0.01,
+  "cpu_s": 0.0
+ },
+ {
+  "domain": "sphere",
+  "n": 7,
+  "graphs": 5,
+  "candidates": [
+   "BAL1",
+   "BAL2",
+   "FL1",
+   "K1"
+  ],
+  "wall_s": 0.0,
+  "cpu_s": 0.0
+ },
+ {
+  "domain": "sphere",
+  "n": 8,
+  "graphs": 14,
+  "candidates": [
+   "BAL2",
+   "FL1",
+   "K1"
+  ],
+  "wall_s": 0.0,
+  "cpu_s": 0.0
+ },
+ {
+  "domain": "sphere",
+  "n": 9,
+  "graphs": 50,
+  "candidates": [
+   "BAL2",
+   "FL1"
+  ],
+  "wall_s": 0.0,
+  "cpu_s": 0.0
+ },
+ {
+  "domain": "sphere",
+  "n": 10,
+  "graphs": 233,
+  "candidates": [
+   "BAL2",
+   "FL1"
+  ],
+  "wall_s": 0.01,
+  "cpu_s": 0.03
+ },
+ {
+  "domain": "sphere",
+  "n": 11,
+  "graphs": 1249,
+  "candidates": [
+   "BAL2",
+   "FL1"
+  ],
+  "wall_s": 0.02,
+  "cpu_s": 0.29
+ },
+ {
+  "domain": "sphere",
+  "n": 12,
+  "graphs": 7595,
+  "candidates": [
+   "BAL2",
+   "FL1"
+  ],
+  "wall_s": 0.13,
+  "cpu_s": 1.67
+ },
+ {
+  "domain": "sphere",
+  "n": 13,
+  "graphs": 49566,
+  "candidates": [
+   "BAL2",
+   "FL1"
+  ],
+  "wall_s": 1.07,
+  "cpu_s": 17.16
+ }
+]
