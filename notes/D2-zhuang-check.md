@@ -11,6 +11,10 @@ then checked two claims against the page images:
   four-term relation, Conjecture 10.1.
 - **[B] p.3, Corollary 2.1:** dim J♭(K) ≤ Tait(K), "an easy corollary" of [KR] Prop 4.18.
 
+The RII computation (Step 4a) was also **re-derived independently** before merge, at Gabriel's
+request, by an agent that saw only Zhuang's definitions and [KM19]. It found H⁰ = 3, H¹ = 0, H² = 6
+for both orientations, and reached the same conclusion.
+
 The papers were downloaded from arXiv with Gabriel's approval. Neither they nor the page images and
 crops the text refers to are committed.
 

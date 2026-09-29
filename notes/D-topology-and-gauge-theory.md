@@ -254,6 +254,13 @@ its sources.
   RII using one crossing of each sign, and Zhuang's single crossing type makes every RII cube behave
   like sl₃'s σ² rather than σσ⁻¹.
 - It does not by itself break his Theorem 1, which uses only the Euler characteristic.
+- **Independently re-derived (2026-09-29, before merge, at Gabriel's request).** A separate agent
+  computed the lens complex from Zhuang's definitions and [KM19] alone, without seeing this check.
+  - It found H⁰ = 3, H¹ = 0 and H² = 6 for both orientations.
+  - H⁰ = 3 follows from stated results. H¹ = 0 needs one isotopy step, and without it H² − H¹ = 6.
+  - Its conclusion, not homotopy equivalent in any degree, rests on the two facts above. It also
+    survives alternative readings of Zhuang's Figs 8 and 9 (dots on the zip; the 0- and
+    1-resolutions swapped).
 
 **Other findings.**
 - **A reformulation worth keeping:** [KM16] Lemma 10.3 shows the Tutte relation is equivalent to two
