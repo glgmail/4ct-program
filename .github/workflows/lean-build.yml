@@ -166,7 +166,14 @@ jobs:
           test -f .lake/build/lib/lean/FourCT/Base.olean
           out=$(lake env lean ../checks/lean/fourct_axioms.lean 2>&1)
           echo "$out"
-          echo "$out" | grep -qx "'FourCT.fourColor_base' depends on axioms: \[propext, Classical.choice, Quot.sound\]"
+          # Every theorem listed in the check file must depend on exactly the
+          # three standard axioms: one such line per `#print axioms`, and no
+          # other output at all.
+          want=$(grep -c '^#print axioms' ../checks/lean/fourct_axioms.lean)
+          good=$(echo "$out" | grep -cx "'[^']*' depends on axioms: \[propext, Classical.choice, Quot.sound\]" || true)
+          lines=$(echo "$out" | grep -c . || true)
+          echo "theorems checked: $want; with exactly the standard axioms: $good; output lines: $lines"
+          [ "$want" -ge 1 ] && [ "$good" -eq "$want" ] && [ "$lines" -eq "$want" ]
 
       - name: Peak memory
         if: always()
