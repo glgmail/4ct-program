@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: the 4ct-program contributors
 -/
 import FourCT.Base
+import FourCT.Examples
+import FourCT.PlaneGraph
 import FourCT.Transfer
 
 /-!

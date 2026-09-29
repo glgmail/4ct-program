@@ -12,3 +12,11 @@ standard ones and nothing else.
 -/
 
 #print axioms FourCT.fourColor_base
+#print axioms FourCT.hypermap_fourColorable
+#print axioms FourCT.PlaneGraph.four_colorable
+#print axioms SimpleGraph.IsPlanar.colorable_four
+#print axioms FourCT.Examples.isPlanar_K4
+#print axioms FourCT.Examples.not_colorable_three_K4
+#print axioms SimpleGraph.IsPlanar.of_isContained
+#print axioms FourCT.Examples.isPlanar_of_card_le_four
+#print axioms FourCT.Examples.not_isPlanar_K5

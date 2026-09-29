@@ -30,4 +30,20 @@ of the real plane can be coloured with four colours. This is
 theorem fourColor_base : FourColor.FourColorTheorem :=
   FourColor.fourColorTheorem
 
+open FourColor in
+/-- **The combinatorial Four Colour Theorem, as the base port proves it**: every
+finite hypermap that is planar (genus zero) and bridgeless is four-colourable,
+i.e. its faces can be coloured with four colours so that the two faces on
+either side of every edge differ.
+
+The base port proves this on the way to `fourColorTheorem`. Here it is
+assembled from the port's unavoidability theorem and its reducibility and
+presentation checks, the same inputs `FourColor.fourColorTheorem` uses. -/
+theorem hypermap_fourColorable {D : Type} [Finite D] (G : Hypermap D)
+    (hG : G.PlanarBridgeless) : G.FourColorable :=
+  Hypermap.fourColorable_of_no_minimalCounterExample
+    (fun H => Hypermap.not_minimalCounterExample (G := H)
+      (redpartSound_theRedpart reducibility)
+      exclude5 exclude6 exclude7 exclude8 exclude9 exclude10 exclude11) G hG
+
 end FourCT

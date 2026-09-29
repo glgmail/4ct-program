@@ -10,6 +10,7 @@ clean checkout. Leads, partial arguments and AI-written summaries go under
 
 | Date | Result | Evidence | Tier | PR |
 | --- | --- | --- | --- | --- |
+| 2026-09-29 | **Every planar simple graph is 4-colourable, stated in Mathlib's vocabulary** (`SimpleGraph.IsPlanar.colorable_four`). Also the 4CT for loopless plane graphs (`FourCT.PlaneGraph.four_colorable`) and for planar bridgeless hypermaps (`FourCT.hypermap_fourColorable`), all derived from the base port. Worked example: `K₄` is planar and not 3-colourable, so the theorem is tight. Every theorem depends only on `propext`, `Classical.choice`, `Quot.sound`. | `lean/FourCT/{Base,PlaneGraph,Examples}.lean`; `lean-build` checks the axioms of every theorem in `checks/lean/fourct_axioms.lean` | A3 | #34 |
 | 2026-09-27 | **The four colour theorem builds on Lean and Mathlib `v4.34.1`**, the program's pinned toolchain, as `FourColor.fourColorTheorem` in `lean/`. Depends only on `propext`, `Classical.choice`, `Quot.sound`; 115,342 declarations, no sorries, no extra axioms; anti-vacuity controls pass. No Lean source changed from corun1024 `3db71e0`. | `lean/build.sh` on the self-hosted runner; `lean-build` on this PR | A2 | #26 |
 | 2026-09-27 | `RBarish-UTokyo/FourColorTheorem-Lean4` builds clean on its own pinned toolchain, and `FourColor.RealPlane.four_color` depends on no axioms beyond `propext`, `Classical.choice`, `Quot.sound`. | port-build run [36350029344](https://github.com/glgmail/4ct-program/actions/runs/36350029344), artifact `port-build-RBarish-UTokyo` | evidence for A1 | #24 |
 | 2026-09-27 | `corun1024/4ct` builds clean on its own pinned toolchain, and `FourColor.fourColorTheorem` depends on no axioms beyond `propext`, `Classical.choice`, `Quot.sound`. 115,342 declarations, no sorries. | port-build run [36336993686](https://github.com/glgmail/4ct-program/actions/runs/36336993686), artifact `port-build-corun1024` | evidence for A1 | #20 |
@@ -17,6 +18,172 @@ clean checkout. Leads, partial arguments and AI-written summaries go under
 ## Open leads
 
 - _(none yet)_
+
+---
+
+# A3 — Mathlib survey, and the foundation for plane graphs
+
+Issue #4 asks for a survey, before anything is written, of what Mathlib at
+`v4.34.1` (commit `d13f23b`) already provides toward planarity, Euler's
+formula, rotation systems, duality and nowhere-zero flows. The base port
+turned out to matter as much as Mathlib, so it is surveyed alongside.
+
+Mathlib was read in the runner's copy under `lean/.lake/packages/mathlib`,
+and the base port under `lean/FourColor/`.
+
+## What exists
+
+| Concept | Mathlib `v4.34.1` | Base port (`FourColor`) |
+| --- | --- | --- |
+| Simple graphs | `SimpleGraph`, with walks, connectivity, matchings, Hamiltonian cycles and line graphs | — |
+| Vertex colourings | `SimpleGraph.Coloring`, `Colorable`, `chromaticNumber` | `Hypermap.GraphColoring`, `GraphFourColorable` (colours constant on node orbits) |
+| Half-edges | `SimpleGraph.Dart`: a pair of adjacent vertices, with no cyclic order | darts are the carrier type of a `Hypermap` |
+| Edge colourings | `SimpleGraph.EdgeLabeling`: any labelling of edges, not required to be proper. A proper edge colouring is a vertex colouring of `lineGraph` | the Tait edge-colour traces in `Color.lean`, used internally |
+| **Embeddings / rotation systems** | **none** | **`Hypermap`**: three permutations `edge`, `node`, `face` of the darts with `node * face * edge = 1` (`Hypermap.lean`) |
+| **Faces** | **none** | orbits of `face` (`CFace`) |
+| **Euler's formula** | **none**. `EulerCharacteristic` exists only for chain complexes | `EulerLhs`/`EulerRhs`/`genus`; `evenGenus` proves the formula exact (`Euler.lean`) |
+| **Planarity** | **none**. The only "planar" in Mathlib is `Coplanar`, for affine spaces | `Planar : genus = 0` (`Hypermap.lean`) |
+| **Duality** | **none** | `dual`, with `dual_dual`, `genus_dual`, `planar_dual` |
+| Bridges and loops | — | `Bridgeless`, `Loopless`, and `bridgeless_dual : G.dual.Bridgeless ↔ G.Loopless` (`Geometry.lean`) |
+| **Nowhere-zero flows** | **none** | none. `Color` is the Klein four-group ℤ₂ × ℤ₂ as `Bool × Bool` (`bitsEquiv`), which is the right group for them |
+| **Tait's correspondence** | **none** | none stated. The colour traces are Tait-style, but there is no vertex-colouring ↔ edge-colouring theorem |
+| **The combinatorial 4CT** | — | `Hypermap.fourColorable_of_no_minimalCounterExample` together with `Hypermap.not_minimalCounterExample`: every finite, planar, bridgeless hypermap is `FourColorable` |
+| The 4CT for real-plane maps | — | `FourColor.fourColorTheorem`, plus a bridge to Mathlib's topology (`RealPlaneMathlib.lean`) |
+
+**Summary.** Mathlib has graphs and colourings but no planar-graph layer at
+all: no embeddings, faces, Euler formula, duality or flows. The base port has
+the whole embedding layer, as Gonthier's hypermaps, up to and including a
+combinatorial Four Colour Theorem. Neither has Tait's correspondence or
+nowhere-zero flows.
+
+## Decision: plane graphs are the base port's hypermaps
+
+#4 asks A3 to choose between Mathlib's `SimpleGraph` and the base port's
+hypermap encoding for plane graphs. **A3 builds on the base port's
+`Hypermap` for the embedding, and states everything a reader sees through
+Mathlib's `SimpleGraph`.** Concretely:
+
+- A **plane graph** is a finite `FourColor.Hypermap` whose `edge` is an
+  involution with no fixed points, which is a combinatorial map, and which is
+  `Planar`. Faces, genus, Euler's formula and the dual all come with it.
+- Its **underlying graph** is a Mathlib `SimpleGraph` on the node orbits,
+  with two nodes adjacent when an `edge` step joins them. Colourings, edge
+  colourings (through `lineGraph`) and flows are stated there, in Mathlib's
+  vocabulary.
+- The **bridge to the base port** is then short. A graph colouring of the
+  underlying graph is a `GraphColoring` of the hypermap, and `GraphColoring`
+  is a `Coloring` of the `dual` (`fourColorable_dual_iff`). The
+  combinatorial 4CT above applies to that.
+
+Why not rotation systems built from scratch on `SimpleGraph`:
+
+- Everything the embedding needs already exists in the base port and is
+  proved there: faces, genus, planarity, duality, bridges ↔ loops. A second
+  encoding would duplicate it, and would then need its own equivalence proof
+  before it could reach the combinatorial 4CT.
+- The theorem A3 has to connect to is stated over hypermaps, so any other
+  choice adds a layer between our statements and the proof.
+- Readability is kept where it matters. What A4 states — colourings,
+  Tait colourings, flows — is phrased with Mathlib's `SimpleGraph`, which
+  anyone who knows Mathlib can read. The hypermap is the machinery
+  underneath.
+
+The risk is the one #4 names: a definition that is subtly wrong makes
+everything downstream vacuous. So each definition gets an English gloss and
+a worked example, the tetrahedron and the octahedron checked by `decide`,
+before anything is built on it.
+
+## What A3 has to build
+
+1. `PlaneGraph`, the underlying `SimpleGraph`, and the colouring bridge to
+   `Hypermap.GraphColoring`. Worked example: the tetrahedron's underlying
+   graph is the complete graph on four vertices.
+2. The combinatorial 4CT restated for plane graphs: every loopless plane
+   graph's underlying graph is 4-colourable. It follows from the base port's
+   combinatorial theorem through `dual` and `bridgeless_dual`.
+3. Tait's correspondence: the vertex 4-colourings of a plane triangulation
+   correspond to the proper 3-edge-colourings of its cubic dual.
+4. Proper 3-edge-colourings correspond to nowhere-zero ℤ₂ × ℤ₂-flows, using
+   the base port's `Color` as the group.
+
+Items 1 and 2 are the bridge #4 calls load-bearing. Items 3 and 4 are the
+correspondences A4 needs.
+
+## Items 1 and 2: done
+
+In `lean/FourCT/PlaneGraph.lean`, with the worked example in
+`lean/FourCT/Examples.lean`. #4 asks for an English gloss of each definition:
+
+- **`PlaneGraph D`**: a finite set of darts `D` with the base port's three
+  permutations (`edge` pairs the two ends of each edge, `node` goes round a
+  vertex, `face` goes round a face, and `node ∘ face ∘ edge = id`). Every edge
+  has exactly two darts (`Plain`), and the genus is zero (`Planar`). Loops
+  and multiple edges are allowed; results about colouring assume no loops.
+- **`PlaneGraph.Vertex`**: the orbits of `node`, one per vertex.
+- **`PlaneGraph.graph`**: Mathlib's `SimpleGraph` on the vertices, in which
+  two distinct vertices are adjacent when an edge joins them. Loops and
+  repeated edges are forgotten.
+- **`SimpleGraph.IsPlanar G`**: `G` is contained in the underlying graph of
+  some loopless plane graph (`G ⊑ P.graph`, Mathlib's `IsContained`). Its
+  vertices map injectively to the plane graph's, with adjacency preserved but
+  not necessarily reflected, so this is an ordinary subgraph, not an induced
+  one. For finite graphs this is the usual notion. A graph with infinitely
+  many vertices is never `IsPlanar`.
+
+The theorems, all derived from the base port, with nothing new assumed:
+
+| Theorem | Says |
+| --- | --- |
+| `FourCT.hypermap_fourColorable` | every finite planar bridgeless hypermap is four-colourable (assembled from the port's unavoidability theorem and its checks) |
+| `FourCT.PlaneGraph.graphFourColorable_iff` | for a loopless plane graph, the port's graph colourings are exactly the proper 4-colourings of the underlying `SimpleGraph` |
+| `FourCT.PlaneGraph.four_colorable` | the underlying graph of every loopless plane graph is 4-colourable (from the above, through `dual`, `planar_dual` and `bridgeless_dual`) |
+| `SimpleGraph.IsPlanar.colorable_four` | **every planar simple graph is 4-colourable** |
+
+**The worked example is the tetrahedron**: 12 darts, three per vertex, given
+by explicit tables.
+- **Checked by `decide`:** it is plain, satisfies the hypermap identity and
+  is loopless.
+- **Planar:** it is connected (a computable set of reachable darts, proved
+  sound once) and has 6 edges, 4 vertices and 4 faces (orbit counts by
+  `decide`). Euler's formula then gives genus zero: `2·1 + 12 = 6 + 4 + 4`.
+- **K₄ is planar:** its underlying graph contains `K₄` (`k4Embedding`).
+- **The theorem is tight:** `K₄` is not 3-colourable
+  (`not_colorable_three_K4`, via Mathlib's `chromaticNumber_top`). So
+  `IsPlanar` is not so narrow as to make the theorem trivial.
+- **The tricky cases come out right:** every simple graph on at most four
+  vertices is `IsPlanar` (`isPlanar_of_card_le_four`, as a subgraph of
+  `K₄`). That includes a path, an edgeless graph and a disconnected graph.
+  `K₅` is not planar (`not_isPlanar_K5`), but only as a consequence of the
+  4CT itself, not an independent check.
+
+**How the definition was chosen** (research, 2026-09-29). It was compared
+with the other formal definitions of planarity found:
+
+- **Gonthier's hypermaps, and the base port:** genus 0 by Euler's formula,
+  with components counted.
+- **Isabelle's AFP** (Noschinski, *Planarity_Certificates*): combinatorial
+  maps of Euler genus 0, linked to Kuratowski's theorem.
+- **devin-lai/jsp-000512-lean**, Lean 4: a topological `PlaneDrawing` in ℝ²,
+  also covering infinite graphs by compactness.
+- **abhishan82/Pancyclicity-in-4-connected-planar-graphs**, Lean 4: a
+  rotation system with `V − E + F = 2` and simple face boundaries. That
+  rules out every disconnected graph, and every graph with a cut vertex: a
+  path's single face meets its middle vertex twice.
+
+Mathlib has no definition of planarity.
+
+The combinatorial, component-counting notion was kept. Its first version
+used `G ↪g P.graph`, which in Mathlib is an *induced* embedding, while its
+docstring said "subgraph". Both define the same class of finite graphs, but
+the definition did not say what its gloss said, so it was changed to `⊑`
+(Gabriel's decision). Not formalized here, and recorded as open:
+
+- the equivalence with drawings in the plane, which is classical but needs
+  Jordan–Schoenflies;
+- infinite planar graphs, which are a compactness step away
+  (De Bruijn–Erdős).
+
+Items 3 (Tait) and 4 (flows) come next.
 
 ---
 
