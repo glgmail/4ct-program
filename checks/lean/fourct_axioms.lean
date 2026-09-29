@@ -29,3 +29,12 @@ standard ones and nothing else.
 #print axioms FourCT.Examples.taitEdge_tetraVertexColors
 #print axioms FourCT.Examples.tetrahedron_colorable_of_tait
 #print axioms FourCT.Examples.theta_torus
+#print axioms FourCT.edgeColoring_iff_nowhereZeroFlow
+#print axioms FourCT.nowhereZeroFlow_taitEdge
+#print axioms FourCT.exists_coloring_of_nowhereZeroFlow
+#print axioms FourCT.fourColorable_iff_nowhereZeroFlow
+#print axioms FourCT.PlaneGraph.colorable_four_iff_nowhereZeroFlow_dual
+#print axioms FourCT.Examples.tetraEdgeColors_flow
+#print axioms FourCT.Examples.taitEdge_triangleFaceColors
+#print axioms FourCT.Examples.triangle_fourColorable_of_flow
+#print axioms FourCT.Examples.theta_torus_flow

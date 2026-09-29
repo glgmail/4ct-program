@@ -131,8 +131,41 @@ theorem edgeColoring_taitEdge {G : Hypermap D} (hG : G.Plain) (hc : G.Cubic) {k 
 
 /-! ### From edge colourings to face colourings, on the sphere -/
 
-private theorem add_three_eq_zero : ∀ a b c : Color, a ≠ 0 → b ≠ 0 → c ≠ 0 →
+/-- Three different non-zero colours add up to zero. -/
+theorem add_three_eq_zero : ∀ a b c : Color, a ≠ 0 → b ≠ 0 → c ≠ 0 →
     a ≠ b → b ≠ c → c ≠ a → a + b + c = 0 := by decide
+
+/-- In a cubic hypermap, a sum over the darts at the vertex of `x` has the three
+terms `x`, `node x`, `node (node x)`. -/
+theorem sum_sameCycle_node_of_cubic [Fintype D] [DecidableEq D] {G : Hypermap D}
+    (hc : G.Cubic) {M : Type*} [AddCommMonoid M] (f : D → M) (x : D) :
+    ∑ y ∈ Finset.univ.filter (fun y => G.node.SameCycle x y), f y =
+      f x + f (G.node x) + f (G.node (G.node x)) := by
+  have hn3 : ∀ x, G.node (G.node (G.node x)) = x := fun x => hc.node_node_node x
+  have hne : ∀ x, G.node x ≠ x := fun x => hc.node_ne x
+  have hS : Finset.univ.filter (fun y => G.node.SameCycle x y) =
+      {x, G.node x, G.node (G.node x)} := by
+    ext y
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_insert,
+      Finset.mem_singleton]
+    exact sameCycle_node_iff hc
+  have h1 : x ≠ G.node x := (hne x).symm
+  have h2 : x ≠ G.node (G.node x) := fun h => hne x <|
+    calc G.node x = G.node (G.node (G.node x)) := by rw [← h]
+      _ = x := hn3 x
+  have h3 : G.node x ≠ G.node (G.node x) := fun h => hne x (G.node.injective h).symm
+  rw [hS, Finset.sum_insert (by simp [h1, h2]), Finset.sum_insert (by simp [h3]),
+    Finset.sum_singleton, ← add_assoc]
+
+/-- The colours of a proper 3-edge-colouring of a cubic map sum to zero at every
+vertex: they are the three non-zero colours. -/
+theorem EdgeColoring.sum_node_eq_zero [Fintype D] [DecidableEq D] {G : Hypermap D}
+    (hc : G.Cubic) {e : D → Color} (he : EdgeColoring G e) (x : D) :
+    ∑ y ∈ Finset.univ.filter (fun y => G.node.SameCycle x y), e y = 0 := by
+  rw [sum_sameCycle_node_of_cubic hc]
+  exact add_three_eq_zero _ _ _ (he.ne_zero _) (he.ne_zero _) (he.ne_zero _)
+    (he.node x).symm (he.node _).symm
+    (fun h => he.node (G.node (G.node x)) (by rw [hc.node_node_node, h]))
 
 /-- **On the sphere, every proper 3-edge-colouring of a cubic map comes from a
 face 4-colouring.** The three colours at a vertex are the three non-zero
@@ -142,28 +175,7 @@ because an edge colour is never zero. -/
 theorem exists_coloring_of_edgeColoring [Fintype D] [DecidableEq D] {G : Hypermap D}
     (hG : G.Plain) (hc : G.Cubic) (hp : G.Planar) {e : D → Color} (he : EdgeColoring G e) :
     ∃ k, G.Coloring k ∧ taitEdge G k = e := by
-  have hn3 : ∀ x, G.node (G.node (G.node x)) = x := fun x =>
-    hc.node_node_node x
-  have hne : ∀ x, G.node x ≠ x := fun x => hc.node_ne x
-  have hsum : ∀ x, ∑ y ∈ Finset.univ.filter (fun y => G.node.SameCycle x y), e y = 0 := by
-    intro x
-    have hS : Finset.univ.filter (fun y => G.node.SameCycle x y) =
-        {x, G.node x, G.node (G.node x)} := by
-      ext y
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_insert,
-        Finset.mem_singleton]
-      exact sameCycle_node_iff hc
-    have h1 : x ≠ G.node x := (hne x).symm
-    have h2 : x ≠ G.node (G.node x) := fun h => hne x <|
-      calc G.node x = G.node (G.node (G.node x)) := by rw [← h]
-        _ = x := hn3 x
-    have h3 : G.node x ≠ G.node (G.node x) := fun h => hne x (G.node.injective h).symm
-    rw [hS, Finset.sum_insert (by simp [h1, h2]), Finset.sum_insert (by simp [h3]),
-      Finset.sum_singleton, ← add_assoc]
-    exact add_three_eq_zero _ _ _ (he.ne_zero _) (he.ne_zero _) (he.ne_zero _)
-      (he.node x).symm (he.node _).symm
-      (fun h => he.node (G.node (G.node x)) (by rw [hn3, h]))
-  obtain ⟨k, hkf, hke⟩ := exists_facePotential G hG hp e he.edge hsum
+  obtain ⟨k, hkf, hke⟩ := exists_facePotential G hG hp e he.edge (he.sum_node_eq_zero hc)
   refine ⟨k, ⟨fun x h => he.ne_zero x ?_, hkf⟩, funext hke⟩
   rw [← hke x, h, Color.add_self]
 
