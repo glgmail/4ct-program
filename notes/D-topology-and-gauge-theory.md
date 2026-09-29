@@ -18,6 +18,11 @@ clean checkout. Leads, partial arguments and AI-written summaries go under
   two. It is the smallest web where the combinatorial theory's dimension is
   unknown. Zhuang (2022) claims his method also gives `dim J♭ = Tait` for
   planar webs, which would force 60. See D1 below.
+- **Zhuang's argument, checked (D2, lead under review).** The step it leaves out,
+  independence of the edge orientations, is equivalent to the four-term Tutte
+  relation for dim J♯. By Kronheimer–Mrowka's own reformulation (1508.07207 p.28,
+  Conjecture 10.1), that is equivalent to the conjecture. Its chain-level
+  invariance theorem fails for RII. See D2 below and `D2-zhuang-check.md`.
 - **The plan's status note needs updating.** Kronheimer–Mrowka (2025) proved
   the SU(3) analogue of their conjecture, and Zhuang (2022) claims the
   conjecture itself. "The route through J♭ is closed" needs qualifying. See
@@ -204,3 +209,81 @@ and its reception, and the qualification of "the route through J♭ is
 closed". B23 closes the route through proving J♭ = J♯ as functors. It does
 not close the route through J♭ non-vanishing, which, since `dim J♭ ≤ Tait`,
 would itself imply the theorem.
+
+---
+
+# D2 — A check of Zhuang's claimed proof (lead, under review)
+
+Issue #43. The full text is in `D2-zhuang-check.md`. **Everything in this section is an AI-written lead,
+under review by Gabriel, and not a result.** It says nothing about whether the Kronheimer–Mrowka
+conjecture is true or false. It judges only whether Zhuang's argument, *as written*, is supported by
+its sources.
+
+**Verdicts, step by step:**
+
+| Step | Verdict |
+| --- | --- |
+| 1. The cube of resolutions is a well-defined complex | verified in full. Squares commute because foams in disjoint balls are isotopic, which Zhuang only asserts |
+| 2. The local foam relations of §3 | gap. Prop 7 over-claims, Prop 11 has no statement, and two relations are drawn wrongly. The bigon and square identities are established inside [KM19]'s proofs, not in its statements |
+| 3. Independence of the auxiliary edge orientations | **gap, equivalent to the conjecture itself** (below) |
+| 4. Invariance under virtual moves (his Theorem 2) | gap. RI holds, but "verbatim" from Mackaay–Vaz is not accurate: each identity needs its own J♯ proof. **RII fails at chain level.** RIII is undetermined. The Euler-characteristic version (his Corollary 2) holds for all his moves |
+| 5. The conclusion, e = Penrose number, so dim = Tait | gap. The logic and signs are sound, but the input is Step 3 |
+| 6. The same argument for J♭ | gap, the same gaps. It would force dim J♭(dodecahedron) = 60, whereas Boozer's computations suggest 58: evidence, not proof |
+
+**The decisive point (Step 3).**
+- Zhuang's induction needs his Euler characteristic to be independent of the orientations he puts on
+  the edges. He neither shows this nor gives a bookkeeping argument that avoids it. His proof asserts
+  e(D) = P(D) for every oriented diagram.
+- That independence is equivalent to the four-term "Tutte relation" for dim J♯ of planar webs. Tait
+  counts satisfy the relation.
+- Kronheimer–Mrowka, *Exact triangles* (arXiv 1508.07207, J. Topol. 2016), p.28, state that relation
+  as Conjecture 10.1. They say the question whether dim J♯ equals the Tait count "is equivalent to"
+  it. The main session checked this on the page image. KM 2025 p.67 repeats it.
+- So the step Zhuang leaves out is, by Kronheimer–Mrowka's own reformulation, as strong as the
+  theorem he claims.
+
+**The RII counterexample (Step 4).**
+- Take two circles overlapping in a lens. One virtual RII move separates them, giving F⁹ in a single
+  degree.
+- Zhuang has only one crossing type, so the lens's cube is 9 → 12 → 12. Its edge map (a zip to the
+  theta web) kills the doubly-dotted pair of discs ([KM19] Prop 5.8) but not the undotted pair
+  (Prop 5.6).
+- So the degree-0 homology has dimension strictly between 0 and 9. It is 3, and the degree-2 homology
+  is at least 6. That cannot be homotopy equivalent to F⁹ in any single degree.
+- This holds for both orientations. It refutes Theorem 2 *as stated*. Khovanov and Mackaay–Vaz prove
+  RII using one crossing of each sign, and Zhuang's single crossing type makes every RII cube behave
+  like sl₃'s σ² rather than σσ⁻¹.
+- It does not by itself break his Theorem 1, which uses only the Euler characteristic.
+- **Independently re-derived (2026-09-29, before merge, at Gabriel's request).** A separate agent
+  computed the lens complex from Zhuang's definitions and [KM19] alone, without seeing this check.
+  - It found H⁰ = 3, H¹ = 0 and H² = 6 for both orientations.
+  - H⁰ = 3 follows from stated results. H¹ = 0 needs one isotopy step, and without it H² − H¹ = 6.
+  - Its conclusion, not homotopy equivalent in any degree, rests on the two facts above. It also
+    survives alternative readings of Zhuang's Figs 8 and 9 (dots on the zip; the 0- and
+    1-resolutions swapped).
+
+**Other findings.**
+- **A reformulation worth keeping:** [KM16] Lemma 10.3 shows the Tutte relation is equivalent to two
+  specific maps having equal rank.
+- **Agol–Krushkal:** they present the planar algebra by the Tutte and lollipop relations, but defer the
+  characterisation of Tait counts to Fendley–Krushkal.
+- **An elementary proof** that the Tutte relation, with the circle, bridge and product rules,
+  characterises Tait counts is written out in the full text. It needs checking by a person.
+- **The J♭ bound:** dim J♭ ≤ Tait is Boozer 2019 Corollary 2.1 (p.3), from Khovanov–Robert Prop 4.18.
+
+**Priorities for review:**
+1. the RII computation;
+2. the elementary characterisation proof;
+3. the 27-case closure checks for Step 2 and RI;
+4. the suggested test: a computer search for an orientation-compatible recursion on the
+   dodecahedron. If one exists, it would matter a great deal. The same tools gave Kronheimer–Mrowka
+   only bounds, though that does not show it impossible.
+
+**Sources still missing:**
+- Tutte's 1998 book, which is copyrighted and was not fetched;
+- Fendley–Krushkal;
+- Kronheimer–Mrowka, *A deformation of instanton homology for webs*, for dim J♯ ≥ Tait;
+- Zhuang's LaTeX source, for the dot positions in his figures.
+
+**Constraints.** Nothing from D2 goes outside GitHub, and no one is contacted (house rules). Whether
+to contact the author is Gabriel's decision.
