@@ -55,17 +55,22 @@ fingerprint of a module covers the module's source, every module it imports,
 transitively, the build options, `lean-toolchain`, `lakefile.toml` and
 `lake-manifest.json`. That is what makes it safe to verify with.
 
-**`lake build --old` is for the keyboard only.** `build_pool.py` also writes
-each module's C file, where Lake keeps it, and with that in place
-`lake build --old +FourCT.Foo` accepts the existing build and compiles only
-what has changed: seconds, not two hours. But `--old` ignores changes in a
-module's imports. A module whose imports changed keeps its stale olean and
-still counts as built, so it is never verification. CI uses `build.sh` alone.
-The measurements behind this are on issue #4.
+**Checking one file at the keyboard:** after `./build.sh`, run
+`lake env lean FourCT/Foo.lean`. It compiles that one file against the
+existing build in seconds, without involving Lake's build logic. Rerun
+`./build.sh` afterwards: it is incremental, rebuilds exactly what depends
+on your change, and is what CI verifies with.
+
+**Not `lake build --old`.** It would accept this build if `build_pool.py`
+also wrote each module's C file, where Lake looks for it. But emitting C made
+the bulk certificate modules (`FourColor.Bulk.Cfg.Grp*`) 23× slower, about 7
+extra hours per cold build, so `build_pool.py` does not. `--old` would not be
+verification anyway: it ignores changes in a module's imports. The
+measurements are on issue #4.
 
 **An editor may try the full rebuild.** Opening a module that imports
-FourColor in an editor runs Lake's `setup-file`, which does not use `--old`,
-and so will most likely try to rebuild the port. This has not been tested.
+FourColor in an editor runs Lake's `setup-file`, and so will most likely try
+to rebuild the port. This has not been tested.
 
 These guard against a `lake build` reaching the port:
 

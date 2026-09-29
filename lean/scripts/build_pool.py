@@ -2,8 +2,8 @@
 """Build the `FourColor` modules under a job-count and a memory budget.
 
 4ct-program: modified from corun1024/4ct (see THIRD_PARTY_NOTICES.md). It
-also builds the program's own libraries, FourCT and Statements, and writes
-each module's C file. The changes are marked "4ct-program".
+also builds the program's own libraries, FourCT and Statements. The changes
+are marked "4ct-program".
 
 Lake starts as many jobs as the machine has hardware threads and offers no way
 to say fewer, which makes a build on many cores memory-bandwidth-bound and a
@@ -56,14 +56,11 @@ LEAN_OPTS = ['-Dpp.unicode.fun=true', '-DautoImplicit=false', '-DrelaxedAutoImpl
 # in lakefile.toml).
 LIBRARIES = (('FourColor', 'FourColor'), ('FourCT', 'FourCT'), ('Statements', None))
 
-# 4ct-program (task A3, step 0): also write each module's C file, where
-# Lake's own build puts it. Lake checks for it: with it present,
-# `lake build --old` accepts this script's output as up to date. That is an
-# interactive convenience only, never verification: `--old` ignores changes
-# in a module's imports. The output format is part of the fingerprint, so
-# adding the C files rebuilt everything once.
-IR_DIR = '.lake/build/ir'
-BUILD_FORMAT = 'olean+ilean+c'
+# 4ct-program (task A3, step 0): no C files are written. With them,
+# `lake build --old` would accept this script's output, but emitting C made
+# the bulk certificate modules (FourColor.Bulk.Cfg.Grp*) 23x slower: about 7
+# extra hours per cold build, measured on 2026-09-29. For interactive work,
+# `lake env lean FourCT/Foo.lean` compiles one file against this build.
 
 FINGERPRINTS = '.lake/build/fourcolor_fingerprints.json'
 PROFILE = 'scripts/module_cost.tsv'
@@ -122,7 +119,6 @@ def env_fingerprint(opts):
     """
     h = hashlib.sha256()
     h.update('\x00'.join(opts).encode())
-    h.update(BUILD_FORMAT.encode())
     for f in ('lean-toolchain', 'lakefile.toml', 'lake-manifest.json'):
         try:
             with open(f, 'rb') as fh:
@@ -183,8 +179,7 @@ def save_fingerprints(path, fps):
 def uptodate(name, recorded, ids):
     """Whether this olean exists and was built from exactly this input."""
     olean = os.path.join('.lake/build/lib/lean', name.replace('.', '/') + '.olean')
-    cfile = os.path.join(IR_DIR, name.replace('.', '/') + '.c')
-    return os.path.exists(olean) and os.path.exists(cfile) and recorded.get(name) == ids.get(name)
+    return os.path.exists(olean) and recorded.get(name) == ids.get(name)
 
 
 def load_profile(paths, warn):
@@ -371,7 +366,7 @@ def main():
     if args.clean and not args.dry_run:
         for lib, _ in LIBRARIES:
             subprocess.run(['rm', '-rf', f'.lake/build/lib/lean/{lib}', f'.lake/build/lib/lean/{lib}.olean',
-                            f'.lake/build/lib/lean/{lib}.ilean', f'{IR_DIR}/{lib}', f'{IR_DIR}/{lib}.c'])
+                            f'.lake/build/lib/lean/{lib}.ilean'])
         try:
             os.remove(FINGERPRINTS)
         except OSError:
@@ -407,11 +402,8 @@ def main():
 
     def run(name, path):
         out = os.path.join('.lake/build/lib/lean', name.replace('.', '/'))
-        cout = os.path.join(IR_DIR, name.replace('.', '/') + '.c')
         os.makedirs(os.path.dirname(out), exist_ok=True)
-        os.makedirs(os.path.dirname(cout), exist_ok=True)
-        cmd = ['lean', '-R', root] + LEAN_OPTS + ['-o', out + '.olean', '-i', out + '.ilean',
-                                                  '-c', cout, path]
+        cmd = ['lean', '-R', root] + LEAN_OPTS + ['-o', out + '.olean', '-i', out + '.ilean', path]
         t0 = time.time()
         p = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         text = p.stdout.read()

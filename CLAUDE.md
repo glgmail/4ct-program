@@ -34,9 +34,10 @@ built **only** with `cd lean && ./build.sh`, by `scripts/build_pool.py`.
 Never run `lake build` on anything there. Lake does not recognise
 `build_pool.py`'s output, so it would rebuild all 821 FourColor modules with
 no job cap and no memory budget, and some modules peak at 20 GB.
-`lake build --old` accepts the existing build and is fine for quick
-interactive checks. It is never verification, because it ignores changes in
-a module's imports. `checks/repo_guardrails.py` enforces both rules in CI.
+To check one file quickly, run `lake env lean FourCT/Foo.lean` after
+`./build.sh`. It compiles that file against the existing build. Verification
+is `./build.sh`, which is incremental. `checks/repo_guardrails.py` fails if
+`lean-build` runs `lake build`.
 Read `lean/README.md` before changing anything under `lean/`.
 
 Editing `lean/lakefile.toml`, `lean/lean-toolchain` or

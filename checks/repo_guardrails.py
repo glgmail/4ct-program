@@ -262,9 +262,8 @@ def check_vendored_port() -> None:
     report(not calls, "lean-build never runs `lake build`",
            "" if not calls else "found: " + "; ".join(calls))
 
-    # `lake build --old` accepts build_pool.py's output, but it ignores changes
-    # in a module's imports: a stale olean would count as built. Fine at the
-    # keyboard, never as verification.
+    # `lake build --old` ignores changes in a module's imports, so a stale
+    # olean would count as built. Never as verification.
     old = []
     for wf in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
         for line in wf.read_text(encoding="utf-8").splitlines():
