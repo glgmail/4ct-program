@@ -235,7 +235,8 @@ Amendment 2 is implemented from SPEC alone (branch d1/phase2b, SPEC commit
 b400a9b), including §A2.13. The mandatory set is run: F0, KM, KMd, T2R,
 T2 and T3s, with controls C0–C8. The optional T3 was added afterwards, on
 Gabriel's go of 2026-09-30 ("Run T3 on all 60 bigon sites"; branch
-d1/phase2b-t3). T4s is still refused by the code. Nothing here is a result
+d1/phase2b-t3), then the optional T4s on Gabriel's go of 2026-09-30 ("Run
+T4s"; branch d1/phase2b-t4s). Nothing here is a result
 until Implementation B agrees byte for byte (§A2.11).
 
 ## Command
@@ -246,11 +247,16 @@ python3 a2run.py --all --jobs 5      # all families and controls, then C6, union
 python3 a2run.py --family T2         # one family: F0 KM KMd T2R T2 T3s
 python3 a2run.py --control C5-W3     # one control: C0 C4-prism5 C4-cube C5-W2 C5-W3 C6
 python3 a2run.py --family T3 --jobs 8   # optional T3, 60 subtrees in 8 worker processes
-python3 a2run.py --union             # union.json again, now with T3 after T3s
+python3 a2run.py --family T4s --jobs 8  # optional T4s, 9 508 level-3 subtrees in 8 workers
+python3 a2run.py --union             # union.json again, with T3 and T4s after T3s
+python3 a2run.py --summary           # A2-summary.json and A2-SHA256SUMS.txt
 ```
 
-T3 refuses more than 8 workers. `--first-limit N` restricts T3 to its first
-N first moves; it is for tests only (outputs then go under `D1_A2_OUT`).
+T3 and T4s refuse more than 8 workers. Two options are for tests only; their
+outputs then go under `D1_A2_OUT`:
+- `--first-limit N` restricts T3 to its first N first moves;
+- `--l2-limit N` restricts T4s to its first N IRREDUCIBLE level-2 nodes, and
+  `--seqcheck` then compares the result with the plain sequential walk.
 
 C8 is written by the KMd run. C6 needs T2's `result.json`, and the union needs
 the families' `novel.jsonl`. `D1_A2_OUT=<dir>` redirects the outputs.
@@ -289,7 +295,38 @@ produced a novel member.
 | T2 | 1 499 040 | 50 220 | 0 | 9 | 9 | 58 | 0 | 9.5 + 45.1 |
 | T3s | 4 085 832 | 61 927 | 0 (Aut closure: nothing to close) | 9 | 9 | 58 | 0 | 43.4 + 69.4 |
 | T3 (optional; 60 first moves, no Aut closure) | 245 149 920 | 3 715 620 | 0 | 9 | 9 | 58 | 0 | 1 941.5 + 4 879.1 (8 workers) |
-| union (KM, T2R, T2, T3s, T3) | – | – | 0 | 9 | 9 | 58 | 0 | – |
+| T4s (optional; s0, M2 and M3 IRREDUCIBLE, M4 REDUCIBLE; Aut closure) | 808 040 304 | 5 300 704 | 0 (Aut closure: nothing to close) | 9 | 9 | 58 | 0 | 4 358.0 + 16 259.6 (8 workers) |
+| union (KM, T2R, T2, T3s, T3, T4s) | – | – | 0 | 9 | 9 | 58 | 0 | – |
+
+**T4s** (`python3 a2run.py --family T4s --jobs 8`, then `--union` and
+`--summary`):
+- **Counts (C3).** Every number of §A2.5's T4s row matches:
+  - expanded: s0, then 87 at level 2 and 9 508 at level 3;
+  - level-4 outcomes (PRECOND / BRIDGE / IRREDUCIBLE / REDUCIBLE):
+    78 764 / 847 536 / 1 253 672 / 1 985 780 (4 165 752 sites);
+  - 808 040 304 leaves and 5 300 704 retained, all of degree −3.
+  - Levels 1–3 equal T3s's move by move.
+  - Level 4 per move type (§A2.5 gives no split for T4s):
+    - Zip 39 382 / 5 161 / 49 118 / 268 850;
+    - Unzip 0 / 43 392 / 998 167 / 678 806;
+    - Saddle 0 / 797 181 / 157 306 / 765 878;
+    - IH 39 382 / 1 802 / 49 081 / 272 246.
+- **Result.** `EXHAUSTED`: no novel member, so the Aut closure had nothing
+  to close. 0 A3 violations; final ℓ₋₃ 9, dim U 9, ℓ 58.
+  - `h_sha256` = `d486c579…dc80` (full value in `result.json`).
+  - `h.jsonl` itself is not written (more than 2 000 000 lines).
+  - All 1 000 sample pairs were also evaluated on the glued closed foam, and
+    agree with β.
+- **Parallel = sequential.** The work unit is one level-3 node; novelty is
+  processed in family order in the parent (NOTES items 48–50). Checks before
+  the full run, on the first 3 IRREDUCIBLE level-2 nodes (79 756 members):
+  - 1 worker and 8 workers gave byte-identical `result.json`,
+    `pairsample.tsv`, `novel.jsonl` and `h.jsonl` (SHA-256 `e95670bd…795f`);
+  - the plain sequential walk gives the same lines and the same novelty
+    record;
+  - T3s rerun with the changed code reproduces its `result.json`,
+    `pairsample.tsv` and `novel.jsonl` byte for byte, and its `h.jsonl`
+    digest `5f31c4db…edf2`.
 
 **T3** (`python3 a2run.py --family T3 --jobs 8`, then `--union`):
 - **Counts (C3).** Every number of §A2.5's T3 row matches: 60 expanded at
@@ -382,6 +419,24 @@ reading.
   - the two 3-first-move test runs took 174 s and about 135 s wall (171 s and
     387 s CPU), the union 2 s;
   - T3 in total: about **0.33 runner-hours** and **2.05 CPU-hours**.
+- **T4s run** (`--family T4s --jobs 8`, same machine; Implementation B was
+  running on it at the same time):
+  - count pass 543.6 s wall, 4 358.0 s CPU; main pass 2 026.5 s wall,
+    16 259.6 s CPU; whole process 42 min 54 s wall (02:55:47–03:38:39 UTC);
+  - estimate logged after the count pass: main 16 082 s CPU (T3's main pass
+    scaled by leaves), 2 010 s wall with 8 workers. The main pass took 1.01×
+    of it, both wall and CPU, far below the 3× stop. A single run fits well
+    inside 4 hours, so it was not chunked;
+  - peak RSS 703 MB summed over the parent, the forkserver and 8 workers
+    (sampled every 0.5 s); no worker above 69 MB;
+  - checks and tests:
+    - the T3s rerun: 192 s wall, 192 s CPU;
+    - the `--l2-limit 3` runs: 8 workers with `--seqcheck`, 264 s wall and
+      877 s CPU; 1 worker, 172 s wall and 168 s CPU;
+    - a trivial `--l2-limit 2` run (no retained member) and an aborted first
+      attempt: about 3 min wall and 0.1 CPU-hours;
+    - union and summary: 12 s;
+  - T4s in total: about **0.95 runner-hours** and **6.2 CPU-hours**.
 
 ## Output files
 
@@ -418,3 +473,15 @@ reading.
   `implB/a2run.py` as modified in the working tree (not opened), and two
   process listings in WSL showed B's T3 test run: `a2run.py family T3 --jobs 8
   --m1-limit 3 --out /home/claude/d1B/t3/det8`. Nothing of B's was opened.
+- **For T4s (branch d1/phase2b-t4s):** I read `CLAUDE.md`,
+  `search/d1/SPEC.md` (Amendment 2), my own files, and my WSL files under
+  `~/d1A`. In `search/d1/README.md` I looked only at a grep for T3 and T4s.
+  - **Not read:** `implB/`, `~/d1B`, `compare.py`, `compare-result.txt`,
+    any `chk/` directory, the scratchpad.
+  - **Seen incidentally, not opened:**
+    - one WSL process listing showed B's T4s count-only command line
+      (`a2run.py family T4s --jobs 8 --count-only --out
+      /home/claude/d1B/t4s/count`);
+    - `git check-ignore` named line 5 of `search/d1/.gitignore`
+      (`pairsample.tsv`);
+    - `git status` listed three modified `implB/` files by name.

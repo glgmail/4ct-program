@@ -2055,4 +2055,6 @@ are larger, so the ranges allow a factor of 3.
    - Runner-hours are charged against the 40-hour cap, which is recorded on #40.
 5. **T3 is released (Gabriel, 2026-09-30, in the Claude session: "Run T3 on all 60 bigon
    sites").** This updates item 2 for T3 only. T4s is still not released.
+6. **T4s is released (Gabriel, 2026-09-30, in the Claude session: "Run T4s").** With it, every
+   family of §A2.5 has been released.
 

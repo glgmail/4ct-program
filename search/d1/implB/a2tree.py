@@ -157,11 +157,16 @@ def _bump(d, k, v=1):
     d[k] = d.get(k, 0) + v
 
 
-def classify(K, site, need_leaves, S=None):
-    """Outcome of a site.  Returns (outcome, K2, rec, extra) where extra is
-    the GEN_STRICT degree multiset (count mode) or the Gen object (a-vector
-    mode) when REDUCIBLE and need_leaves, and the transfer (S2, tcols) in
-    a-vector mode."""
+def classify(K, site, need_leaves, S=None, wanted=None):
+    """Outcome of a site.  Returns (outcome, K2, rec, extra).
+
+    count mode (S None): extra is the GEN_STRICT degree multiset when REDUCIBLE.
+    a-vector mode, need_leaves (an emitting level): the outcome is decided by the
+    degree-only GEN; extra is (S2, tcols, G, degree multiset) when REDUCIBLE, where
+    the transfer and the Gen object G are computed only if wanted(rec, multiset)
+    (some leaf is retained), else (None, None, None, multiset): A2.4 lets the
+    a-vectors of non-retained leaves be skipped; they are counted from the multiset.
+    a-vector mode, not need_leaves: extra is (S2, tcols, None)."""
     bm = build_move(K, site)
     if bm is None:
         return "precond", None, None, None
@@ -171,13 +176,16 @@ def classify(K, site, need_leaves, S=None):
     if S is None:                       # count-only
         c = gen_count(K2)
         return ("reducible" if c is not None else "irreducible"), K2, rec, c
-    S2, tc = rec.transfer(S)
     if need_leaves:
-        try:
-            G = gen(K2, S2, True, None)
-        except Fail:
-            return "irreducible", K2, rec, (S2, tc, None)
-        return "reducible", K2, rec, (S2, tc, G)
+        c = gen_count(K2)
+        if c is None:
+            return "irreducible", K2, rec, None
+        if wanted is not None and not wanted(rec, c):
+            return "reducible", K2, rec, (None, None, None, c)
+        S2, tc = rec.transfer(S)
+        G = gen(K2, S2, True, None)     # succeeds when gen_count does (same greedy)
+        return "reducible", K2, rec, (S2, tc, G, c)
+    S2, tc = rec.transfer(S)
     c = gen_count(K2)
     return ("reducible" if c is not None else "irreducible"), K2, rec, (S2, tc, None)
 
@@ -197,8 +205,12 @@ def walk(K, policies, level, cnt, retain, S=None, chain=None, restrict=None,
     lv = level + 1
     emit = pol == "emit"
     want = None if emit else pol.split(":")[1].lower()
+
+    def wanted(rec, c):
+        d0 = prefix_deg + rec.deg
+        return any(retain(d0 + dg) for dg in c)
     for site in sites:
-        outcome, K2, rec, extra = classify(K, site, emit, S)
+        outcome, K2, rec, extra = classify(K, site, emit, S, wanted)
         _bump_site(cnt, lv, site[0], outcome)
         moves = prefix_moves + (list(site),)
         if emit:
@@ -211,9 +223,16 @@ def walk(K, policies, level, cnt, retain, S=None, chain=None, restrict=None,
                     if retain(d0 + dg):
                         _bump(cnt["retained"], d0 + dg, n)
                 continue
-            S2, tc, G = extra
+            S2, tc, G, c = extra
+            if G is None:                   # no retained leaf: count from the multiset
+                for dg, n in c.items():
+                    _bump(cnt["leaves"], d0 + dg, n)
+                continue
+            gc = {}
             for dg in G.degs:
                 _bump(cnt["leaves"], d0 + dg)
+                _bump(gc, dg)
+            assert gc == c, "GEN degrees differ from the degree-only GEN"
             idx = [i for i in range(G.n) if retain(d0 + G.degs[i])]
             if not idx:
                 continue

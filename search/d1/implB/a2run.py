@@ -6,6 +6,9 @@
   python3 a2run.py family T3 --jobs 8 --prior DIR
                                            optional family T3 (SPEC A2.5), then the union
                                            with T3 after T3s (prior families read from DIR)
+  python3 a2run.py family T4s --jobs 8 --prior DIR
+                                           optional family T4s (SPEC A2.5) with its Aut
+                                           closure, then the union with T4s after T3
   python3 a2run.py control C4 --jobs 8     one control (C0 C3 C4 C5 C6 C8)
 
 Outputs under results/<web>/A2/... (SPEC A2.8).  h.jsonl files are written to
@@ -47,6 +50,11 @@ FAMILIES = {
     # moves as M1; no Aut closure.  Units are the level-2 nodes (5,220), in DFS order.
     "T3": dict(web="W1", policies=["expand:IRREDUCIBLE", "expand:IRREDUCIBLE", "emit"], unit=2,
                restrict=None, retain="RET"),
+    # optional (Gabriel's go, 2026-09-30, "Run T4s"): paths (s0, M2, M3, M4), M2 and M3
+    # IRREDUCIBLE, M4 REDUCIBLE; Aut closure of the novel members.  Units are the level-3
+    # nodes (9,508), in DFS order.
+    "T4s": dict(web="W1", policies=["expand:IRREDUCIBLE", "expand:IRREDUCIBLE", "expand:IRREDUCIBLE",
+                                    "emit"], unit=3, restrict=S0_SITE, retain="RET"),
     # control C6 symmetry check: T2 restricted to M1 = s0
     "T2s0": dict(web="W1", policies=["expand:IRREDUCIBLE", "emit"], unit=1, restrict=S0_SITE, retain="RET"),
     # controls C4, C5
@@ -75,6 +83,11 @@ EXPECTED = {
                expanded={1: 60, 2: 5220}, leaves=245149920, retained=3715620,
                per_m1=dict(n=60, units=87, level=3, outcomes=(548, 6974, 9508, 17362),
                            leaves=4085832, retained=61927)),
+    # level 4 and totals from the A2.5 T4s row; level 1 is s0 alone, level 2 the T2s0 row,
+    # level 3 the T3s row (same sites).
+    "T4s": dict(levels={1: (0, 0, 1, 0), 2: (4, 71, 87, 190), 3: (548, 6974, 9508, 17362),
+                        4: (78764, 847536, 1253672, 1985780)},
+                expanded={1: 1, 2: 87, 3: 9508}, leaves=808040304, retained=5300704),
     "T2s0": dict(levels={2: (4, 71, 87, 190)}, expanded={1: 1}, retained=837),
     "C4-prism5": dict(levels={2: (320, 4290, 0, 10950)}, expanded={1: 100}, leaves=566700),
     "C4-cube": dict(levels={2: (288, 2532, 0, 5748)}, expanded={1: 72}, leaves=250056),
@@ -84,9 +97,13 @@ EXPECTED = {
                   retained_hist={-5: 8444, -3: 159612}),
 }
 
-NOT_IMPLEMENTED = {"T4s": "T4s is not implemented (optional; no go from Gabriel)"}
+NOT_IMPLEMENTED = {}
 H_MAX = 2000000          # A2.8: above this many processed members h.jsonl is not written
 M1_LIMIT = None          # test option: restrict a tree family to its first K level-1 expansions
+L2_LIMIT = None          # test option: restrict a tree family to its first K level-2 expansions
+AUT_FAMILIES = ("T3s", "T4s", "T2s0")     # A2.7 step 2.4 (T2s0: control C6)
+# run.json digest of the h lines per node at this level (0 = first move, 1 = second move)
+DIG_LEVEL = {"T3": 0, "T4s": 1}
 
 P2_ELLQ = {-3: 9, -1: 20, 1: 20, 3: 9}
 P2_RQ = {-3: 9, -1: 20, 1: 20, 3: 11}
@@ -295,15 +312,22 @@ LAST_UNIT_COUNTS = {}
 
 
 def limit_units(units):
-    """M1_LIMIT (test option, T3 only): keep the units below the first K level-1 expansions."""
-    if M1_LIMIT is None:
-        return units
-    firsts = []
-    for p in units:
-        if p[0] not in firsts:
-            firsts.append(p[0])
-    keep = firsts[:M1_LIMIT]
-    return [p for p in units if p[0] in keep]
+    """Test options (budgeted families only): M1_LIMIT keeps the units below the first K
+    level-1 expansions, L2_LIMIT those below the first K level-2 expansions."""
+    for lim, depth in ((M1_LIMIT, 1), (L2_LIMIT, 2)):
+        if lim is None:
+            continue
+        firsts = []
+        for p in units:
+            if tuple(map(tuple, p[:depth])) not in firsts:
+                firsts.append(tuple(map(tuple, p[:depth])))
+        keep = set(firsts[:lim])
+        units = [p for p in units if tuple(map(tuple, p[:depth])) in keep]
+    return units
+
+
+def limited():
+    return M1_LIMIT is not None or L2_LIMIT is not None
 
 
 def count_pass(fam, jobs, monitor=None):
@@ -620,7 +644,7 @@ def base_run_info(command, jobs, times, extra=None):
 
 
 # ---------------------------------------------------------------- family processing
-BUDGETED = ("T3",)       # families whose main pass is stopped at 3x its estimate (A2.10)
+BUDGETED = ("T3", "T4s")       # families whose main pass is stopped at 3x its estimate (A2.10)
 MAX_RUN_WALL_S = 4 * 3600 - 600   # A2.13: no single run over 4 h (10 min margin)
 
 
@@ -665,12 +689,29 @@ def process_family(fam, F0res, R0, st, jobs, root, hdir, command, log, st_factor
         "main-pass estimate %.0f CPU s (~%.0f s wall); peak total RSS %.0f MB"
         % (fam, t1 - t0, c1 - c0, len(units), nleaves, nret, "ok" if okc else "MISMATCH", msgs, est,
            est_wall, mon_c.peak_total_rss_mb))
+    log("  %s count-only sites by level and move: %s; expanded %s; leaves by degree %s; "
+        "retained %s" % (fam, json.dumps(sites_json(ccnt), sort_keys=True),
+                         json.dumps(smap(ccnt["expanded"])), json.dumps(smap(ccnt["leaves"])),
+                         json.dumps(smap(ccnt["retained"]))))
+    if fam in DIG_LEVEL and DIG_LEVEL[fam] > 0:
+        dl = DIG_LEVEL[fam]
+        groups, order = {}, []
+        for p, c in zip(units, LAST_UNIT_COUNTS[fam]):
+            key = tuple(p[dl])
+            if key not in groups:
+                groups[key] = [0, 0, 0]
+                order.append(key)
+            groups[key][0] += 1
+            groups[key][1] += sum(c["leaves"].values())
+            groups[key][2] += sum(c["retained"].values())
+        log("  %s per level-%d node [#, label, units, leaves, retained]: %s"
+            % (fam, dl + 1, json.dumps([[n + 1, list(k)] + groups[k] for n, k in enumerate(order)])))
     if m1sum is not None:
         log("  %s per-first-move signatures [precond, bridge, irreducible, reducible, L2 nodes, "
             "leaves, retained, #first moves]: %s" % (fam, m1sum["signatures"]))
     if count_only:
         return None
-    if fam in BUDGETED and not okc and M1_LIMIT is None:
+    if fam in BUDGETED and not okc and not limited():
         raise SystemExit("%s: count-only numbers differ from A2.5 (%s); main pass not run" % (fam, msgs))
     S = st_factory()
     d = os.path.join(root, "W1", "A2", fam)
@@ -688,8 +729,11 @@ def process_family(fam, F0res, R0, st, jobs, root, hdir, command, log, st_factor
     novel = []
     novel_members = []
     allv = VecStore(F0res["T"])
-    m1_dig = []              # per first move: [label, first i, lines, sha256]
+    dlev = DIG_LEVEL.get(fam, 0)
+    m1_dig = []              # per node at level dlev+1: [label, first i, lines, sha256]
     cur_m1, m1h, m1_first = None, None, 0
+    nvpath = os.path.join(hdir, "W1-A2-%s-novel.jsonl" % fam)     # h lines of novel members
+    nvfh = None
     cpu_budget = wall_budget = None
     if fam in BUDGETED:
         cpu_budget = 3 * est
@@ -709,10 +753,10 @@ def process_family(fam, F0res, R0, st, jobs, root, hdir, command, log, st_factor
                     pfh.write(line)
                 lb = line.encode("ascii")
                 h.update(lb)
-                if moves[0] != cur_m1:
+                if moves[dlev] != cur_m1:
                     if cur_m1 is not None:
                         m1_dig.append([cur_m1, m1_first, i - m1_first, m1h.hexdigest()])
-                    cur_m1, m1h, m1_first = moves[0], hashlib.sha256(), i
+                    cur_m1, m1h, m1_first = moves[dlev], hashlib.sha256(), i
                 m1h.update(lb)
                 v = hex_to_packed(hx)
                 allv.append(v)
@@ -724,6 +768,12 @@ def process_family(fam, F0res, R0, st, jobs, root, hdir, command, log, st_factor
                 if isnov:
                     novel.append([i, dg, len(S.U), len(S.P)])
                     novel_members.append((i, v))
+                    if nvfh is None:
+                        nvfh = open(nvpath, "w", newline="\n")
+                    nvfh.write(line)
+                    nvfh.flush()
+                    log("  %s: novel member i=%d deg %d dimU %d ell_m3 %d  %s"
+                        % (fam, i, dg, len(S.U), len(S.P), line.strip()))
                 if status in ("ELL60", "DIMU11"):
                     stop = status
                     break
@@ -742,6 +792,8 @@ def process_family(fam, F0res, R0, st, jobs, root, hdir, command, log, st_factor
         write_run_json(d, info)
         raise SystemExit(msg)
     gen_.close()
+    if nvfh:
+        nvfh.close()
     if cur_m1 is not None:
         m1_dig.append([cur_m1, m1_first, i + 1 - m1_first, m1h.hexdigest()])
     if fh:
@@ -750,7 +802,7 @@ def process_family(fam, F0res, R0, st, jobs, root, hdir, command, log, st_factor
         pfh.close()
     processed = i
     aut_novel = []
-    if stop is None and fam in ("T3s", "T2s0"):
+    if stop is None and fam in AUT_FAMILIES:
         K = get_web("W1")
         perms = aut_perms(K, F0res["tait"])
         assert len(perms) == 120
@@ -795,13 +847,14 @@ def process_family(fam, F0res, R0, st, jobs, root, hdir, command, log, st_factor
              "estimate_cpu_s": round(est, 1), "h_path": hpath}
     if fam in BUDGETED:
         extra.update({"h_written": hpath is not None, "h_prefix_path": ppath,
-                      "m1_limit": M1_LIMIT, "units": len(units),
+                      "m1_limit": M1_LIMIT, "l2_limit": L2_LIMIT, "units": len(units),
                       "estimate_wall_s": round(est_wall, 1),
                       "budget": {"cpu_s": round(cpu_budget, 1), "wall_s": round(wall_budget, 1)},
                       "peak_total_rss_mb_sampled": {"count": round(mon_c.peak_total_rss_mb, 1),
                                                     "main": round(mon.peak_total_rss_mb, 1)},
                       "per_first_move_counts": m1sum,
-                      "h_sha256_by_first_move": m1_dig})
+                      "h_sha256_by_first_move" if dlev == 0 else "h_sha256_by_second_move": m1_dig,
+                      "novel_path": nvpath if novel else None})
     info = base_run_info(command, jobs, (t0, t1, t2, c0, c1, c2), extra)
     write_run_json(d, info)
     log("  %s: processed %d, novel %d (+%d Aut), final %s, stop %s, wall %.1fs cpu %.1fs"
@@ -903,13 +956,16 @@ def main():
     ap.add_argument("--count-only", action="store_true", help="family: count-only pass only")
     ap.add_argument("--m1-limit", type=int, default=None,
                     help="test only: restrict a tree family to its first K level-1 expansions")
+    ap.add_argument("--l2-limit", type=int, default=None,
+                    help="test only: restrict a tree family to its first K level-2 expansions")
     ap.add_argument("--hprefix", type=int, default=None,
                     help="also write the first N h lines to a separate file")
     a = ap.parse_args()
     if a.name in NOT_IMPLEMENTED:
         raise SystemExit(NOT_IMPLEMENTED[a.name])
-    global M1_LIMIT
+    global M1_LIMIT, L2_LIMIT
     M1_LIMIT = a.m1_limit
+    L2_LIMIT = a.l2_limit
     hdir = a.hdir or os.path.join(a.out, "h")
     command = "python3 a2run.py " + " ".join(sys.argv[1:])
     import a2controls
@@ -918,6 +974,6 @@ def main():
 
 if __name__ == "__main__":
     # a2controls imports this file as module `a2run`; make both names one module so that
-    # the options set above (M1_LIMIT) are seen there.
+    # the options set above (M1_LIMIT, L2_LIMIT) are seen there.
     sys.modules.setdefault("a2run", sys.modules[__name__])
     main()

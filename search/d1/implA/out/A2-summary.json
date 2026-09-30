@@ -41,7 +41,19 @@
    "ell_3": 9,
    "ell_m3": 9
   },
+  "T3": {
+   "dimU": 9,
+   "ell": 58,
+   "ell_3": 9,
+   "ell_m3": 9
+  },
   "T3s": {
+   "dimU": 9,
+   "ell": 58,
+   "ell_3": 9,
+   "ell_m3": 9
+  },
+  "T4s": {
    "dimU": 9,
    "ell": 58,
    "ell_3": 9,
@@ -119,6 +131,16 @@
     "wall_s": 69.4
    }
   },
+  "W1/A2/T4s": {
+   "count": {
+    "cpu_s": 4358.0,
+    "wall_s": 543.6
+   },
+   "main": {
+    "cpu_s": 16259.6,
+    "wall_s": 2026.5
+   }
+  },
   "W1/A2/ctl-C0": {
    "main": {
     "cpu_s": 2.0,
@@ -193,7 +215,15 @@
    0,
    0
   ],
+  "T3": [
+   0,
+   0
+  ],
   "T3s": [
+   0,
+   0
+  ],
+  "T4s": [
    0,
    0
   ]
@@ -204,6 +234,8 @@
   "KMd": "EXHAUSTED",
   "T2": "EXHAUSTED",
   "T2R": "EXHAUSTED",
-  "T3s": "EXHAUSTED"
+  "T3": "EXHAUSTED",
+  "T3s": "EXHAUSTED",
+  "T4s": "EXHAUSTED"
  }
 }
