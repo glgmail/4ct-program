@@ -12,7 +12,7 @@ without changing either. For each web W1-W7 in B19 mode it checks:
 * the Amendment 1 A2 subsets (the Unzip block alone, and the first N_e
   half-foams) have equal ell, ell_q, r and r_q in both implementations.
 
-Phase 2b (Amendment 2): for each dodecahedron family (F0, KM, KMd, T2R, T2, T3s) the two
+Phase 2b (Amendment 2): for each dodecahedron family (F0, KM, KMd, T2R, T2, T3s, T3) the two
 result.json files must be byte-identical. Each records its family's h.jsonl SHA-256
 (`h_sha256`), so this also compares the uncommitted half-foam files.
 
@@ -70,7 +70,7 @@ def main():
         status = "AGREE" if not problems else "DISAGREE: " + "; ".join(problems)
         ok &= not problems
         print(f"{w}: N={ra['N']} ell={ra['ell']} Tait={ra['Tait']} r={ra['r']} halffoams={ha[:16]}  {status}")
-    for fam in ("F0", "KM", "KMd", "T2R", "T2", "T3s"):
+    for fam in ("F0", "KM", "KMd", "T2R", "T2", "T3s", "T3"):
         fa = HERE / "implA" / "out" / "W1" / "A2" / fam / "result.json"
         fb = HERE / "implB" / "results" / "W1" / "A2" / fam / "result.json"
         same = fa.read_bytes() == fb.read_bytes()

@@ -180,7 +180,7 @@ was not done.
 
 Amendment 2 was read in full, including §A2.13 (Gabriel's decisions). Only the
 mandatory families (F0, KM, KMd, T2R, T2, T3s) and the §A2.9 controls are run;
-`a2run.py` refuses T3 and T4s. The items below are the points where Amendment 2
+`a2run.py` refused T3 and T4s (T3 was enabled later, items 40–46). The items below are the points where Amendment 2
 left a choice. Where the choice affects a byte-compared file, it is marked
 **[compared]**; B may have chosen differently, so these need reconciling.
 
@@ -263,3 +263,71 @@ left a choice. Where the choice affects a byte-compared file, it is marked
     own code. C3 matches every number in §A2.5 and §A2.9, including T2's
     per-first-move uniformity and the T3s level-3 counts for
     `["unzip", 18, 1, 2]`.
+
+## Phase 2b, optional T3 (Gabriel's go, 2026-09-30; branch d1/phase2b-t3)
+
+T3 is "T3s without the symmetry reduction: all 60 bigon moves as M1" (§A2.5).
+T4s is still refused.
+
+40. **T3 counts and keys [compared].**
+    - `sites` level 1 counts all 300 sites of W1 (0 / 60 / 60 / 180), as for
+      T2 and T2R; only T3s counts s0 alone (item 26). Levels 2 and 3 are
+      summed over the 60 subtrees.
+    - `expanded_nodes` = `{"0": 1, "1": 60, "2": 5220}` (item 25's
+      convention).
+    - This is what a single sequential walk with M1 free gives.
+    - No Aut closure (§A2.7 step 2.4 is T3s/T4s only), so `aut_novel` is `[]`.
+    - `h.jsonl` is not written (3 715 620 > 2 000 000 lines, §A2.8). Its
+      SHA-256 is computed in the parent, in family order, and reported as
+      `h_sha256`. The decision to write it is taken from `N_retained`; if a
+      stop left ≤ 2 000 000 processed members, the file would still be
+      missing (the run prints a note). Not exercised.
+41. **Parallel run, identical to a sequential one.** Each of the 60 subtrees
+    (M1 fixed) runs in a worker process (forkserver pool, at most 8). A worker
+    returns its subtree's `h.jsonl` lines (with global i), its counts, the
+    sample values it was asked for, and its *candidates*: the members whose
+    a-vector lies outside A3 (only the first), or outside U0 + the span of the
+    subtree's earlier candidates.
+    - Any other member is already in the family's current U at its turn: U
+      always contains U0 and every earlier processed vector. So step 2
+      returns "not novel" for it, with no side effect.
+    - The parent runs step 2 on the candidates in family order and hashes the
+      lines in order. On a stop at i, only lines 1…i are hashed and
+      `processed` = i. This reproduces the sequential computation exactly.
+    - The main pass asserts, per subtree, that its counts equal the
+      count-only pass.
+    - Checked on the first 3 first moves (`--first-limit 3`): 1 worker and 8
+      workers give byte-identical `result.json`, `pairsample.tsv`,
+      `novel.jsonl` and `h.jsonl`. Lines 1–61 927 equal the T3s `h.jsonl` of
+      the mandatory run byte for byte.
+42. **Sample.** The min(1000, N_ret) k-pairs are assigned to the subtrees
+    holding their i. Each worker evaluates its pairs directly on the glued
+    closed foam and asserts equality with β. Every candidate is also
+    evaluated directly against the C3 members in the worker; the values are
+    used only if the parent finds it novel. On an early stop, the sample
+    indices change with `processed`; the missing pairs are then computed by
+    re-walking the subtrees concerned. That path is not exercised.
+43. **Budget and memory rules for T3.**
+    - Estimate: 60 × 69.4 s CPU, the measured T3s main pass on one worker, so
+      4 164 s CPU and ⌈60 / J⌉ × 69.4 s wall.
+    - The main pass stops at 3× the wall estimate, at 3× the summed worker
+      CPU, or at 4 hours.
+    - A thread samples the summed RSS of the parent, the forkserver and the
+      workers every 0.5 s. The run aborts above 3 400 MB; `peak_rss_mb` in
+      `run.json` is that sampled sum.
+    - `--jobs` above 8 is refused.
+44. **`union.json` [compared].** The order is KM, T2R, T2, T3s, then T3 when
+    its `result.json` exists (§A2.7 step 4: "then the optional ones").
+    `order` in `union.json` lists T3.
+45. **Summary and digests.** `out/A2-summary.json` and
+    `out/A2-SHA256SUMS.txt` were regenerated with the T3 files and the new
+    `union.json`. The rerun reproduced every other digest in the file,
+    including the uncommitted `h.jsonl` files of the mandatory run kept in
+    WSL. The only changes are the `union.json` line and the four new T3
+    lines; the summary gained the T3 ledger entry.
+46. **What was read for T3.** `CLAUDE.md`, `search/d1/SPEC.md` (Amendment 2,
+    §A2.4–§A2.13), `search/d1/README.md` and my own files, including my WSL
+    outputs under `~/d1A`. Not read: `implB/`, `~/d1B`, `compare.py`, any
+    `chk/` directory, the scratchpad. Seen incidentally, not opened: `git
+    status` listing `compare.py` and `implB/a2run.py` as modified, and B's T3
+    test command line in two WSL process listings.

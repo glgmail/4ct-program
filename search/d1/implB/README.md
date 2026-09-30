@@ -213,8 +213,18 @@ This runs:
 - controls C3, C1, C2 and C8;
 - the union (step 4).
 
-T3 and T4s are implemented only as far as the tree machinery goes. They
-were not run, per SPEC A2.13.
+The optional family T3 was run separately, on Gabriel's go of 2026-09-30
+("Run T3 on all 60 bigon sites"):
+
+    python3 a2run.py family T3 --jobs 8 --prior ~/d1B/a2out2 --hprefix 61927 --out ~/d1B/t3/full
+
+This recomputes F0 as the start state, runs T3's count-only pass (it stops
+there if any count differs from §A2.5, including the per-first-move check),
+then the main pass, then the union (§A2.7 step 4) with T3 after T3s.
+`--prior` names the results root of the mandatory run, whose `result.json`
+files supply the other families' novel members (all empty). Only
+`W1/A2/T3/` and `W1/A2/union.json` were copied into `results/`. T4s is not
+implemented, and `a2run.py family T4s` refuses.
 
 ## Files
 
@@ -235,6 +245,21 @@ were not run, per SPEC A2.13.
 | T2R | 4 190 400 | 107 430 | 0 | 58 | 9 | 9 | 0 | EXHAUSTED | 74 s / 296 s |
 | T2 | 1 499 040 | 50 220 | 0 | 58 | 9 | 9 | 0 | EXHAUSTED | 26 s / 103 s |
 | T3s (+ Aut closure) | 4 085 832 | 61 927 | 0 (0 Aut) | 58 | 9 | 9 | 0 | EXHAUSTED | 47 s / 185 s |
+| T3 (optional; no Aut closure) | 245 149 920 | 3 715 620 | 0 | 58 | 9 | 9 | 0 | EXHAUSTED | 35 min 05 s / 16 800 s (8 workers) |
+
+T3 details:
+
+- Count-only numbers equal the §A2.5 T3 row: expanded L1 60, L2 5,220;
+  level 3 32,880 / 418,440 / 570,480 / 1,041,720; 245,149,920 leaves;
+  3,715,620 retained. Level 1 equals F0's and level 2 equals T2's outcomes.
+  Each of the 60 first moves has exactly T3s's numbers (548 / 6,974 /
+  9,508 / 17,362; 87 level-2 nodes; 61,927 retained).
+- `h.jsonl` is not written (more than 2,000,000 members, §A2.8); its
+  SHA-256 was computed on the fly and is `h_sha256` in `result.json`.
+  The s0 subtree (lines 1–61,927) is byte-identical to T3s's `h.jsonl`.
+- `--m1-limit 3` runs with 1 and 8 workers gave byte-identical outputs
+  (NOTES item 42).
+- The union with T3 after T3s is still `EXHAUSTED` at dim U 9, ℓ₋₃ 9.
 
 F0 details:
 
@@ -271,6 +296,22 @@ KMd:
 - **Tests**: about 35 s wall.
 - **Total**: about 0.26 runner-hours and 1.5 CPU-hours.
 
+T3 (optional), 2026-09-30, all in WSL while implementation A also ran:
+
+| Run | Workers | Wall | CPU | Peak RSS, all processes |
+| --- | ---: | --- | ---: | ---: |
+| Smoke test (`--m1-limit 1`) | 8 | 1 min 10 s | 362 s | ≈ 280 MB |
+| Count-only pass, all 60 first moves | 8 | 5 min 36 s | 2 583 s | 283 MB |
+| Determinism, `--m1-limit 3` | 8 | 2 min 14 s | 941 s | 280 MB |
+| Determinism, `--m1-limit 3` | 1 | 14 min 33 s | 873 s | 38 MB |
+| **Full run** (count 276 s wall / 2 166 s CPU, main 1 828 s / 14 634 s) | 8 | 35 min 06 s | 16 802 s | 445 MB (in-process sampling), 461 MB (external sampler) |
+
+The main pass estimate was 11,032 CPU s (45 µs per leaf), so the stop
+threshold was 33,095 CPU s; the pass used 14,634 s (1.3×). A regression
+rerun of T2 and T3s with the changed code (8 workers, 47 s wall, about
+340 CPU s) reproduced the mandatory outputs byte for byte. T3 total: about
+1.0 runner-hours and 6.1 CPU-hours.
+
 Per-family wall and CPU times for the count-only and main passes are in each
 `run.json`.
 
@@ -295,7 +336,9 @@ The `h.jsonl` files are not committed. They are in WSL at
 | W1/A2/T3s/pairsample.tsv | 497a64dacba4a9945df1494cca47cc5fe6539e703f3e232b97e3400b2c2d9749 |
 | W1/A2/T2s0/result.json (C6) | 0aa7259cc4207514eb9945934f6548a619b004dad5b09644f623c92b3fe82f7e |
 | W1/A2/T2s0/pairsample.tsv | e69cfd7960fd360969bd032ec7938f2eeecb8ebe0fa43606d1602d1d2e31a52f |
-| W1/A2/union.json | 7273ed4b9775b621aec5c194edbfedb14beaddafce34c4f97c5e352925d28088 |
+| W1/A2/T3/result.json | 8f703eb26b198825bbbd583aad8cc119a279cf3cdfe170f79797389244050ab5 |
+| W1/A2/T3/pairsample.tsv | 849e4cdd06145629fbab4008699de3c7c2f64086d1d3d941f14032bad8de4742 |
+| W1/A2/union.json (with T3) | 2e81251d063a6e7f1af7848503e8b6b837dcf5d65f88eb5fe9be2157fcbd37b8 |
 | W1/A2/controls.txt | 89e553559cdcb46b3dce3842aa9b3f08a3d28328778c549f7bc6db756afb4f7c |
 | W1/A2/ctl-C0/result.json | 5b93949f6f3a737817138d1d20ae792b5deb438fb27458278e5a5dfe7b6a4a54 |
 | W1/A2/ctl-C3/result.json | 2680f9ebb3a2dbd225193988fbb1106154904e2c9913c051b8cbfd2411ada390 |
@@ -316,6 +359,7 @@ The `h.jsonl` files are not committed. They are in WSL at
 | T2R | f211ed2cf019c747bd4fee75fc7e395b9c23aff387b984b350f0ddf323fc003f |
 | T2 | 8c2c96ce95f42fe9fe92304fd2ff445f41a60100431bdae5316e208fdfb9c9ed |
 | T3s | 5f31c4db60abf4fc893497544cfcb858a960cb98141864bbdb9302a12f7eedf2 |
+| T3 (not written; computed on the fly) | 6ea3919a1e7c7a83d6c0416330dbe9be1f788eb5afdda4c001e72bfbb77b5542 |
 | T2s0 | 009c5e0fa3d67de0f798ad04d70218b10ef45978a6cd9e8cac9da2537ccf7d0b |
 | C4 prism5 | 8a6e97fec8f0713832d420f80e907566b51f511478fbeb499d3597501a688e87 |
 | C4 cube | 4c381a952290f7eb3cd2243debdc25b127e07bac2d9de56a5198eef2b4f10881 |
@@ -324,7 +368,7 @@ The `h.jsonl` files are not committed. They are in WSL at
 
 ## Reading (SPEC §A2.2 framing)
 
-- Every mandatory family ended `EXHAUSTED`: ℓ₋₃ stayed at 9, dim U stayed
+- Every mandatory family, and the optional T3, ended `EXHAUSTED`: ℓ₋₃ stayed at 9, dim U stayed
   at 9, and no family had a novel member.
 - This decides nothing about 58 versus 60. It is consistent with both, and
   it is not evidence beyond B19.

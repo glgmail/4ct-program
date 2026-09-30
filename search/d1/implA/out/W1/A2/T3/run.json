@@ -1,0 +1,32 @@
+{
+ "command": "python3 a2run.py --family T3 --jobs 8",
+ "direct_evaluations": 1000,
+ "end_utc": "2026-09-30T00:59:32Z",
+ "estimate_main_cpu_s": 4164.0,
+ "estimate_main_wall_s": 555.2,
+ "first_limit": null,
+ "git_commit": "unknown",
+ "h_jsonl_written": false,
+ "h_lines": 3715620,
+ "implementation": "A",
+ "machine": "Legion Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43 python 3.14.4",
+ "parent_cpu_s_total": 15.0,
+ "parent_peak_rss_mb": 181.9,
+ "peak_rss_mb": 1145.6,
+ "peak_rss_note": "sampled every 0.5 s: parent + forkserver + workers, summed",
+ "phases": {
+  "count": {
+   "cpu_s": 1941.5,
+   "wall_s": 252.5
+  },
+  "main": {
+   "cpu_s": 4879.1,
+   "wall_s": 635.2
+  }
+ },
+ "start_utc": "2026-09-30T00:44:43Z",
+ "subtrees": 60,
+ "worker_peak_rss_mb_max": 145.9,
+ "worker_setup_cpu_s": 27.9,
+ "workers": 8
+}

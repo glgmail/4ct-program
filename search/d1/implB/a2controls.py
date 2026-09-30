@@ -325,8 +325,12 @@ def main(args, hdir, command):
             if extra:
                 c8 = extra
         else:
-            res, okc, msgs, S, nm, autn = A.process_family(fam, F, R0, None, args.jobs, args.out, hdir,
-                                                             command, log, st_factory_for(F))
+            r_ = A.process_family(fam, F, R0, None, args.jobs, args.out, hdir, command, log,
+                                  st_factory_for(F), count_only=getattr(args, "count_only", False),
+                                  hprefix=getattr(args, "hprefix", None))
+            if r_ is None:          # --count-only
+                continue
+            res, okc, msgs, S, nm, autn = r_
             counts_ok[fam] = (okc, msgs)
         fam_res[fam] = res
         if fam != "KMd":
@@ -337,6 +341,17 @@ def main(args, hdir, command):
                 for (ii, g, dg, _, _) in res["aut_novel"]:
                     items.append(((ii, g), dg, A.act(perms[g], vec_of[ii])))
             fam_novels.append((fam, items))
+    # optional family T3: redo the union (step 4) with T3 after T3s
+    if args.cmd == "family" and want == "T3" and "T3" in fam_res and A.M1_LIMIT is None:
+        prior = getattr(args, "prior", None) or args.out
+        pri = []
+        for pf in ("KM", "T2R", "T2", "T3s"):
+            with open(os.path.join(prior, "W1", "A2", pf, "result.json")) as f:
+                r = json.load(f)
+            if r["novel"] or r["aut_novel"] or r["stop"] != "EXHAUSTED":
+                raise SystemExit("union: %s has novel members or a stop; rerun `all` plus T3" % pf)
+            pri.append((pf, []))
+        do_union(F, R0, pri + fam_novels, args)
     # C6: automorphisms + symmetry check
     if args.cmd == "all" or want == "C6":
         okp, info = do_C6_perms(F, args)

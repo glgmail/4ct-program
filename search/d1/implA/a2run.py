@@ -5,10 +5,14 @@
     python3 a2run.py --family T2         # one family (F0 KM KMd T2R T2 T3s)
     python3 a2run.py --control C4-cube   # one control (C0 C4-prism5 C4-cube C5-W2 C5-W3 C6 C8)
     python3 a2run.py --union             # union.json from finished families
+    python3 a2run.py --family T3 --jobs 8   # optional T3 (Gabriel's go, 2026-09-30)
 
-Only the mandatory families are enabled (A2.13 item 2): T3 and T4s refuse to run.
+The mandatory families (A2.13 item 2) and the optional T3 are enabled; T4s
+refuses to run.  T3 runs its 60 first-move subtrees in worker processes
+(A2.10); novelty is still processed in family order in the parent.
 Outputs: out/<web>/A2/... (A2.8).  h.jsonl files are written next to the other
-outputs but are not meant to be committed (A2.13 item 4).
+outputs but are not meant to be committed (A2.13 item 4); T3's is not written
+at all (more than 2,000,000 lines, A2.8).
 """
 
 import argparse
@@ -16,11 +20,14 @@ import datetime
 import hashlib
 import itertools
 import json
+import math
+import multiprocessing
 import os
 import platform
 import resource
 import subprocess
 import sys
+import threading
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -69,7 +76,8 @@ TREE = {   # family: (web, rules, first, keep)
 # A2.10: A (CPU) upper estimates in seconds for the main pass; 3x is the hard stop.
 ESTIMATE = {"F0": 120, "KM": 120, "KMd": 120, "T2R": 1800, "T2": 720, "T3s": 1800,
             "C0": 120, "C6": 720, "C8": 120,
-            "C4-prism5": 1200, "C4-cube": 600, "C5-W2": 2700, "C5-W3": 2700}
+            "C4-prism5": 1200, "C4-cube": 600, "C5-W2": 2700, "C5-W3": 2700,
+            "T3": 60 * 69.4}   # T3: 60 x the measured T3s main pass (out/W1/A2/T3s/run.json)
 
 # ------------------------------------------------------------------ C3 expected
 def _s(z, u, s, i):
@@ -650,6 +658,408 @@ def run_f0(st, ellq_f0, r):
                       "r_q": res["r_q"], "C3_size": len(st.C3), "start": st.start()}), flush=True)
 
 
+# ------------------------------------------------------------------ T3 (optional)
+# A2.5 T3 = T3s without the symmetry reduction: M1 ranges over the 60
+# IRREDUCIBLE level-1 sites of W1 in SITES order, M2 IRREDUCIBLE, M3 REDUCIBLE
+# (emitted), retained degrees RET, no Aut closure.  The 60 subtrees run in
+# worker processes (A2.10).  Each worker returns its subtree's h.jsonl lines
+# (global i), its counts, the sample values it was asked for, and the
+# "candidates": the members whose a-vector is outside A3, or outside
+# U0 + the span of the subtree's earlier candidates.  Every other member is
+# in the family's current U whatever happened before it (U contains U0 and
+# every earlier processed vector), so A2.7 step 2 returns "not novel" for it
+# with no side effect.  The parent runs step 2 on the candidates in family
+# order, which is exactly the sequential computation.
+T3_RULES = ["irreducible", "irreducible", "emit"]
+T3S_MAIN_CPU = 69.4
+T3_EXPECT = {"L1": (0, 60, 60, 180), "L2": (240, 4260, 5220, 11400),
+             "L3": (32880, 418440, 570480, 1041720), "sub_L3": (548, 6974, 9508, 17362),
+             "expanded": {"0": 1, "1": 60, "2": 5220},
+             "N_leaves": 245149920, "N_retained": 3715620}
+H_FILE_MAX = 2000000
+MEM_ABORT_MB = 3400
+_W = {}
+
+
+def _w_K():
+    if "K" not in _W:
+        _W["K"] = W.load("W1")
+    return _W["K"]
+
+
+def _w_st():
+    if "st" not in _W:
+        c0 = time.process_time()
+        _W["st"] = F0State()
+        _W["setup_cpu"] = time.process_time() - c0
+    return _W["st"]
+
+
+def _outc(stats, lvl):
+    return tuple(sum(stats["sites"][lvl][m][o] for m in tree.MOVES) for o in tree.OUTCOMES)
+
+
+def t3_count_task(site):
+    c0 = time.process_time()
+    d = tree.walk(_w_K(), T3_RULES, tuple(site), RET, tree.Stats(3)).as_dict()
+    return {"stats": d, "cpu": time.process_time() - c0, "rss": peak_mb()}
+
+
+def _direct_check(st, a, H, j0):
+    v = gf4.dot(a, st.items[j0][4])
+    if v > 1:
+        raise AssertionError("sample value not in F")
+    dv = st.tw.direct_pair(H, st.items[j0][3])
+    if dv != v:
+        raise AssertionError("direct closed-foam value %d != beta %d (F0 member %d)"
+                             % (dv, v, j0 + 1))
+    return v
+
+
+def t3_main_task(args):
+    """One first-move subtree.  args = (m, site, offset, want, lines_wanted)."""
+    m, site, offset, want, lines_wanted = args
+    c0 = time.process_time()
+    st = _w_st()
+    setup = _W.pop("setup_cpu", 0.0)
+    tw, T = st.tw, st.T
+    Ul = st.U0.copy()
+    lines = []
+    samp = []
+    cands = []
+    nd = [0]
+    n = [0]
+    a3 = [False]
+
+    def emit(moves, chain, deg, H):
+        n[0] += 1
+        il = n[0]
+        tw.check_degree(H, deg)
+        a = tw.avec(H)
+        if lines_wanted:
+            lines.append(json.dumps({"i": offset + il, "moves": moves, "chain": list(chain),
+                                     "deg": deg, "a": tw.hexa(a)}))
+        for j0 in want.get(il, ()):
+            samp.append((offset + il, j0, _direct_check(st, a, H, j0)))
+            nd[0] += 1
+        x = fview(a, T)
+        if not st.A3.contains(x):
+            if not a3[0]:          # the first violation stops the family
+                a3[0] = True
+                cands.append((il, deg, a, H, None))
+        elif not Ul.contains(x):
+            Ul.add(x)
+            c3 = [_direct_check(st, a, H, j0) for j0 in st.C3]
+            nd[0] += len(c3)
+            cands.append((il, deg, a, H, c3))
+    stats = tree.walk(_w_K(), T3_RULES, tuple(site), RET, tree.Stats(3), emit).as_dict()
+    data = ("\n".join(lines) + "\n").encode("ascii") if lines else b""
+    return {"m": m, "stats": stats, "n": n[0], "data": data, "samp": samp, "cands": cands,
+            "direct": nd[0], "cpu": time.process_time() - c0, "setup_cpu": setup,
+            "rss": peak_mb()}
+
+
+def _tree_rss_mb(root):
+    """Resident set size of root and all its descendants (Linux /proc), in MB."""
+    kids, rss = {}, {}
+    for p in os.listdir("/proc"):
+        if not p.isdigit():
+            continue
+        try:
+            with open("/proc/%s/stat" % p) as fh:
+                s = fh.read()
+            ppid = int(s[s.rfind(")") + 2:].split()[1])
+            with open("/proc/%s/statm" % p) as fh:
+                r = int(fh.read().split()[1])
+        except (OSError, ValueError, IndexError):
+            continue
+        kids.setdefault(ppid, []).append(int(p))
+        rss[int(p)] = r
+    tot, stack = 0, [root]
+    while stack:
+        q = stack.pop()
+        tot += rss.get(q, 0)
+        stack += kids.get(q, [])
+    return tot * os.sysconf("SC_PAGE_SIZE") / 2.0 ** 20
+
+
+class RssMonitor(threading.Thread):
+    """Samples the total RSS of this process tree (parent + workers)."""
+
+    def __init__(self):
+        super().__init__(daemon=True)
+        self.peak = 0.0
+        self.halt = threading.Event()
+        self.over = False
+
+    def run(self):
+        me = os.getpid()
+        while not self.halt.is_set():
+            v = _tree_rss_mb(me)
+            self.peak = max(self.peak, v)
+            if v > MEM_ABORT_MB:
+                self.over = True
+            self.halt.wait(0.5)
+
+
+def _pool_results(it, count, deadline, mon, what, on_result):
+    """Consume count ordered results, enforcing the wall limit and memory ceiling."""
+    for _ in range(count):
+        while True:
+            try:
+                r = it.next(timeout=2)
+                break
+            except multiprocessing.TimeoutError:
+                if time.time() > deadline:
+                    raise Budget("T3 %s pass exceeded its wall limit" % what)
+                if mon.over:
+                    raise Budget("T3 %s pass: total RSS above %d MB" % (what, MEM_ABORT_MB))
+        if on_result(r) is False:
+            return
+
+
+def t3_level1(K):
+    st = tree.Stats(3)
+    fbm = {f[0]: f for f in K.faces()}
+    firsts = []
+    for site in tree.sites(K):
+        oc, op, node = tree.outcome(K, site, fbm)
+        st.sites["1"][site[0]][oc] += 1
+        if oc == "irreducible":
+            firsts.append(site)
+    return st.sites["1"], firsts
+
+
+def run_t3(st, ellq_f0, jobs, first_limit=None):
+    name = "T3"
+    t_start, start_utc = time.time(), utc()
+    cpu_parent0 = time.process_time()
+    K = st.K
+    d = famdir("W1", name)
+    os.makedirs(d, exist_ok=True)
+    four_h = 4 * 3600.0
+    mon = RssMonitor()
+    mon.start()
+    ctx = multiprocessing.get_context("forkserver")
+    phases = {}
+    worker_rss = [0.0]
+    wcpu = {"count": 0.0, "main": 0.0, "setup": 0.0}
+    with ctx.Pool(jobs) as pool:
+        # ---------------- step 0: count-only pass
+        t0, c0 = time.time(), time.process_time()
+        l1, firsts = t3_level1(K)
+        bad = []
+        if _outc({"sites": {"1": l1}}, "1") != T3_EXPECT["L1"] or len(firsts) != 60:
+            bad.append("level 1 outcomes %s" % (_outc({"sites": {"1": l1}}, "1"),))
+        if first_limit:
+            firsts = firsts[:first_limit]
+        subs = []
+
+        def got_count(r):
+            subs.append(r["stats"])
+            wcpu["count"] += r["cpu"]
+            worker_rss[0] = max(worker_rss[0], r["rss"])
+        _pool_results(pool.imap(t3_count_task, firsts, chunksize=1), len(firsts),
+                      t_start + four_h, mon, "count", got_count)
+        cd = {"sites": {"1": l1}, "expanded_nodes": {"0": 1, "1": len(firsts), "2": 0},
+              "leaves_by_degree": {}, "N_leaves": 0, "N_retained": 0}
+        for lvl in ("2", "3"):
+            cd["sites"][lvl] = {mv: {oc: 0 for oc in tree.OUTCOMES} for mv in tree.MOVES}
+        lbd = {}
+        per_sub = []
+        for site, s in zip(firsts, subs):
+            if s["expanded_nodes"] != {"0": 1, "1": 1, "2": 87}:
+                bad.append("subtree %s expanded %s" % (list(site), s["expanded_nodes"]))
+            if _outc(s, "3") != T3_EXPECT["sub_L3"]:
+                bad.append("subtree %s level-3 outcomes %s" % (list(site), _outc(s, "3")))
+            for lvl in ("2", "3"):
+                for mv in tree.MOVES:
+                    for oc in tree.OUTCOMES:
+                        cd["sites"][lvl][mv][oc] += s["sites"][lvl][mv][oc]
+            cd["expanded_nodes"]["2"] += s["expanded_nodes"]["2"]
+            for k, v in s["leaves_by_degree"].items():
+                lbd[int(k)] = lbd.get(int(k), 0) + v
+            cd["N_leaves"] += s["N_leaves"]
+            cd["N_retained"] += s["N_retained"]
+            per_sub.append((s["N_leaves"], s["N_retained"], json.dumps(s["sites"]["3"], sort_keys=True)))
+        cd["leaves_by_degree"] = {str(k): v for k, v in sorted(lbd.items()) if v}
+        uniform = {"leaves_retained": sorted(set((a, b) for a, b, _ in per_sub)),
+                   "level3_per_move_patterns": len(set(c for _, _, c in per_sub))}
+        if not first_limit:
+            for key, lvl in (("L2", "2"), ("L3", "3")):
+                if _outc(cd, lvl) != T3_EXPECT[key]:
+                    bad.append("level %s outcomes %s" % (lvl, _outc(cd, lvl)))
+            for k in ("expanded", "N_leaves", "N_retained"):
+                got = cd["expanded_nodes"] if k == "expanded" else cd[k]
+                if got != T3_EXPECT[k]:
+                    bad.append("%s %s" % (k, got))
+            # level 2 of T3 is level 2 of T2 (same 60 first moves, all sites)
+            for mv, tup in EXPECT["T2"]["per_move"]["2"].items():
+                if tuple(cd["sites"]["2"][mv][o] for o in tree.OUTCOMES) != tup:
+                    bad.append("level 2 %s differs from T2" % mv)
+        phases["count"] = {"wall_s": round(time.time() - t0, 1),
+                           "cpu_s": round(time.process_time() - c0 + wcpu["count"], 1)}
+        if bad:
+            raise AssertionError("C3 count mismatch for T3: %s" % bad)
+        nsub = len(firsts)
+        est_cpu = nsub * T3S_MAIN_CPU
+        est_wall = math.ceil(nsub / float(jobs)) * T3S_MAIN_CPU
+        print(json.dumps({"family": name, "count": {k: cd[k] for k in
+                          ("expanded_nodes", "N_leaves", "N_retained")},
+                          "level3": _outc(cd, "3"), "uniform": uniform,
+                          "count_phase": phases["count"],
+                          "estimate_main_cpu_s": round(est_cpu, 1),
+                          "estimate_main_wall_s": round(est_wall, 1), "jobs": jobs}), flush=True)
+
+        # ---------------- step 2: main pass
+        t0, c0 = time.time(), time.process_time()
+        deadline = min(t0 + 3 * est_wall, t_start + four_h)
+        N_ret = cd["N_retained"]
+        offsets = []
+        o = 0
+        for s in subs:
+            offsets.append(o)
+            o += s["N_retained"]
+        p3 = st.idx[3]
+        n3 = len(p3)
+
+        def kpairs(N):
+            return [(1 + (7919 * k) % N, p3[(104729 * k) % n3])
+                    for k in range(1, min(1000, N) + 1)]
+
+        def wants(pairs):
+            w = [dict() for _ in firsts]
+            for i, j0 in pairs:
+                m = max(q for q in range(nsub) if offsets[q] < i)
+                w[m].setdefault(i - offsets[m], []).append(j0)
+            return w
+        want = wants(kpairs(N_ret))
+        write_h = N_ret <= H_FILE_MAX
+        hpath = os.path.join(d, "h.jsonl")
+        if os.path.exists(hpath):
+            os.remove(hpath)
+        hfh = open(hpath, "wb") if write_h else None
+        sha = hashlib.sha256()
+        S = Search(st)
+        novel_foams = []
+        novel_c3 = {}
+        sval = {}
+        state = {"processed": 0, "direct": 0, "lines": 0}
+
+        def got_main(r):
+            m = r["m"]
+            wcpu["main"] += r["cpu"]            # includes the worker's F0 set-up
+            wcpu["setup"] += r["setup_cpu"]
+            worker_rss[0] = max(worker_rss[0], r["rss"])
+            state["direct"] += r["direct"]
+            if r["stats"] != subs[m]:
+                raise AssertionError("main pass counts differ from the count-only pass "
+                                     "(subtree %d)" % m)
+            if r["n"] != subs[m]["N_retained"]:
+                raise AssertionError("subtree %d: %d members != %d" % (m, r["n"],
+                                                                       subs[m]["N_retained"]))
+            for (i, j0, v) in r["samp"]:
+                sval[(i, j0)] = v
+            upto = r["n"]
+            for (il, deg, a, H, c3) in r["cands"]:
+                i = offsets[m] + il
+                nb = len(S.novel)
+                S.process(a, deg, i)
+                if len(S.novel) > nb:
+                    novel_foams.append((i, a, H))
+                    novel_c3[i] = c3
+                if S.stop is not None:
+                    upto = il
+                    break
+            data = r["data"]
+            if upto != r["n"]:
+                data = b"".join(ln + b"\n" for ln in data.split(b"\n")[:upto])
+            sha.update(data)
+            if hfh:
+                hfh.write(data)
+            state["processed"] = offsets[m] + upto
+            state["lines"] += data.count(b"\n")
+            if wcpu["main"] > 3 * est_cpu:
+                raise Budget("T3 main pass exceeded 3x its CPU estimate (%d s)" % (3 * est_cpu))
+            if S.stop is not None:
+                return False
+        tasks = [(m, firsts[m], offsets[m], want[m], True) for m in range(nsub)]
+        _pool_results(pool.imap(t3_main_task, tasks, chunksize=1), nsub, deadline, mon,
+                      "main", got_main)
+        if hfh:
+            hfh.close()
+        processed = state["processed"]
+        if state["lines"] != processed:
+            raise AssertionError("h lines %d != processed %d" % (state["lines"], processed))
+        if S.stop is None and processed != N_ret:
+            raise AssertionError("processed %d != N_retained %d" % (processed, N_ret))
+        if not write_h and processed <= H_FILE_MAX:
+            print("note: a stop left %d processed members; h.jsonl was not written "
+                  "(N_retained > %d)" % (processed, H_FILE_MAX), flush=True)
+        pairs = kpairs(processed)
+        if S.stop is not None:
+            # the sample indices depend on `processed`: evaluate the missing ones
+            pool.terminate()
+        missing = [pq for pq in pairs if pq not in sval]
+    if missing:
+        with ctx.Pool(jobs) as pool:
+            want2 = wants(missing)
+            tasks = [(m, firsts[m], offsets[m], want2[m], False)
+                     for m in range(nsub) if want2[m]]
+
+            def got_extra(r):
+                for (i, j0, v) in r["samp"]:
+                    sval[(i, j0)] = v
+                state["direct"] += len(r["samp"])
+                wcpu["main"] += r["cpu"]
+            _pool_results(pool.imap(t3_main_task, tasks, chunksize=1), len(tasks),
+                          t_start + four_h, mon, "sample", got_extra)
+    lines = ["%d\t%d\t%d\n" % (i, j0 + 1, sval[(i, j0)]) for (i, j0) in pairs]
+    for (i, a, H) in novel_foams:
+        for j0, v in zip(st.C3, novel_c3[i]):
+            lines.append("%d\t%d\t%d\n" % (i, j0 + 1, v))
+    with open(os.path.join(d, "pairsample.tsv"), "w", newline="\n") as fh:
+        fh.writelines(lines)
+    phases["main"] = {"wall_s": round(time.time() - t0, 1),
+                      "cpu_s": round(time.process_time() - c0 + wcpu["main"], 1)}
+    fin = S.final(ellq_f0)
+    res = {"amendment": 2, "web": "W1", "family": name}
+    res.update(cd)
+    res.update({"processed": processed, "h_sha256": sha.hexdigest(), "a3_violations": S.a3v,
+                "novel": S.novel, "aut_novel": [], "start": st.start(), "final": fin,
+                "stop": S.stop or "EXHAUSTED"})
+    write_result(os.path.join(d, "result.json"), res)
+    with open(os.path.join(d, "novel.jsonl"), "w", newline="\n") as fh:
+        for (i, g, deg, a) in S.novel_items:
+            fh.write(json.dumps({"i": i, "g": g, "deg": deg, "a": st.tw.hexa(a)}) + "\n")
+    if S.stop in ("ELL60", "DIMU11"):
+        write_certificate(d, st, S, name, None, None, novel_foams)
+    mon.halt.set()
+    mon.join()
+    run = {"implementation": "A", "command": "python3 a2run.py " + " ".join(sys.argv[1:]),
+           "git_commit": os.environ.get("D1_GIT_COMMIT", "unknown"),
+           "machine": platform.node() + " " + platform.platform() + " python " +
+           platform.python_version(),
+           "phases": phases, "workers": jobs, "subtrees": nsub,
+           "peak_rss_mb": round(mon.peak, 1),
+           "peak_rss_note": "sampled every 0.5 s: parent + forkserver + workers, summed",
+           "parent_peak_rss_mb": peak_mb(), "worker_peak_rss_mb_max": worker_rss[0],
+           "worker_setup_cpu_s": round(wcpu["setup"], 1),
+           "parent_cpu_s_total": round(time.process_time() - cpu_parent0, 1),
+           "start_utc": start_utc, "end_utc": utc(),
+           "estimate_main_cpu_s": round(est_cpu, 1), "estimate_main_wall_s": round(est_wall, 1),
+           "direct_evaluations": state["direct"], "h_lines": processed,
+           "h_jsonl_written": write_h, "first_limit": first_limit}
+    with open(os.path.join(d, "run.json"), "w", newline="\n") as fh:
+        fh.write(json.dumps(run, sort_keys=True, indent=1) + "\n")
+    summary = {k: res[k] for k in ("N_leaves", "N_retained", "processed", "a3_violations",
+                                   "h_sha256", "final", "stop")}
+    summary["novel"] = len(S.novel)
+    print(json.dumps({"family": name, "summary": summary, "phases": phases,
+                      "peak_rss_mb": run["peak_rss_mb"]}), flush=True)
+    return res
+
+
 # ------------------------------------------------------------------ certificates
 def write_certificate(d, st, S, name, avecs, foams, novel_foams):
     tw = st.tw
@@ -917,9 +1327,12 @@ def run_c6(st, ellq_f0):
 
 
 def run_union(st, ellq_f0):
+    """A2.7 step 4: order KM, T2R, T2, T3s, then the optional families that ran (T3)."""
     S = Search(st)
     rows = []
-    for fam in ["KM", "T2R", "T2", "T3s"]:
+    order = ["KM", "T2R", "T2", "T3s"] + [f for f in ("T3",) if os.path.exists(
+        os.path.join(famdir("W1", f), "result.json"))]
+    for fam in order:
         p = os.path.join(famdir("W1", fam), "novel.jsonl")
         for line in open(p):
             o = json.loads(line)
@@ -933,7 +1346,7 @@ def run_union(st, ellq_f0):
         if S.stop:
             break
     write_result(os.path.join(OUT, "W1", "A2", "union.json"), {
-        "amendment": 2, "web": "W1", "family": "union", "order": ["KM", "T2R", "T2", "T3s"],
+        "amendment": 2, "web": "W1", "family": "union", "order": order,
         "novel": rows, "a3_violations": S.a3v, "start": st.start(), "final": S.final(ellq_f0),
         "stop": S.stop or "EXHAUSTED"})
     print(json.dumps({"union": S.final(ellq_f0), "stop": S.stop or "EXHAUSTED"}), flush=True)
@@ -1007,9 +1420,17 @@ def main():
     ap.add_argument("--summary", action="store_true")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--jobs", type=int, default=1)
+    ap.add_argument("--first-limit", type=int, default=None,
+                    help="T3 test runs only: the first N first moves")
     args = ap.parse_args()
-    if args.family in ("T3", "T4s"):
-        sys.exit("T3 and T4s are not run now (A2.13 item 2)")
+    if args.family == "T4s":
+        sys.exit("T4s is not run (A2.13 item 2; only T3 has Gabriel's go)")
+    if args.family == "T3":
+        if not 1 <= args.jobs <= 8:
+            sys.exit("T3: --jobs must be 1..8 (at most 8 worker processes)")
+        st, r = f0_setup()
+        run_t3(st, r["ell_q"], args.jobs, args.first_limit)
+        return
     if args.summary:
         sys.exit(0 if run_summary() else 1)
     if args.control and args.control.startswith(("C4", "C5")):
