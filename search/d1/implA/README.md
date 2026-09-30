@@ -228,3 +228,143 @@ version and are not a cross-implementation target.
   the agent automatically by the harness. Listing the WSL home directory once
   (to check the environment) displayed other directory names. None of them
   was opened.
+
+# Phase 2b (SPEC Amendment 2): the dodecahedron families
+
+Amendment 2 is implemented from SPEC alone (branch d1/phase2b, SPEC commit
+b400a9b), including §A2.13. Only the mandatory set is run: F0, KM, KMd, T2R,
+T2 and T3s, with controls C0–C8. T3 and T4s are refused by the code. Nothing
+here is a result until Implementation B agrees byte for byte (§A2.11).
+
+## Command
+
+```
+cd search/d1/implA
+python3 a2run.py --all --jobs 5      # all families and controls, then C6, union, summary
+python3 a2run.py --family T2         # one family: F0 KM KMd T2R T2 T3s
+python3 a2run.py --control C5-W3     # one control: C0 C4-prism5 C4-cube C5-W2 C5-W3 C6
+```
+
+C8 is written by the KMd run. C6 needs T2's `result.json`, and the union needs
+the families' `novel.jsonl`. `D1_A2_OUT=<dir>` redirects the outputs.
+
+## Code
+
+| Path | Content |
+| --- | --- |
+| `d1a/tree.py` | SITES(K), site outcomes (PRECOND / BRIDGE / REDUCIBLE / IRREDUCIBLE), GEN_STRICT as a reduction tree with lazily composed, memoised leaf foams, depth-first path walk |
+| `d1a/a2lib.py` | automorphisms of W1 and their action on a-vectors and on half-foams (§A2.6), KM half-foams (§A2.5), F-spans (§A2.7) |
+| `a2run.py` | families, step 0–4 of §A2.7, direct-evaluation samples, certificates, controls, ledger |
+
+- **Families.** Each family runs a count-only pass first; C3 is asserted
+  there, and a mismatch aborts the run. The main pass then composes the
+  retained leaves, M1∘…∘Mk∘h, as facet–seam half-foams (Mode G). a-vectors
+  come from direct colouring enumeration, then A3 membership and novelty in
+  the F-view, as in step 2.
+- **Direct evaluation.** Every `pairsample.tsv` value is also evaluated
+  directly on the glued closed foam, and the two are asserted equal.
+- **Main pass = count pass.** The main pass re-derives every count and asserts
+  that they equal the count-only pass.
+- **F0 = Phase 2.** F0 is checked to be member-for-member identical (site,
+  chain, degree and a-vector) to Phase 2's STRICT-ALL generator.
+
+## Results
+
+Every family ended **EXHAUSTED**. **No stop criterion fired**, and no family
+produced a novel member.
+
+| Family | Leaves (all degrees) | Retained / processed | Novel | Final ℓ₋₃ | Final dim U | Final ℓ | A3 violations | CPU s (count + main) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| F0 | 11 880 | 11 880 (all degrees) | – | 9 | 9 | 58 | 0 | 1.2 + ~5 setup |
+| KM | 20 | 20 | 0 | 9 | 9 | 58 | 0 | 0.0 |
+| KMd | 58 500 | 58 500 (all degrees; step 2 on the 20 of degree −3) | 0 | 9 | 9 | 58 | 0 | 7.0 |
+| T2R | 4 190 400 | 107 430 | 0 | 9 | 9 | 58 | 0 | 35.2 + 104.5 |
+| T2 | 1 499 040 | 50 220 | 0 | 9 | 9 | 58 | 0 | 9.5 + 45.1 |
+| T3s | 4 085 832 | 61 927 | 0 (Aut closure: nothing to close) | 9 | 9 | 58 | 0 | 43.4 + 69.4 |
+| union (KM, T2R, T2, T3s) | – | – | 0 | 9 | 9 | 58 | 0 | – |
+
+**F0 (step 1):**
+- ℓ = 58, with ℓ_q = 9q⁻³+20q⁻¹+20q+9q³ and r_q = 9q⁻³+20q⁻¹+20q+11q³.
+  Both are exactly the [P2] values.
+- C3_size = 20, dim U0 = 9, dim A3 = 20, dim R = 11, dim P = 9. All the
+  [derived] assertions hold.
+
+**KMd alone** has ℓ = 58, with the same ℓ_q and r_q as F0; so does F0 ∪ KMd
+(C8). That is B19 Remark 4.3's value, under the "every multiset of ≤ 3 dots"
+reading.
+
+**Controls** (all pass):
+- **C0:** all B19-mode degree −3 a-vectors lie in U0, all degree 3 ones in
+  A3, and ℓ(F0) = 58.
+- **C1:** 0 A3 violations.
+- **C2:** T2R has no novel member.
+- **C3:** every count in §A2.5 and §A2.9 matches, including:
+  - T2's uniformity: 352 sites (4/71/87/190) and 837 retained for each of
+    the 60 first moves;
+  - the T3s level-3 counts for `["unzip", 18, 1, 2]`.
+- **C4:**
+  - prism5: 566 700 leaves; cube: 250 056 leaves.
+  - 0 span violations.
+  - For baseline ∪ family: ℓ = r = Tait, and ℓ_q = r_q = qdim of §9.4.
+- **C5:**
+  - W2: 161 448 retained; W3: 168 056 retained.
+  - 0 span violations.
+  - ℓ(baseline ∪ family) = Tait (120 and 162).
+- **C6:**
+  - 120 automorphisms; images of F0₋₃ lie in U0 and of F0₃ in A3.
+  - β is invariant on the F0 sample for all g.
+  - Relabelled image half-foams have a-vector g·a.
+  - Symmetry check: T2 restricted to s0 (837 members) plus Aut closure gives
+    dim U 9 and ℓ₋₃ 9, the same as the full T2.
+- **C7:** pending Implementation B.
+- **C8:** as above.
+
+## Time, memory, ledger
+
+- **Final run** (`--all --jobs 5`, WSL, Python 3.14.4):
+  - 271 s wall, 806 s CPU;
+  - peak RSS 305 MB (C5-W3), no process above 0.31 GB.
+- **Per-family CPU** is in each `run.json` and in `out/A2-summary.json`.
+  The ~5 s F0 set-up that every process repeats is not included in its
+  phases.
+- **Against the §A2.10 estimates:** every family's main pass finished well
+  inside its estimate, far below the 3× stop.
+- **Phase 2b runner time, including a first full run and development count
+  runs:**
+  - the first full run took 551 s wall, while another job was also running
+    on the machine;
+  - the development count runs took about 4 min;
+  - together with the final run, about **0.25 runner-hours** of wall time and
+    about **0.75 CPU-hours** in total.
+- **Reproducibility:** the first and the final run produced byte-identical
+  files everywhere:
+  - every `result.json`, `pairsample.tsv` and `union.json`;
+  - every `h.jsonl` (compared in WSL).
+
+## Output files
+
+- **What is here:** `out/<web>/A2/...` and `out/A2-summary.json`. SHA-256
+  digests of every output file, including the uncommitted `h.jsonl` files,
+  are in `out/A2-SHA256SUMS.txt`.
+- **What is not here:** the `h.jsonl` files are not in the repository
+  (§A2.13 item 4). Each one's digest is `h_sha256` in its `result.json`.
+- **Formats:**
+  - `result.json` follows §A2.8.
+  - Where §A2.8 leaves the schema open (controls, union, level numbering),
+    NOTES.md items 25–39 say what I chose.
+
+## What was read for Phase 2b
+
+- **Read:** `search/d1/SPEC.md` (Amendment 2 in full, including §A2.13) and
+  my own files.
+- **Not read:**
+  - `implB/`;
+  - the scratchpad;
+  - Boozer's materials;
+  - `search/d1/README.md`, `compare.py`, `compare-result.txt` and
+    `.gitignore`;
+  - any other repository file.
+- **Seen incidentally:** one process listing in WSL showed that
+  Implementation B's program was running at the time: its executable path
+  under `/home/claude/d1B/` and one command-line flag. Nothing of B's was
+  opened.

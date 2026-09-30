@@ -5,4 +5,10 @@ W4: N=47196 ell=178 Tait=180 r=180 halffoams=cffacecaa83a109d  AGREE
 W5: N=40704 ell=188 Tait=192 r=192 halffoams=f3f2c2db7546e613  AGREE
 W6: N=53172 ell=248 Tait=252 r=252 halffoams=160cead62e416e2c  AGREE
 W7: N=101970 ell=308 Tait=312 r=312 halffoams=5829e354ec44bb99  AGREE
+W1/A2/F0: leaves=11880 retained=11880 novel=0 stop=EXHAUSTED final={'dimU': 9, 'ell': 58, 'ell_3': 9, 'ell_m3': 9} h=f88b99480a96759a  AGREE (result.json byte-identical)
+W1/A2/KM: leaves=20 retained=20 novel=0 stop=EXHAUSTED final={'dimU': 9, 'ell': 58, 'ell_3': 9, 'ell_m3': 9} h=788c2e92d6467bef  AGREE (result.json byte-identical)
+W1/A2/KMd: leaves=58500 retained=58500 novel=0 stop=EXHAUSTED final={'dimU': 9, 'ell': 58, 'ell_3': 9, 'ell_m3': 9} h=b98430f7d29c4636  AGREE (result.json byte-identical)
+W1/A2/T2R: leaves=4190400 retained=107430 novel=0 stop=EXHAUSTED final={'dimU': 9, 'ell': 58, 'ell_3': 9, 'ell_m3': 9} h=f211ed2cf019c747  AGREE (result.json byte-identical)
+W1/A2/T2: leaves=1499040 retained=50220 novel=0 stop=EXHAUSTED final={'dimU': 9, 'ell': 58, 'ell_3': 9, 'ell_m3': 9} h=8c2c96ce95f42fe9  AGREE (result.json byte-identical)
+W1/A2/T3s: leaves=4085832 retained=61927 novel=0 stop=EXHAUSTED final={'dimU': 9, 'ell': 58, 'ell_3': 9, 'ell_m3': 9} h=5f31c4db60abf4fc  AGREE (result.json byte-identical)
 ALL AGREE

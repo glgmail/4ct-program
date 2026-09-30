@@ -1,0 +1,17 @@
+{
+ "command": "python3 a2run.py --control C6",
+ "end_utc": "2026-09-29T23:39:28Z",
+ "estimate_main_cpu_s": 720,
+ "git_commit": "unknown",
+ "implementation": "A",
+ "machine": "Legion Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43 python 3.14.4",
+ "peak_rss_mb": 74.0,
+ "phases": {
+  "main": {
+   "cpu_s": 5.1,
+   "wall_s": 5.1
+  }
+ },
+ "start_utc": "2026-09-29T23:39:23Z",
+ "workers": 1
+}

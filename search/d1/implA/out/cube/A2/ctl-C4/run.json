@@ -1,0 +1,22 @@
+{
+ "command": "python3 a2run.py --control C4-cube",
+ "direct_evaluations": 1000,
+ "end_utc": "2026-09-29T23:35:42Z",
+ "estimate_main_cpu_s": 600,
+ "git_commit": "unknown",
+ "implementation": "A",
+ "machine": "Legion Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43 python 3.14.4",
+ "peak_rss_mb": 103.3,
+ "phases": {
+  "count": {
+   "cpu_s": 0.9,
+   "wall_s": 0.9
+  },
+  "main": {
+   "cpu_s": 30.0,
+   "wall_s": 30.0
+  }
+ },
+ "start_utc": "2026-09-29T23:35:11Z",
+ "workers": 1
+}

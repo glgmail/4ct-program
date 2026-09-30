@@ -1,0 +1,23 @@
+{
+ "command": "python3 a2run.py all --jobs 4 --out /home/claude/d1B/a2out2",
+ "count_check_msgs": [],
+ "count_check_ok": true,
+ "count_pass": {
+  "cpu_s": 1.46,
+  "wall_s": 0.37
+ },
+ "end_utc": "2026-09-29T23:19:45Z",
+ "family": "C4-cube",
+ "git_commit": "unknown",
+ "h_path": "/home/claude/d1B/a2out2/h/cube-A2-ctl-C4-cube-h.jsonl",
+ "implementation": "B (Mode T: transfer matrices), search/d1/implB",
+ "machine": "Legion Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+ "main_pass": {
+  "cpu_s": 17.88,
+  "wall_s": 4.23
+ },
+ "peak_rss_mb": 124.3,
+ "python": "3.14.4",
+ "start_utc": "2026-09-29T23:19:41Z",
+ "workers": 4
+}

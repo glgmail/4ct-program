@@ -1,0 +1,48 @@
+{
+ "N": 58500,
+ "N_leaves": 58500,
+ "N_retained": 58500,
+ "a3_violations": 0,
+ "amendment": 2,
+ "aut_novel": [],
+ "ell": 58,
+ "ell_q": {
+  "-1": 20,
+  "-3": 9,
+  "1": 20,
+  "3": 9
+ },
+ "expanded_nodes": {},
+ "family": "KMd",
+ "final": {
+  "dimU": 9,
+  "ell": 58,
+  "ell_3": 9,
+  "ell_m3": 9
+ },
+ "h_sha256": "b98430f7d29c4636894941344bcd88aa7f634799264e563bdf643e4cbabcbb2e",
+ "leaves_by_degree": {
+  "-1": 480,
+  "-3": 20,
+  "1": 6000,
+  "3": 52000
+ },
+ "novel": [],
+ "processed": 58500,
+ "r": 60,
+ "r_q": {
+  "-1": 20,
+  "-3": 9,
+  "1": 20,
+  "3": 11
+ },
+ "sites": {},
+ "start": {
+  "dimA3": 20,
+  "dimR": 11,
+  "dimU": 9,
+  "ell_m3": 9
+ },
+ "stop": "EXHAUSTED",
+ "web": "W1"
+}

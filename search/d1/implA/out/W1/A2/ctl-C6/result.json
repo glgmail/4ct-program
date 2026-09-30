@@ -1,0 +1,28 @@
+{
+ "F0_3_images_in_A3": true,
+ "F0_m3_images_in_U0": true,
+ "amendment": 2,
+ "beta_invariant": true,
+ "family": "ctl-C6",
+ "image_foams_match": true,
+ "n_aut": 120,
+ "pass": true,
+ "sym_check": {
+  "T2_final": {
+   "dimU": 9,
+   "ell": 58,
+   "ell_3": 9,
+   "ell_m3": 9
+  },
+  "aut_novel": 0,
+  "final": {
+   "dimU": 9,
+   "ell": 58,
+   "ell_3": 9,
+   "ell_m3": 9
+  },
+  "novel": 0,
+  "s0_members": 837
+ },
+ "web": "W1"
+}

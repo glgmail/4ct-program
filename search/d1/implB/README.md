@@ -193,3 +193,140 @@ strings (`python3 d1b.py all --jobs 4`, `unrecorded`).
   (stopping point of the task).
 - No dodecahedron enlargement was started.
 - The optional §9.2, §9.7 and Smith-form checks were not implemented.
+
+---
+
+# Phase 2b (SPEC Amendment 2): the dodecahedron families
+
+## Command
+
+From this directory, in WSL:
+
+    python3 a2run.py all --jobs 4 --out results
+
+This runs:
+
+- F0, which gives the start state: C3, A3, U0, R and P;
+- controls C0, C4 and C5;
+- families KM, KMd, T2R, T2 and T3s;
+- control C6 (Aut and the T2-restricted-to-s0 symmetry check);
+- controls C3, C1, C2 and C8;
+- the union (step 4).
+
+T3 and T4s are implemented only as far as the tree machinery goes. They
+were not run, per SPEC A2.13.
+
+## Files
+
+| File | Contents |
+| --- | --- |
+| `a2tree.py` | SITES, outcomes, paths, leaves (§A2.4), in Mode T with column-packed transfer products. Includes a degree-only GEN for the count-only pass. |
+| `km.py` | Facet-based KM/KMd half-foams, evaluated directly by §4.5. This is B's only facet code. |
+| `a2run.py` | Families, the span state (A3, U, P, C3, R), automorphisms (§A2.6) and output writers. |
+| `a2controls.py` | Controls and orchestration. |
+
+## Results (all controls PASS; no stop criterion fired)
+
+| Family | Leaves | Retained deg −3 | Novel | final ℓ | ℓ₋₃ | dim U | A3 viol. | stop | wall / CPU (4 workers) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| F0 | 11 880 | 810 (all 11 880 kept) | 0 | 58 | 9 | 9 | 0 | EXHAUSTED | 1.4 s / 1.4 s |
+| KM | 20 | 20 | 0 | 58 | 9 | 9 | 0 | EXHAUSTED | <0.1 s |
+| KMd | 58 500 | 20 (all 58 500 kept) | 0 | 58 | 9 | 9 | 0 | EXHAUSTED | 0.8 s |
+| T2R | 4 190 400 | 107 430 | 0 | 58 | 9 | 9 | 0 | EXHAUSTED | 74 s / 296 s |
+| T2 | 1 499 040 | 50 220 | 0 | 58 | 9 | 9 | 0 | EXHAUSTED | 26 s / 103 s |
+| T3s (+ Aut closure) | 4 085 832 | 61 927 | 0 (0 Aut) | 58 | 9 | 9 | 0 | EXHAUSTED | 47 s / 185 s |
+
+F0 details:
+
+- ℓ_q = 9q⁻³+20q⁻¹+20q+9q³ and r_q = 9q⁻³+20q⁻¹+20q+11q³, both equal to
+  [P2].
+- C3 has 20 members.
+- Start state: dim U0 = 9, dim A3 = 20, dim R = 11, ℓ₋₃ = 9, all as SPEC
+  asserts.
+
+KMd:
+
+- KMd alone has ℓ = 58, the same ℓ_q as F0, r = 60, and r_q equal to F0's.
+- F0 ∪ KMd gives the same values (C8).
+
+## Controls
+
+| Control | Result |
+| --- | --- |
+| C0 | PASS. All 765 B19 degree −3 vectors lie in U0, all 2955 degree 3 vectors lie in A3, and ℓ(F0) = 58. |
+| C1 | PASS: zero A3 violations. |
+| C2 | PASS: T2R has no novel member. |
+| C3 | PASS. Every count-only number equals §A2.5, and T2 is uniform: all 60 first moves give 4/71/87/190 and 837 retained. |
+| C4 | PASS for prism5 (566 700 leaves) and cube (250 056). No span violations, and ℓ_q = r_q = §9.4 with ℓ = r = Tait. |
+| C5 | PASS for W2 (4 603 104 leaves; 14 232 retained at deg −5, 147 216 at deg −3) and W3 (8 835 096; 8 444 and 159 612). No span violations, and ℓ(baseline ∪ family) = Tait. |
+| C6 | PASS. There are 120 automorphisms, all images lie in U0 or A3, β is invariant on the sample, and the symmetry check (T2 restricted to s0 plus Aut closure) matches full T2's dim U 9 and ℓ₋₃ 9. |
+| C8 | Reported above. |
+
+## Resource ledger (Phase 2b, this implementation)
+
+- **Committed run** (4 workers): 7 min 10 s wall, 1666 CPU s, peak RSS 124 MB.
+- **Identical run with 8 workers**: 8 min 04 s wall, 3656 CPU s (inflated by
+  hyperthreading), 163 MB. It gave byte-identical outputs, including every
+  `h.jsonl`.
+- **Tests**: about 35 s wall.
+- **Total**: about 0.26 runner-hours and 1.5 CPU-hours.
+
+Per-family wall and CPU times for the count-only and main passes are in each
+`run.json`.
+
+## Output digests (committed files)
+
+The `h.jsonl` files are not committed. They are in WSL at
+`~/d1B/a2out2/h/`.
+
+| File | SHA-256 |
+| --- | --- |
+| W1/A2/F0/result.json | 31c6b8143868100ce1207482b6a4ffdcba350f1353d3be4c234b618af428103d |
+| W1/A2/F0/pairsample.tsv | f8b971defedc4d8c72ac8a1afa3f89959df6ff015964c2711156d72e47d13742 |
+| W1/A2/KM/result.json | 94479e75da739c358339ca71f916b4d3d56d87c0e1537424ec2ff374596b2b9b |
+| W1/A2/KM/pairsample.tsv | a25d66521bf1f31dbccf03c0774bf5a5435aead297dfb43ac7c3c3931a0e21f2 |
+| W1/A2/KMd/result.json | 3696abf5fb6d6e90651d8a20a85cbe09cec756435021fc18305829a52d4e05ba |
+| W1/A2/KMd/pairsample.tsv | 8fc4d931b3c8373ae21c701ff32815d627b12100c6b0e8b011ec94fc405c090e |
+| W1/A2/T2R/result.json | 65cbca84e772782368c9b8b7b5427c9ef9d8c5f4fa7e03bf422f0a2a9b6363c2 |
+| W1/A2/T2R/pairsample.tsv | b2573106ec71218e1cdebbcb11b5898cddcfe0a215a3382cde94f2f5cec33d87 |
+| W1/A2/T2/result.json | 5c3cf247cd13635477f44c2a901f78dff7525a77d9428e343f8be5ebf511b5c9 |
+| W1/A2/T2/pairsample.tsv | 6a07899f0f9e8dd4d4b94fd42d6523be064bce3150953473ad7372ecb083172f |
+| W1/A2/T3s/result.json | 43ed0315f6812cb22b76948bf0a68f40237a671d61b47e71dccd80a738d7b981 |
+| W1/A2/T3s/pairsample.tsv | 497a64dacba4a9945df1494cca47cc5fe6539e703f3e232b97e3400b2c2d9749 |
+| W1/A2/T2s0/result.json (C6) | 0aa7259cc4207514eb9945934f6548a619b004dad5b09644f623c92b3fe82f7e |
+| W1/A2/T2s0/pairsample.tsv | e69cfd7960fd360969bd032ec7938f2eeecb8ebe0fa43606d1602d1d2e31a52f |
+| W1/A2/union.json | 7273ed4b9775b621aec5c194edbfedb14beaddafce34c4f97c5e352925d28088 |
+| W1/A2/controls.txt | 89e553559cdcb46b3dce3842aa9b3f08a3d28328778c549f7bc6db756afb4f7c |
+| W1/A2/ctl-C0/result.json | 5b93949f6f3a737817138d1d20ae792b5deb438fb27458278e5a5dfe7b6a4a54 |
+| W1/A2/ctl-C3/result.json | 2680f9ebb3a2dbd225193988fbb1106154904e2c9913c051b8cbfd2411ada390 |
+| W1/A2/ctl-C6/result.json | 7f4eb662697de3a63183968956bb64531f00b52b0e798a046e13cfa301ed6ded |
+| W1/A2/ctl-C8/result.json | 1de1610b28899ed450693f207ad51c38374b523346407f9f7e590c4cb71ff126 |
+| prism5/A2/ctl-C4/result.json | c7450cdbc1f821a9c423d285dbe953503f6284da18546d348c33c58b064fa658 |
+| cube/A2/ctl-C4/result.json | 8521bd242eff47809d2208b9a7a79518fceb0da234d795410abf6867b367b837 |
+| W2/A2/ctl-C5/result.json | 2aada97e475f72d5c431734ebafe0edfdb6011ea8657c35c3d3837e9474462a7 |
+| W3/A2/ctl-C5/result.json | ff244a961f4296f747c0a33ca55062187bc55f1ca4dfcb717a144fcdcacda048 |
+
+`h.jsonl` digests (these are also `h_sha256` in each `result.json`):
+
+| File | SHA-256 |
+| --- | --- |
+| F0 | f88b99480a96759a4975402fb6519c0c46e1937b0284f975abbc13adbe7f06b1 |
+| KM | 788c2e92d6467bef3c555c9573287e5e2a95ebe411d2f5e100234d4012053d6c |
+| KMd | b98430f7d29c4636894941344bcd88aa7f634799264e563bdf643e4cbabcbb2e |
+| T2R | f211ed2cf019c747bd4fee75fc7e395b9c23aff387b984b350f0ddf323fc003f |
+| T2 | 8c2c96ce95f42fe9fe92304fd2ff445f41a60100431bdae5316e208fdfb9c9ed |
+| T3s | 5f31c4db60abf4fc893497544cfcb858a960cb98141864bbdb9302a12f7eedf2 |
+| T2s0 | 009c5e0fa3d67de0f798ad04d70218b10ef45978a6cd9e8cac9da2537ccf7d0b |
+| C4 prism5 | 8a6e97fec8f0713832d420f80e907566b51f511478fbeb499d3597501a688e87 |
+| C4 cube | 4c381a952290f7eb3cd2243debdc25b127e07bac2d9de56a5198eef2b4f10881 |
+| C5 W2 | c408290882cb6840703f35f02ab9b6e32c7ac22bb8a41d11fe7b9d7eeb8f37c6 |
+| C5 W3 | 002ae566f44b5d73ff0e0bb0a8389c9fd64ad2875b6a8413c9dd77fa5afa0493 |
+
+## Reading (SPEC §A2.2 framing)
+
+- Every mandatory family ended `EXHAUSTED`: ℓ₋₃ stayed at 9, dim U stayed
+  at 9, and no family had a novel member.
+- This decides nothing about 58 versus 60. It is consistent with both, and
+  it is not evidence beyond B19.
+- No certificate applies.
+- All of this is a lead until A agrees byte for byte (C7).

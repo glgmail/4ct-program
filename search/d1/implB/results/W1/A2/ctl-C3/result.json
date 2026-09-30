@@ -1,0 +1,41 @@
+{
+ "T2_uniformity": {
+  "ok": true,
+  "signatures": [
+   [
+    4,
+    71,
+    87,
+    190,
+    837
+   ]
+  ],
+  "units": 60
+ },
+ "amendment": 2,
+ "control": "C3",
+ "families": {
+  "F0": {
+   "msgs": [],
+   "ok": true
+  },
+  "T2": {
+   "msgs": [],
+   "ok": true
+  },
+  "T2R": {
+   "msgs": [],
+   "ok": true
+  },
+  "T2s0": {
+   "msgs": [],
+   "ok": true
+  },
+  "T3s": {
+   "msgs": [],
+   "ok": true
+  }
+ },
+ "pass": true,
+ "web": "W1"
+}

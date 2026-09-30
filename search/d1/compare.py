@@ -12,7 +12,11 @@ without changing either. For each web W1-W7 in B19 mode it checks:
 * the Amendment 1 A2 subsets (the Unzip block alone, and the first N_e
   half-foams) have equal ell, ell_q, r and r_q in both implementations.
 
-It prints one line per web and exits 0 only if everything agrees.
+Phase 2b (Amendment 2): for each dodecahedron family (F0, KM, KMd, T2R, T2, T3s) the two
+result.json files must be byte-identical. Each records its family's h.jsonl SHA-256
+(`h_sha256`), so this also compares the uncommitted half-foam files.
+
+It prints one line per web and per family, and exits 0 only if everything agrees.
 
     python3 search/d1/compare.py          (from the repository root)
 """
@@ -66,6 +70,15 @@ def main():
         status = "AGREE" if not problems else "DISAGREE: " + "; ".join(problems)
         ok &= not problems
         print(f"{w}: N={ra['N']} ell={ra['ell']} Tait={ra['Tait']} r={ra['r']} halffoams={ha[:16]}  {status}")
+    for fam in ("F0", "KM", "KMd", "T2R", "T2", "T3s"):
+        fa = HERE / "implA" / "out" / "W1" / "A2" / fam / "result.json"
+        fb = HERE / "implB" / "results" / "W1" / "A2" / fam / "result.json"
+        same = fa.read_bytes() == fb.read_bytes()
+        r = json.loads(fa.read_text())
+        ok &= same
+        print(f"W1/A2/{fam}: leaves={r['N_leaves']} retained={r['N_retained']} novel={len(r['novel'])} "
+              f"stop={r['stop']} final={r['final']} h={r['h_sha256'][:16]}  "
+              f"{'AGREE (result.json byte-identical)' if same else 'DISAGREE'}")
     print("ALL AGREE" if ok else "DISAGREEMENT FOUND")
     sys.exit(0 if ok else 1)
 

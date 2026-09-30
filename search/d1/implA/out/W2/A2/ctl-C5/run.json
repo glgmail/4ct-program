@@ -1,0 +1,22 @@
+{
+ "command": "python3 a2run.py --control C5-W2",
+ "direct_evaluations": 1000,
+ "end_utc": "2026-09-29T23:38:00Z",
+ "estimate_main_cpu_s": 2700,
+ "git_commit": "unknown",
+ "implementation": "A",
+ "machine": "Legion Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43 python 3.14.4",
+ "peak_rss_mb": 203.6,
+ "phases": {
+  "count": {
+   "cpu_s": 37.1,
+   "wall_s": 37.1
+  },
+  "main": {
+   "cpu_s": 99.8,
+   "wall_s": 99.8
+  }
+ },
+ "start_utc": "2026-09-29T23:35:43Z",
+ "workers": 1
+}

@@ -1,0 +1,92 @@
+{
+ "N_leaves": 1499040,
+ "N_retained": 50220,
+ "a3_violations": 0,
+ "amendment": 2,
+ "aut_novel": [],
+ "expanded_nodes": {
+  "0": 1,
+  "1": 60
+ },
+ "family": "T2",
+ "final": {
+  "dimU": 9,
+  "ell": 58,
+  "ell_3": 9,
+  "ell_m3": 9
+ },
+ "h_sha256": "8c2c96ce95f42fe9fe92304fd2ff445f41a60100431bdae5316e208fdfb9c9ed",
+ "leaves_by_degree": {
+  "-1": 213840,
+  "-3": 50220,
+  "1": 401940,
+  "3": 437940,
+  "5": 285840,
+  "7": 97740,
+  "9": 11520
+ },
+ "novel": [],
+ "processed": 50220,
+ "sites": {
+  "1": {
+   "ih": {
+    "bridge": 0,
+    "irreducible": 0,
+    "precond": 0,
+    "reducible": 30
+   },
+   "saddle": {
+    "bridge": 60,
+    "irreducible": 0,
+    "precond": 0,
+    "reducible": 60
+   },
+   "unzip": {
+    "bridge": 0,
+    "irreducible": 60,
+    "precond": 0,
+    "reducible": 60
+   },
+   "zip": {
+    "bridge": 0,
+    "irreducible": 0,
+    "precond": 0,
+    "reducible": 30
+   }
+  },
+  "2": {
+   "ih": {
+    "bridge": 0,
+    "irreducible": 120,
+    "precond": 120,
+    "reducible": 1740
+   },
+   "saddle": {
+    "bridge": 4140,
+    "irreducible": 360,
+    "precond": 0,
+    "reducible": 4080
+   },
+   "unzip": {
+    "bridge": 120,
+    "irreducible": 4620,
+    "precond": 0,
+    "reducible": 3840
+   },
+   "zip": {
+    "bridge": 0,
+    "irreducible": 120,
+    "precond": 120,
+    "reducible": 1740
+   }
+  }
+ },
+ "start": {
+  "dimA3": 20,
+  "dimR": 11,
+  "dimU": 9,
+  "ell_m3": 9
+ },
+ "stop": "EXHAUSTED",
+ "web": "W1"
+}
