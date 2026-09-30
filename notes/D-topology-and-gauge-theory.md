@@ -21,6 +21,12 @@ clean checkout. Leads, partial arguments and AI-written summaries go under
   two. It is the smallest web where the combinatorial theory's dimension is
   unknown. Zhuang (2022) claims his method also gives `dim J♭ = Tait` for
   planar webs, which would force 60. See D1 below.
+  - **D1 ended here (2026-09-30).** Every half-foam family of Amendment 2 was run, up to four-move
+    chains, and none raises the bound above 58 (#45–#49). The search cannot prove 58.
+  - **What could decide it is an upper bound:** a written proof that some finite set of half-foams
+    spans J♭(dodecahedron), for example by reducing every half-foam to Boozer's single-move family
+    with local foam relations. If that set's pairing rank is 58, the dimension is 58.
+  - Nobody is working on this. It would be a new task, not a continuation of D1.
 - **Zhuang's argument, checked (D2, lead under review).** The step it leaves out,
   independence of the edge orientations, is equivalent to the four-term Tutte
   relation for dim J♯. By Kronheimer–Mrowka's own reformulation (1508.07207 p.28,
