@@ -6,16 +6,18 @@
     python3 a2run.py --control C4-cube   # one control (C0 C4-prism5 C4-cube C5-W2 C5-W3 C6 C8)
     python3 a2run.py --union             # union.json from finished families
     python3 a2run.py --family T3 --jobs 8   # optional T3 (Gabriel's go, 2026-09-30)
+    python3 a2run.py --family T4s --jobs 8  # optional T4s (Gabriel's go, 2026-09-30)
 
-The mandatory families (A2.13 item 2) and the optional T3 are enabled; T4s
-refuses to run.  T3 runs its 60 first-move subtrees in worker processes
-(A2.10); novelty is still processed in family order in the parent.
+The mandatory families (A2.13 item 2) and the optional T3 and T4s are enabled.
+T3 runs its 60 first-move subtrees, T4s its 9,508 level-3 subtrees, in worker
+processes (A2.10); novelty is still processed in family order in the parent.
 Outputs: out/<web>/A2/... (A2.8).  h.jsonl files are written next to the other
-outputs but are not meant to be committed (A2.13 item 4); T3's is not written
-at all (more than 2,000,000 lines, A2.8).
+outputs but are not meant to be committed (A2.13 item 4); T3's and T4s's are
+not written at all (more than 2,000,000 lines, A2.8).
 """
 
 import argparse
+import bisect
 import datetime
 import hashlib
 import itertools
@@ -555,30 +557,10 @@ def family_main(name, st, ellq_f0):
             except tree.StopWalk:
                 pass
         foam_of = foams.get
-    # A2.7 step 2.4: Aut closure (T3s only)
+    # A2.7 step 2.4: Aut closure (T3s only here; T4s in run_t4s)
     aut_direct = 0
     if name == "T3s" and S.stop is None:
-        auts = automorphisms(st.K)
-        perms = tait_perms(st.K, st.tw.taits, auts)
-        base = list(S.novel_items)
-        for (i, g0, deg, a) in base:
-            Hn = [H for (ii, aa, H) in novel_foams if ii == i][0]
-            for g in range(1, 120):
-                b = apply_perm(a, perms[g])
-                nb = len(S.aut_novel)
-                S.process(b, deg, i, g)
-                if len(S.aut_novel) > nb:
-                    # extra internal check: the image foam has a-vector g.a and
-                    # direct values with C3 equal to beta
-                    Hg = foam_image(Hn, st.K, auts[g][2])
-                    assert tw.avec(Hg) == b
-                    for j0 in st.C3:
-                        assert tw.direct_pair(Hg, st.items[j0][3]) == gf4.dot(b, st.items[j0][4])
-                        aut_direct += 1
-                if S.stop is not None:
-                    break
-            if S.stop is not None:
-                break
+        aut_direct = aut_closure(st, S, novel_foams)
     clock.mark("main")
     hsha = hw.close()
     lines, nd = sample_lines(st, processed, lambda i: avecs[i], foam_of, novel_foams)
@@ -616,6 +598,36 @@ def family_main(name, st, ellq_f0):
     summary["aut_novel"] = len(S.aut_novel)
     print(json.dumps({"family": name, "summary": summary, "phases": clock.phases}), flush=True)
     return res
+
+
+def aut_closure(st, S, novel_foams):
+    """A2.7 step 2.4 (T3s, T4s): for each main-pass novel member in order and
+    g = 1..119, process g.a_H as in step 2.  Returns the number of extra
+    direct evaluations (each novel image foam against the C3 members)."""
+    tw = st.tw
+    aut_direct = 0
+    auts = automorphisms(st.K)
+    perms = tait_perms(st.K, tw.taits, auts)
+    base = list(S.novel_items)
+    for (i, g0, deg, a) in base:
+        Hn = [H for (ii, aa, H) in novel_foams if ii == i][0]
+        for g in range(1, 120):
+            b = apply_perm(a, perms[g])
+            nb = len(S.aut_novel)
+            S.process(b, deg, i, g)
+            if len(S.aut_novel) > nb:
+                # extra internal check: the image foam has a-vector g.a and
+                # direct values with C3 equal to beta
+                Hg = foam_image(Hn, st.K, auts[g][2])
+                assert tw.avec(Hg) == b
+                for j0 in st.C3:
+                    assert tw.direct_pair(Hg, st.items[j0][3]) == gf4.dot(b, st.items[j0][4])
+                    aut_direct += 1
+            if S.stop is not None:
+                break
+        if S.stop is not None:
+            break
+    return aut_direct
 
 
 def degree_of_km(i, items):
@@ -811,9 +823,9 @@ def _pool_results(it, count, deadline, mon, what, on_result):
                 break
             except multiprocessing.TimeoutError:
                 if time.time() > deadline:
-                    raise Budget("T3 %s pass exceeded its wall limit" % what)
+                    raise Budget("parallel %s pass exceeded its wall limit" % what)
                 if mon.over:
-                    raise Budget("T3 %s pass: total RSS above %d MB" % (what, MEM_ABORT_MB))
+                    raise Budget("parallel %s pass: total RSS above %d MB" % (what, MEM_ABORT_MB))
         if on_result(r) is False:
             return
 
@@ -1058,6 +1070,422 @@ def run_t3(st, ellq_f0, jobs, first_limit=None):
     print(json.dumps({"family": name, "summary": summary, "phases": phases,
                       "peak_rss_mb": run["peak_rss_mb"]}), flush=True)
     return res
+
+
+# ------------------------------------------------------------------ T4s (optional)
+# A2.5 T4s: paths (s0, M2, M3, M4) with M2 and M3 IRREDUCIBLE and M4 REDUCIBLE
+# (emitted), retained degrees RET, then the Aut closure of the novel members
+# (A2.7 step 2.4).  Gabriel's go: 2026-09-30, "Run T4s".
+# Parallelisation: the 9,508 level-3 nodes (s0, M2, M3) are the work units, in
+# family (depth-first) order.  Each unit's members are contiguous in the
+# family order (A2.4), so the concatenation of the units in order is the
+# sequential family.  Workers return lines, counts, sample values and the
+# candidates exactly as for T3 (NOTES item 41); the parent runs step 2 on the
+# candidates in family order and hashes the lines in order.
+T4S_RULES = ["irreducible", "irreducible", "irreducible", "emit"]
+T3_MAIN_CPU = 4879.1          # measured T3 main pass (out/W1/A2/T3/run.json)
+T3_COUNT_CPU = 1941.5         # measured T3 count pass
+T3_LEAVES = 245149920
+T4S_EXPECT = {"L4": (78764, 847536, 1253672, 1985780),
+              "expanded": {"0": 1, "1": 1, "2": 87, "3": 9508},
+              "N_leaves": 808040304, "N_retained": 5300704}
+WALL_REFUSE_S = 3.5 * 3600    # a single run estimated above this must be chunked
+
+
+def _w_K1():
+    if "K1" not in _W:
+        K = _w_K()
+        oc, op, node = tree.outcome(K, S0, {f[0]: f for f in K.faces()})
+        assert oc == "irreducible"
+        _W["K1"] = op.Kp
+    return _W["K1"]
+
+
+def _sub4(d):
+    """The part of a level-3 subtree's stats that belongs to the family."""
+    if d["expanded_nodes"] != {"0": 1, "1": 1, "2": 1, "3": 1}:
+        raise AssertionError("prefix path not expanded: %s" % d["expanded_nodes"])
+    return {"sites4": d["sites"]["4"], "lbd": d["leaves_by_degree"],
+            "N_leaves": d["N_leaves"], "N_retained": d["N_retained"]}
+
+
+def t4s_l2_task(m2):
+    """Level-3 site outcomes below (s0, m2): per-move stats and the IRREDUCIBLE sites."""
+    c0 = time.process_time()
+    K1 = _w_K1()
+    op = tree.make_op(K1, tuple(m2), {f[0]: f for f in K1.faces()})
+    K2 = op.Kp
+    fbm = {f[0]: f for f in K2.faces()}
+    s3 = {mv: {oc: 0 for oc in tree.OUTCOMES} for mv in tree.MOVES}
+    m3s = []
+    for site in tree.sites(K2):
+        oc, op3, node = tree.outcome(K2, site, fbm)
+        s3[site[0]][oc] += 1
+        if oc == "irreducible":
+            m3s.append(site)
+    return {"sites3": s3, "m3s": m3s, "cpu": time.process_time() - c0, "rss": peak_mb()}
+
+
+def t4s_count_task(pair):
+    c0 = time.process_time()
+    m2, m3 = pair
+    d = tree.walk(_w_K(), T4S_RULES, None, RET, tree.Stats(4),
+                  prefix=(S0, m2, m3)).as_dict()
+    return {"sub": _sub4(d), "cpu": time.process_time() - c0, "rss": peak_mb()}
+
+
+def t4s_main_task(args):
+    """One level-3 subtree.  args = (m, m2, m3, offset, want, lines_wanted)."""
+    m, m2, m3, offset, want, lines_wanted = args
+    c0 = time.process_time()
+    st = _w_st()
+    setup = _W.pop("setup_cpu", 0.0)
+    tw, T = st.tw, st.T
+    Ul = st.U0.copy()
+    lines = []
+    samp = []
+    cands = []
+    nd = [0]
+    n = [0]
+    a3 = [False]
+
+    def emit(moves, chain, deg, H):
+        n[0] += 1
+        il = n[0]
+        tw.check_degree(H, deg)
+        a = tw.avec(H)
+        if lines_wanted:
+            lines.append(json.dumps({"i": offset + il, "moves": moves, "chain": list(chain),
+                                     "deg": deg, "a": tw.hexa(a)}))
+        for j0 in want.get(il, ()):
+            samp.append((offset + il, j0, _direct_check(st, a, H, j0)))
+            nd[0] += 1
+        x = fview(a, T)
+        if not st.A3.contains(x):
+            if not a3[0]:          # the first violation stops the family
+                a3[0] = True
+                cands.append((il, deg, a, H, None))
+        elif not Ul.contains(x):
+            Ul.add(x)
+            c3 = [_direct_check(st, a, H, j0) for j0 in st.C3]
+            nd[0] += len(c3)
+            cands.append((il, deg, a, H, c3))
+    d = tree.walk(_w_K(), T4S_RULES, None, RET, tree.Stats(4), emit,
+                  prefix=(S0, m2, m3)).as_dict()
+    data = ("\n".join(lines) + "\n").encode("ascii") if lines else b""
+    return {"m": m, "sub": _sub4(d), "n": n[0], "data": data, "samp": samp, "cands": cands,
+            "direct": nd[0], "cpu": time.process_time() - c0, "setup_cpu": setup,
+            "rss": peak_mb()}
+
+
+def _add_sites(acc, s):
+    for mv in tree.MOVES:
+        for oc in tree.OUTCOMES:
+            acc[mv][oc] += s[mv][oc]
+
+
+def run_t4s(st, ellq_f0, jobs, l2_limit=None, seqcheck=False):
+    name = "T4s"
+    t_start, start_utc = time.time(), utc()
+    cpu_parent0 = time.process_time()
+    K = st.K
+    d = famdir("W1", name)
+    os.makedirs(d, exist_ok=True)
+    four_h = 4 * 3600.0
+    mon = RssMonitor()
+    mon.start()
+    ctx = multiprocessing.get_context("forkserver")
+    phases = {}
+    worker_rss = [0.0]
+    wcpu = {"count": 0.0, "main": 0.0, "setup": 0.0}
+    zero = lambda: {mv: {oc: 0 for oc in tree.OUTCOMES} for mv in tree.MOVES}  # noqa: E731
+    with ctx.Pool(jobs) as pool:
+        # ---------------- step 0: count-only pass
+        t0, c0 = time.time(), time.process_time()
+        sites = {str(l): zero() for l in range(1, 5)}
+        oc1, op1, _ = tree.outcome(K, S0, {f[0]: f for f in K.faces()})
+        sites["1"]["unzip"][oc1] += 1          # level 1 counts s0 alone (NOTES item 26)
+        K1 = op1.Kp
+        fbm1 = {f[0]: f for f in K1.faces()}
+        m2s = []
+        for site in tree.sites(K1):
+            oc, _, _ = tree.outcome(K1, site, fbm1)
+            sites["2"][site[0]][oc] += 1
+            if oc == "irreducible":
+                m2s.append(site)
+        n_m2_all = len(m2s)
+        if l2_limit:
+            m2s = m2s[:l2_limit]
+        pairs = []
+
+        def got_l2(r, box=iter(m2s)):
+            m2 = next(box)
+            _add_sites(sites["3"], r["sites3"])
+            pairs.extend((m2, m3) for m3 in r["m3s"])
+            wcpu["count"] += r["cpu"]
+            worker_rss[0] = max(worker_rss[0], r["rss"])
+        _pool_results(pool.imap(t4s_l2_task, m2s, chunksize=1), len(m2s),
+                      t_start + four_h, mon, "count", got_l2)
+        subs = []
+
+        def got_count(r):
+            subs.append(r["sub"])
+            wcpu["count"] += r["cpu"]
+            worker_rss[0] = max(worker_rss[0], r["rss"])
+        _pool_results(pool.imap(t4s_count_task, pairs, chunksize=1), len(pairs),
+                      t_start + four_h, mon, "count", got_count)
+        lbd = {}
+        for s in subs:
+            _add_sites(sites["4"], s["sites4"])
+            for k, v in s["lbd"].items():
+                lbd[int(k)] = lbd.get(int(k), 0) + v
+        cd = {"sites": sites,
+              "expanded_nodes": {"0": 1, "1": 1, "2": len(m2s), "3": len(pairs)},
+              "leaves_by_degree": {str(k): v for k, v in sorted(lbd.items()) if v},
+              "N_leaves": sum(s["N_leaves"] for s in subs),
+              "N_retained": sum(s["N_retained"] for s in subs)}
+        bad = []
+        if oc1 != "irreducible":
+            bad.append("s0 outcome %s" % oc1)
+        if n_m2_all != 87:
+            bad.append("level-2 IRREDUCIBLE %d != 87" % n_m2_all)
+        if not l2_limit:
+            if _outc(cd, "3") != EXPECT["T3s"]["levels"]["3"]:
+                bad.append("level 3 outcomes %s" % (_outc(cd, "3"),))
+            if _outc(cd, "4") != T4S_EXPECT["L4"]:
+                bad.append("level 4 outcomes %s" % (_outc(cd, "4"),))
+            for k in ("expanded", "N_leaves", "N_retained"):
+                got = cd["expanded_nodes"] if k == "expanded" else cd[k]
+                if got != T4S_EXPECT[k]:
+                    bad.append("%s %s" % (k, got))
+            # levels 1-3 are T3s's levels 1-3, move by move
+            p = os.path.join(famdir("W1", "T3s"), "result.json")
+            if os.path.exists(p):
+                t3s = json.load(open(p))["sites"]
+                for lvl in ("1", "2", "3"):
+                    if t3s[lvl] != cd["sites"][lvl]:
+                        bad.append("level %s differs from T3s" % lvl)
+            else:
+                bad.append("T3s result.json missing (levels 1-3 not cross-checked)")
+        phases["count"] = {"wall_s": round(time.time() - t0, 1),
+                           "cpu_s": round(time.process_time() - c0 + wcpu["count"], 1)}
+        # estimate (A2.10): T3's measured main pass scaled by leaves, and by the
+        # count-pass CPU ratio; the larger of the two
+        est_cpu = max(T3_MAIN_CPU * cd["N_leaves"] / T3_LEAVES,
+                      phases["count"]["cpu_s"] * T3_MAIN_CPU / T3_COUNT_CPU)
+        est_wall = est_cpu / jobs
+        print(json.dumps({"family": name, "count": {k: cd[k] for k in
+                          ("expanded_nodes", "N_leaves", "N_retained", "leaves_by_degree")},
+                          "level3": _outc(cd, "3"), "level4": _outc(cd, "4"),
+                          "level4_by_move": {mv: [cd["sites"]["4"][mv][o] for o in tree.OUTCOMES]
+                                             for mv in tree.MOVES},
+                          "count_phase": phases["count"],
+                          "estimate_main_cpu_s": round(est_cpu, 1),
+                          "estimate_main_wall_s": round(est_wall, 1), "jobs": jobs}), flush=True)
+        if bad:
+            raise AssertionError("C3 count mismatch for T4s: %s" % bad)
+        if time.time() - t_start + est_wall > WALL_REFUSE_S:
+            raise Budget("T4s: estimated wall %.0f s exceeds 3.5 h; the run must be chunked"
+                         % (time.time() - t_start + est_wall))
+
+        # ---------------- step 2: main pass
+        t0, c0 = time.time(), time.process_time()
+        deadline = min(t0 + 3 * est_wall, t_start + four_h)
+        N_ret = cd["N_retained"]
+        nsub = len(pairs)
+        offsets = []
+        o = 0
+        for s in subs:
+            offsets.append(o)
+            o += s["N_retained"]
+        p3 = st.idx[3]
+        n3 = len(p3)
+
+        def kpairs(N):
+            return [(1 + (7919 * k) % N, p3[(104729 * k) % n3])
+                    for k in range(1, min(1000, N) + 1)]
+
+        def wants(pp):
+            w = [dict() for _ in range(nsub)]
+            for i, j0 in pp:
+                m = bisect.bisect_left(offsets, i) - 1     # last m with offsets[m] < i
+                assert offsets[m] < i <= offsets[m] + subs[m]["N_retained"]
+                w[m].setdefault(i - offsets[m], []).append(j0)
+            return w
+        want = wants(kpairs(N_ret)) if N_ret else [dict() for _ in range(nsub)]
+        write_h = N_ret <= H_FILE_MAX
+        hpath = os.path.join(d, "h.jsonl")
+        if os.path.exists(hpath):
+            os.remove(hpath)
+        hfh = open(hpath, "wb") if write_h else None
+        sha = hashlib.sha256()
+        S = Search(st)
+        novel_foams = []
+        novel_c3 = {}
+        sval = {}
+        state = {"processed": 0, "direct": 0, "lines": 0, "done": 0}
+        last = [time.time()]
+
+        def got_main(r):
+            m = r["m"]
+            wcpu["main"] += r["cpu"]            # includes the worker's F0 set-up
+            wcpu["setup"] += r["setup_cpu"]
+            worker_rss[0] = max(worker_rss[0], r["rss"])
+            state["direct"] += r["direct"]
+            if r["sub"] != subs[m]:
+                raise AssertionError("main pass counts differ from the count-only pass "
+                                     "(subtree %d)" % m)
+            if r["n"] != subs[m]["N_retained"]:
+                raise AssertionError("subtree %d: %d members != %d" % (m, r["n"],
+                                                                       subs[m]["N_retained"]))
+            for (i, j0, v) in r["samp"]:
+                sval[(i, j0)] = v
+            upto = r["n"]
+            for (il, deg, a, H, c3) in r["cands"]:
+                i = offsets[m] + il
+                nb = len(S.novel)
+                S.process(a, deg, i)
+                if len(S.novel) > nb:
+                    novel_foams.append((i, a, H))
+                    novel_c3[i] = c3
+                    print(json.dumps({"novel": S.novel[-1]}), flush=True)
+                if S.stop is not None:
+                    upto = il
+                    break
+            data = r["data"]
+            if upto != r["n"]:
+                data = b"".join(ln + b"\n" for ln in data.split(b"\n")[:upto])
+            sha.update(data)
+            if hfh:
+                hfh.write(data)
+            state["processed"] = offsets[m] + upto
+            state["lines"] += data.count(b"\n")
+            state["done"] += 1
+            if time.time() - last[0] > 300:
+                last[0] = time.time()
+                print(json.dumps({"progress": state["done"], "of": nsub,
+                                  "processed": state["processed"],
+                                  "wall_s": round(time.time() - t0, 1),
+                                  "worker_cpu_s": round(wcpu["main"], 1),
+                                  "rss_mb": round(mon.peak, 1)}), flush=True)
+            if wcpu["main"] > 3 * est_cpu:
+                raise Budget("T4s main pass exceeded 3x its CPU estimate (%d s)" % (3 * est_cpu))
+            if S.stop is not None:
+                return False
+        tasks = [(m, pairs[m][0], pairs[m][1], offsets[m], want[m], True) for m in range(nsub)]
+        _pool_results(pool.imap(t4s_main_task, tasks, chunksize=1), nsub, deadline, mon,
+                      "main", got_main)
+        if hfh:
+            hfh.close()
+        processed = state["processed"]
+        if state["lines"] != processed:
+            raise AssertionError("h lines %d != processed %d" % (state["lines"], processed))
+        if S.stop is None and processed != N_ret:
+            raise AssertionError("processed %d != N_retained %d" % (processed, N_ret))
+        if not write_h and processed <= H_FILE_MAX:
+            print("note: a stop left %d processed members; h.jsonl was not written "
+                  "(N_retained > %d)" % (processed, H_FILE_MAX), flush=True)
+        pairs_k = kpairs(processed) if processed else []
+        if S.stop is not None:
+            pool.terminate()
+        missing = [pq for pq in pairs_k if pq not in sval]
+    if missing:
+        with ctx.Pool(jobs) as pool:
+            want2 = wants(missing)
+            tasks = [(m, pairs[m][0], pairs[m][1], offsets[m], want2[m], False)
+                     for m in range(nsub) if want2[m]]
+
+            def got_extra(r):
+                for (i, j0, v) in r["samp"]:
+                    sval[(i, j0)] = v
+                state["direct"] += len(r["samp"])
+                wcpu["main"] += r["cpu"]
+            _pool_results(pool.imap(t4s_main_task, tasks, chunksize=1), len(tasks),
+                          t_start + four_h, mon, "sample", got_extra)
+    # A2.7 step 2.4: Aut closure of the novel members (only if no stop fired)
+    aut_direct = 0
+    if S.stop is None:
+        aut_direct = aut_closure(st, S, novel_foams)
+    lines = ["%d\t%d\t%d\n" % (i, j0 + 1, sval[(i, j0)]) for (i, j0) in pairs_k]
+    for (i, a, H) in novel_foams:
+        for j0, v in zip(st.C3, novel_c3[i]):
+            lines.append("%d\t%d\t%d\n" % (i, j0 + 1, v))
+    with open(os.path.join(d, "pairsample.tsv"), "w", newline="\n") as fh:
+        fh.writelines(lines)
+    phases["main"] = {"wall_s": round(time.time() - t0, 1),
+                      "cpu_s": round(time.process_time() - c0 + wcpu["main"], 1)}
+    fin = S.final(ellq_f0)
+    res = {"amendment": 2, "web": "W1", "family": name}
+    res.update(cd)
+    res.update({"processed": processed, "h_sha256": sha.hexdigest(), "a3_violations": S.a3v,
+                "novel": S.novel, "aut_novel": S.aut_novel, "start": st.start(), "final": fin,
+                "stop": S.stop or "EXHAUSTED"})
+    write_result(os.path.join(d, "result.json"), res)
+    with open(os.path.join(d, "novel.jsonl"), "w", newline="\n") as fh:
+        for (i, g, deg, a) in S.novel_items:
+            fh.write(json.dumps({"i": i, "g": g, "deg": deg, "a": st.tw.hexa(a)}) + "\n")
+    if S.stop in ("ELL60", "DIMU11"):
+        write_certificate(d, st, S, name, None, None, novel_foams)
+    seq = None
+    if seqcheck:
+        seq = t4s_seqcheck(st, processed, sha.hexdigest(), S)
+    mon.halt.set()
+    mon.join()
+    run = {"implementation": "A", "command": "python3 a2run.py " + " ".join(sys.argv[1:]),
+           "git_commit": os.environ.get("D1_GIT_COMMIT", "unknown"),
+           "machine": platform.node() + " " + platform.platform() + " python " +
+           platform.python_version(),
+           "phases": phases, "workers": jobs, "subtrees": nsub,
+           "peak_rss_mb": round(mon.peak, 1),
+           "peak_rss_note": "sampled every 0.5 s: parent + forkserver + workers, summed",
+           "parent_peak_rss_mb": peak_mb(), "worker_peak_rss_mb_max": worker_rss[0],
+           "worker_setup_cpu_s": round(wcpu["setup"], 1),
+           "parent_cpu_s_total": round(time.process_time() - cpu_parent0, 1),
+           "start_utc": start_utc, "end_utc": utc(),
+           "estimate_main_cpu_s": round(est_cpu, 1), "estimate_main_wall_s": round(est_wall, 1),
+           "direct_evaluations": state["direct"] + aut_direct, "h_lines": processed,
+           "h_jsonl_written": write_h, "l2_limit": l2_limit, "chunks": 1,
+           "seqcheck": seq}
+    with open(os.path.join(d, "run.json"), "w", newline="\n") as fh:
+        fh.write(json.dumps(run, sort_keys=True, indent=1) + "\n")
+    summary = {k: res[k] for k in ("N_leaves", "N_retained", "processed", "a3_violations",
+                                   "h_sha256", "final", "stop")}
+    summary["novel"] = len(S.novel)
+    summary["aut_novel"] = len(S.aut_novel)
+    print(json.dumps({"family": name, "summary": summary, "phases": phases,
+                      "peak_rss_mb": run["peak_rss_mb"], "seqcheck": seq}), flush=True)
+    return res
+
+
+def t4s_seqcheck(st, processed, sha_par, S_par):
+    """Test only (--seqcheck with --l2-limit): the plain sequential walk of the
+    whole family (tree.walk from W1 with M1 = s0), stopped after `processed`
+    members, must give the same lines and the same step-2 record."""
+    tw = st.tw
+    sha = hashlib.sha256()
+    S = Search(st)
+    n = [0]
+
+    def emit(moves, chain, deg, H):
+        if n[0] >= processed:
+            raise tree.StopWalk()
+        n[0] += 1
+        tw.check_degree(H, deg)
+        a = tw.avec(H)
+        sha.update((json.dumps({"i": n[0], "moves": moves, "chain": list(chain), "deg": deg,
+                                "a": tw.hexa(a)}) + "\n").encode("ascii"))
+        if S.stop is None:
+            S.process(a, deg, n[0])
+    try:
+        tree.walk(st.K, T4S_RULES, S0, RET, tree.Stats(4), emit)
+    except tree.StopWalk:
+        pass
+    ok = (n[0] == processed and sha.hexdigest() == sha_par and S.novel == S_par.novel
+          and S.a3v == S_par.a3v)
+    out = {"members": n[0], "sha256": sha.hexdigest(), "novel": len(S.novel), "equal": ok}
+    if not ok:
+        raise AssertionError("T4s seqcheck: sequential walk differs: %s" % out)
+    return out
 
 
 # ------------------------------------------------------------------ certificates
@@ -1327,10 +1755,10 @@ def run_c6(st, ellq_f0):
 
 
 def run_union(st, ellq_f0):
-    """A2.7 step 4: order KM, T2R, T2, T3s, then the optional families that ran (T3)."""
+    """A2.7 step 4: order KM, T2R, T2, T3s, then the optional families that ran (T3, T4s)."""
     S = Search(st)
     rows = []
-    order = ["KM", "T2R", "T2", "T3s"] + [f for f in ("T3",) if os.path.exists(
+    order = ["KM", "T2R", "T2", "T3s"] + [f for f in ("T3", "T4s") if os.path.exists(
         os.path.join(famdir("W1", f), "result.json"))]
     for fam in order:
         p = os.path.join(famdir("W1", fam), "novel.jsonl")
@@ -1356,8 +1784,10 @@ def run_summary():
     """Controls C1-C3 summary, ledger of CPU/wall seconds, SHA-256 of every
     Phase 2b output file.  Not a compared file."""
     res = {}
-    for fam in MANDATORY:
-        res[fam] = json.load(open(os.path.join(famdir("W1", fam), "result.json")))
+    for fam in MANDATORY + ["T3", "T4s"]:
+        p = os.path.join(famdir("W1", fam), "result.json")
+        if fam in MANDATORY or os.path.exists(p):
+            res[fam] = json.load(open(p))
     c1 = all(r["a3_violations"] == 0 for r in res.values())
     c2 = res["T2R"]["novel"] == [] and res["T2R"]["aut_novel"] == []
     ctl = {}
@@ -1422,9 +1852,17 @@ def main():
     ap.add_argument("--jobs", type=int, default=1)
     ap.add_argument("--first-limit", type=int, default=None,
                     help="T3 test runs only: the first N first moves")
+    ap.add_argument("--l2-limit", type=int, default=None,
+                    help="T4s test runs only: the first N IRREDUCIBLE level-2 nodes")
+    ap.add_argument("--seqcheck", action="store_true",
+                    help="T4s test runs only: compare with the plain sequential walk")
     args = ap.parse_args()
     if args.family == "T4s":
-        sys.exit("T4s is not run (A2.13 item 2; only T3 has Gabriel's go)")
+        if not 1 <= args.jobs <= 8:
+            sys.exit("T4s: --jobs must be 1..8 (at most 8 worker processes)")
+        st, r = f0_setup()
+        run_t4s(st, r["ell_q"], args.jobs, args.l2_limit, args.seqcheck)
+        return
     if args.family == "T3":
         if not 1 <= args.jobs <= 8:
             sys.exit("T3: --jobs must be 1..8 (at most 8 worker processes)")

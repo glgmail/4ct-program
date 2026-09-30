@@ -165,8 +165,8 @@ produced after Amendment 1 was applied.
 
 Amendment 2 is applied, including the decisions in §A2.13. These runs were
 made: the mandatory families F0, KM, KMd, T2R, T2 and T3s, and controls
-C0, C1, C2, C3, C4, C5, C6 and C8. T3 was run later (items 39–46); T4s
-was not run. C7 compares A with B and cannot be run from B alone. No stop
+C0, C1, C2, C3, C4, C5, C6 and C8. T3 was run later (items 39–46), and
+T4s after it (items 47–55). C7 compares A with B and cannot be run from B alone. No stop
 criterion fired.
 
 24. **Step 2 applies only to RET degrees.** F0 and KMd "retain all
@@ -253,7 +253,7 @@ criterion fired.
 T3 is "T3s without the symmetry reduction": all 60 bigon moves as M1
 (§A2.5), M2 IRREDUCIBLE, M3 REDUCIBLE and emitted, RET degrees retained, no
 Aut closure (§A2.7 step 2.4 is for T3s and T4s only), so `aut_novel` is `[]`.
-T4s is still not implemented; `a2run.py family T4s` refuses.
+(T4s was implemented later; items 47–55.)
 
 39. **Parallel units.** T3's units are its 5,220 level-2 nodes in DFS order
     (as for T3s, whose units are s0's 87 level-2 nodes). Each unit walks its
@@ -312,3 +312,88 @@ T4s is still not implemented; `a2run.py family T4s` refuses.
     `search/d1/compare.py` as modified in the working tree (names and line
     counts only), and a `ps` listing on the shared WSL machine showed the
     command line of implementation A's concurrent T3 test run.
+
+# Phase 2b, optional family T4s (Gabriel's go, 2026-09-30: "Run T4s")
+
+T4s is paths (s0, M2, M3, M4) with M1 = s0 = `["unzip", 0, 0, 1]`, M2 and M3
+IRREDUCIBLE (expanded), M4 REDUCIBLE and emitted, RET degrees retained
+(§A2.5), followed by the Aut closure of the novel members (§A2.7 step 2.4).
+
+47. **Units.** T4s's units are its 9,508 level-3 nodes in DFS order. The
+    parent enumerates them (classifying the 1 + 352 + 34,392 sites of levels
+    1–3 with the degree-only GEN, about 25 s), each worker walks one level-3
+    node's subtree, and the parent consumes the results strictly in unit
+    order and does all of §A2.7 step 2 itself, as for T3 (item 39). The 87
+    level-2 nodes would have been too coarse for 8 workers: their subtrees
+    range from 1.5M to 11.3M leaves, about 11 units per worker, so the tail
+    would have been badly balanced.
+    At most 4 × jobs units are in flight.
+48. **Count-only checks.** Level 1 is s0 alone (0 / 0 / 1 / 0), level 2 the
+    T2s0 row (4 / 71 / 87 / 190), level 3 the T3s row (548 / 6,974 / 9,508 /
+    17,362), level 4 and the totals the §A2.5 T4s row; expanded L1 1, L2 87,
+    L3 9,508. On any mismatch the command stops before the main pass. All
+    matched. §A2.5 gives no per-move split for T4s; ours is in the README
+    and in `result.json` (`sites["4"]`). The count-only log also lists, for
+    each level-2 node, its level-3 nodes, leaves and retained members.
+    The first two level-2 nodes (`["zip", 9]` and `["zip", 60]`) have no
+    retained member at all.
+49. **h.jsonl.** 5,300,704 retained members, so `h.jsonl` is not written
+    (§A2.8). `h_sha256` is computed on the fly, in order. `run.json` has one
+    digest per second move (`h_sha256_by_second_move`: label, first i,
+    number of lines, SHA-256). Any novel member's h line would have been
+    written to `W1-A2-T4s-novel.jsonl` and logged at once, so that a
+    certificate could be built from it; there was none.
+50. **Skipping a-vectors of non-retained leaves (§A2.4).** At an emitting
+    level, `a2tree.classify` now decides the outcome with the degree-only
+    GEN first. It computes the transfer and the full GEN (a-vectors) only
+    if some leaf of the site has a retained degree; otherwise the leaves
+    are counted from the degree multiset. Where the full GEN is computed,
+    its degree multiset is asserted equal to the degree-only one. This
+    changes no output (the main pass still asserts its counts equal the
+    count-only pass). It applies to every family; the regression reruns of
+    item 52 cover it. Measured main-pass CPU per leaf: about 88 µs on the
+    first two level-2 nodes before the change; after it, 29 µs on the first
+    three and 34 µs over the full T4s main pass (T3, before the change:
+    60 µs).
+51. **No chunking.** The count pass and a 3-level-2-node prefix put the full
+    run at about 1.2–1.5 h wall with 8 workers, well under the 3.5 h at
+    which the run would have been split. It took 1 h 15 min. The budget
+    guard of item 43 was in force (stop at 3 × 36,362 CPU s, or at
+    12,701 s wall so that the run stays under 4 h minus 10 min); the main
+    pass used 0.75 × its estimate. So no chunked mode was written or
+    tested.
+52. **Checks made before the full run.**
+    - Determinism: `--l2-limit 3` (a test option: only the units below the
+      first 3 level-2 nodes; the first 2 have no retained member, so 2
+      would have tested nothing) with 1 worker and with 8 workers gave
+      byte-identical `result.json`, `pairsample.tsv`, `h.jsonl` (79,756
+      lines; SHA-256 `e95670bd…`) and per-second-move digests. Its
+      result.json fails the count check by design. The full run's digest of
+      the same 79,756 lines (first entry of `h_sha256_by_second_move`) is
+      the same `e95670bd…`.
+    - Regression: `family T3s`, `family T2` and `family T2R` (8 workers)
+      with the changed code reproduced their committed `result.json` and
+      `pairsample.tsv` byte for byte, and F0's `result.json`; the `h.jsonl`
+      digests are unchanged (T3s `5f31c4db…`, T2 `8c2c96ce…`, T2R
+      `f211ed2c…`, F0 `f88b9948…`).
+53. **Aut closure.** Same code as T3s: for each novel member in order and
+    g = 1…119, g·a is processed as in step 2 items 1–3. T4s had no novel
+    member, so nothing was processed and `aut_novel` is `[]`.
+54. **Union with T4s.** `family T4s` redoes §A2.7 step 4 with the order KM,
+    T2R, T2, T3s, T3, T4s. The earlier families' novel members come from
+    their `result.json` under `--prior` (a copy of the committed
+    `results/`); all were empty, so the union processes T4s's novel members
+    and their novel Aut images only. The union is `EXHAUSTED` at dim U 9,
+    ℓ₋₃ 9, ℓ 58.
+55. **What I read for T4s.** Only `search/d1/implB/`, `search/d1/SPEC.md`
+    (Amendment 2), `CLAUDE.md` and my own WSL files under `~/d1B`. I did
+    not open `search/d1/implA/`, `~/d1A`, `search/d1/compare.py`,
+    `search/d1/compare-result.txt` or any `chk/` directory. One thing passed
+    in front of me without being opened: a `ps` listing on the shared WSL
+    machine showed the command line of a concurrent implementation-A
+    process (a T4s test run with `--l2-limit 3` and a `--seqcheck` flag).
+    After that I listed only my own processes. And `git status` listed
+    modified or new files under `search/d1/implA/` (`NOTES.md`,
+    `README.md`, `a2run.py`, `d1a/tree.py`, `out/A2-SHA256SUMS.txt`,
+    `out/A2-summary.json`, `out/W1/A2/union.json`, `out/W1/A2/T4s/`):
+    names only.

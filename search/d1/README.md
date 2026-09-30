@@ -87,6 +87,7 @@ files are identical, and each records its half-foam file's SHA-256:
 | T2 (bigon move, then any move) | 1,499,040 | 50,220 | 0 | 9 / 9 / 58 |
 | T3s (three moves from one bigon site, closed under the 120 symmetries) | 4,085,832 | 61,927 | 0 | 9 / 9 / 58 |
 | T3 (optional: three moves from all 60 bigon sites, no symmetry reduction) | 245,149,920 | 3,715,620 | 0 | 9 / 9 / 58 |
+| T4s (optional: four moves from one bigon site, closed under the 120 symmetries) | 808,040,304 | 5,300,704 | 0 | 9 / 9 / 58 |
 
 **The outcome is inconclusive, as the specification allows.** No family produced a single novel
 degree −3 vector, and neither stop fired. That decides nothing between 58 and 60: if the answer is
@@ -107,9 +108,18 @@ degree −3 vector, and neither stop fired. That decides nothing between 58 and 
 - T3's degree −3 file has more than 2,000,000 lines, so it is never written (§A2.8). Its SHA-256 is
   computed in order and is in `result.json`.
 
-**Cost:** about 0.5 runner-hours for the mandatory families and at most 1.3 for T3 (A and B ran
-partly at the same time), so at most about 1.8 of the 40-hour cap. T4s, the only deeper family, is
-Gabriel's decision.
+**T4s (Gabriel's go, 2026-09-30).**
+- T4s is the deepest family the specification defines. It takes four moves from s0, with the second
+  and third IRREDUCIBLE, then closes novel members under the 120 symmetries.
+- It found no novel member, so the symmetry closure had nothing to act on.
+- Its count pass matches the spec. Levels 1–3 equal T3s's. Both implementations were checked
+  byte-identical between one worker and eight on the first three IRREDUCIBLE level-2 nodes. A also
+  ran a plain sequential walk. Both reran T3s byte for byte with the changed code.
+- No chunking was needed: A took 43 minutes of wall time and B 75, each as one run.
+
+**Cost:** about 0.5 runner-hours for the mandatory families, at most 1.3 for T3 and at most 2.7 for
+T4s (A and B ran partly at the same time each time). So Phase 2b has used at most about 4.5 of the
+40-hour cap. Every family the specification defines has now been run.
 
 **Commands** (in WSL):
 
@@ -119,7 +129,7 @@ cd search/d1/implB && python3 a2run.py all --jobs 4 --out results
 python3 search/d1/compare.py
 ```
 
-T3 runs separately, with at most 8 workers each; see each implementation's README for its exact
-command. A took about 15 minutes of wall time and B about 35.
+T3 and T4s run separately, with at most 8 workers each; see each implementation's README for the
+exact commands. T3 took about 15 minutes of wall time in A and 35 in B; T4s took 43 and 75.
 
 The half-foam (`h.jsonl`) files are not committed. Their digests are in each `result.json`.

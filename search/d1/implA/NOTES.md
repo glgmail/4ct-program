@@ -180,7 +180,8 @@ was not done.
 
 Amendment 2 was read in full, including §A2.13 (Gabriel's decisions). Only the
 mandatory families (F0, KM, KMd, T2R, T2, T3s) and the §A2.9 controls are run;
-`a2run.py` refused T3 and T4s (T3 was enabled later, items 40–46). The items below are the points where Amendment 2
+`a2run.py` refused T3 and T4s (T3 was enabled later, items 40–46, and T4s
+after it, items 47–55). The items below are the points where Amendment 2
 left a choice. Where the choice affects a byte-compared file, it is marked
 **[compared]**; B may have chosen differently, so these need reconciling.
 
@@ -331,3 +332,99 @@ T4s is still refused.
     `chk/` directory, the scratchpad. Seen incidentally, not opened: `git
     status` listing `compare.py` and `implB/a2run.py` as modified, and B's T3
     test command line in two WSL process listings.
+
+## Phase 2b, optional T4s (Gabriel's go, 2026-09-30: "Run T4s"; branch d1/phase2b-t4s)
+
+T4s is §A2.5's "paths (s0, M2, M3, M4) with M2 and M3 IRREDUCIBLE and M4
+REDUCIBLE, followed by the Aut-closure of the novel members". Retained
+degrees are RET, as for T3s. §A2.13 still says "T4s is still not released";
+the go came in the Claude session and is not yet recorded in SPEC.
+
+47. **T4s counts and keys [compared].**
+    - `sites` level 1 counts s0 alone (item 26). Levels 2 and 3 are T3s's
+      levels 2 and 3. The run checks this move by move against T3s's
+      `result.json`. Level 4 is summed over the 9 508 level-3 nodes.
+    - `expanded_nodes` = `{"0": 1, "1": 1, "2": 87, "3": 9508}` (item 25).
+    - `aut_novel` is filled by the Aut closure (§A2.7 step 2.4). It ran here,
+      but there was nothing to close.
+    - `h.jsonl` is not written (5 300 704 > 2 000 000 lines). `h_sha256` is
+      computed in the parent, in family order, as for T3 (item 40).
+48. **Work unit: one level-3 node.** The 9 508 nodes (s0, M2, M3) are
+    processed in family order. `tree.walk` gained a `prefix` argument: with
+    `prefix=(s0, M2, M3)`, levels 1–3 visit only those sites, and the walk is
+    exactly the part of the full depth-first walk below that path.
+    - A node's members are contiguous in the family order (§A2.4), so the
+      concatenation of the nodes in order is the sequential family.
+    - Workers return lines, counts, sample values and candidates exactly as
+      for T3 (item 41). The parent runs step 2 on the candidates in order.
+    - The count pass has three stages:
+      - the parent does levels 1 and 2 (s0, then the 352 sites of K1, 87 of
+        them IRREDUCIBLE);
+      - 87 tasks give the level-3 outcomes and the IRREDUCIBLE M3 sites;
+      - 9 508 tasks walk level 4 and count leaves by degree.
+    - The main pass asserts, per node, that its level-4 counts, leaf degrees
+      and member count equal the count pass.
+    - `imap` uses chunksize 1. In Python 3.14, `Pool.imap` with chunksize > 1
+      returns a plain generator, which has no `next(timeout)`.
+49. **Aut closure (T4s).** After the main pass, if no stop fired, the parent
+    applies the closure to the main-pass novel members (item 31). That code
+    is now one function, `aut_closure`, shared by T3s and T4s. The T3s rerun
+    (item 52) reproduces its committed files. Images are not members, so they
+    are not in `pairsample.tsv` (item 30).
+50. **Sample.** As item 42. The k-pairs go to the node holding i, found by
+    bisection on the node offsets from the count pass. Each worker
+    evaluates its pairs on the glued closed foam and asserts equality with β.
+51. **Budget and chunking.**
+    - Estimate, logged after the count pass: the larger of
+      - T3's main pass CPU (4 879.1 s) × T4s leaves / T3 leaves, and
+      - T4s count-pass CPU × (T3 main / T3 count).
+    - Measured: 16 082 s CPU, that is 2 010 s wall with 8 workers.
+    - The run refuses to start its main pass if count wall + estimated main
+      wall exceeds 3.5 h.
+    - The main pass stops at 3× the wall estimate, at 3× the summed worker
+      CPU, or at 4 h. The memory abort stays at 3 400 MB summed RSS.
+    - The whole run took 43 min, so **no chunking was needed**, and none is
+      implemented (`run.json` says `"chunks": 1`).
+52. **Checks before the full run.**
+    - **`--l2-limit 3`** runs the first three IRREDUCIBLE level-2 nodes. The
+      first two are Zip nodes with no retained member at all. The third, the
+      first Unzip node, gives 79 756 members over 242 level-3 nodes.
+    - **1 worker vs 8 workers:** byte-identical `result.json`,
+      `pairsample.tsv`, `novel.jsonl` and `h.jsonl` (79 756 lines, SHA-256
+      `e95670bd…795f`).
+    - **Plain sequential walk:** `--seqcheck` walks the whole family from W1
+      with M1 = s0 (plain `tree.walk`, no prefix, no workers), stopped after
+      79 756 members. It gives the same line digest and the same step-2
+      record.
+    - **T3s rerun** with the changed code (`D1_A2_OUT` elsewhere): the
+      committed `result.json`, `pairsample.tsv` and `novel.jsonl`
+      reproduce byte for byte, and `h.jsonl` still has SHA-256
+      `5f31c4db…edf2`. That run used the final code except for the two
+      T4s-only `chunksize` values.
+53. **Result.**
+    - `EXHAUSTED`: no novel member, `aut_novel` = [], 0 A3 violations.
+    - Final ℓ₋₃ 9, dim U 9, ℓ 58.
+    - `h_sha256` = `d486c579…dc80`.
+    - All 1 000 sample pairs agree with direct closed-foam evaluation.
+    - `union.json` (order KM, T2R, T2, T3s, T3, T4s) is unchanged except for
+      `order`.
+54. **Summary and digests.**
+    - `A2-summary.json` now also lists the optional families that ran (T3,
+      T4s) under `stops`, `final` and `novel`, and C1 covers them.
+    - `A2-SHA256SUMS.txt` was regenerated in WSL, with the uncommitted
+      mandatory `h.jsonl` files copied back in. The only changes are the
+      `union.json` line and the four new T4s lines.
+55. **What was read for T4s.** `CLAUDE.md`, `search/d1/SPEC.md` (Amendment 2,
+    §A2.0–§A2.13), my own files (`search/d1/implA/`), and my WSL files under
+    `~/d1A`. `search/d1/README.md` was grepped for T3/T4s mentions only.
+    - **Not read:** `implB/`, `~/d1B`, `compare.py`, `compare-result.txt`,
+      any `chk/` directory, the scratchpad.
+    - **Seen incidentally, not opened:**
+      - one WSL process listing (`pgrep -af a2run`) showed B's T4s
+        count-only run: `a2run.py family T4s --jobs 8 --count-only --out
+        /home/claude/d1B/t4s/count`;
+      - `git check-ignore` reported that `search/d1/.gitignore` line 5
+        ignores `pairsample.tsv`, so the `pairsample.tsv` files, T4s's
+        included, are not tracked unless they are added by force;
+      - `git status` listed `implB/a2controls.py`, `implB/a2run.py` and
+        `implB/a2tree.py` as modified in the working tree.

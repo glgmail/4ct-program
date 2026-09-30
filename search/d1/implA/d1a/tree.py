@@ -188,7 +188,7 @@ class Stats:
                 "N_leaves": sum(self.leaves.values()), "N_retained": self.retained}
 
 
-def walk(K0, rules, first, keep, stats, emit=None, per_first=None):
+def walk(K0, rules, first, keep, stats, emit=None, per_first=None, prefix=None):
     """Depth-first path enumeration (A2.4).
 
     rules: list over levels 1..L; rules[l-1] is "reducible" or "irreducible"
@@ -198,6 +198,10 @@ def walk(K0, rules, first, keep, stats, emit=None, per_first=None):
     emit:  None (count only) or callback(moves, chain, deg, foam); it may raise
            StopWalk.
     per_first: optional dict site -> [sites-by-outcome dict, retained count]
+    prefix: optional sequence of sites (M1, ..., Mk): level l <= k visits only
+           prefix[l-1].  The walk is then exactly the part of the full walk
+           below that path (used for T4s's level-3 subtrees); the stats of
+           levels 1..k count only the prefix sites.
     """
     L = len(rules)
 
@@ -205,7 +209,10 @@ def walk(K0, rules, first, keep, stats, emit=None, per_first=None):
         key = str(lvl - 1)
         stats.expanded[key] = stats.expanded.get(key, 0) + 1
         fbm = {f[0]: f for f in K.faces()}
-        slist = [first] if (lvl == 1 and first is not None) else sites(K)
+        if prefix is not None and lvl <= len(prefix):
+            slist = [tuple(prefix[lvl - 1])]
+        else:
+            slist = [first] if (lvl == 1 and first is not None) else sites(K)
         rule = rules[lvl - 1]
         for site in slist:
             oc, op, node = outcome(K, site, fbm)
