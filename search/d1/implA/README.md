@@ -232,9 +232,11 @@ version and are not a cross-implementation target.
 # Phase 2b (SPEC Amendment 2): the dodecahedron families
 
 Amendment 2 is implemented from SPEC alone (branch d1/phase2b, SPEC commit
-b400a9b), including §A2.13. Only the mandatory set is run: F0, KM, KMd, T2R,
-T2 and T3s, with controls C0–C8. T3 and T4s are refused by the code. Nothing
-here is a result until Implementation B agrees byte for byte (§A2.11).
+b400a9b), including §A2.13. The mandatory set is run: F0, KM, KMd, T2R,
+T2 and T3s, with controls C0–C8. The optional T3 was added afterwards, on
+Gabriel's go of 2026-09-30 ("Run T3 on all 60 bigon sites"; branch
+d1/phase2b-t3). T4s is still refused by the code. Nothing here is a result
+until Implementation B agrees byte for byte (§A2.11).
 
 ## Command
 
@@ -243,7 +245,12 @@ cd search/d1/implA
 python3 a2run.py --all --jobs 5      # all families and controls, then C6, union, summary
 python3 a2run.py --family T2         # one family: F0 KM KMd T2R T2 T3s
 python3 a2run.py --control C5-W3     # one control: C0 C4-prism5 C4-cube C5-W2 C5-W3 C6
+python3 a2run.py --family T3 --jobs 8   # optional T3, 60 subtrees in 8 worker processes
+python3 a2run.py --union             # union.json again, now with T3 after T3s
 ```
+
+T3 refuses more than 8 workers. `--first-limit N` restricts T3 to its first
+N first moves; it is for tests only (outputs then go under `D1_A2_OUT`).
 
 C8 is written by the KMd run. C6 needs T2's `result.json`, and the union needs
 the families' `novel.jsonl`. `D1_A2_OUT=<dir>` redirects the outputs.
@@ -281,7 +288,29 @@ produced a novel member.
 | T2R | 4 190 400 | 107 430 | 0 | 9 | 9 | 58 | 0 | 35.2 + 104.5 |
 | T2 | 1 499 040 | 50 220 | 0 | 9 | 9 | 58 | 0 | 9.5 + 45.1 |
 | T3s | 4 085 832 | 61 927 | 0 (Aut closure: nothing to close) | 9 | 9 | 58 | 0 | 43.4 + 69.4 |
-| union (KM, T2R, T2, T3s) | – | – | 0 | 9 | 9 | 58 | 0 | – |
+| T3 (optional; 60 first moves, no Aut closure) | 245 149 920 | 3 715 620 | 0 | 9 | 9 | 58 | 0 | 1 941.5 + 4 879.1 (8 workers) |
+| union (KM, T2R, T2, T3s, T3) | – | – | 0 | 9 | 9 | 58 | 0 | – |
+
+**T3** (`python3 a2run.py --family T3 --jobs 8`, then `--union`):
+- **Counts (C3).** Every number of §A2.5's T3 row matches: 60 expanded at
+  level 1 and 5 220 at level 2; level-3 outcomes 32 880 / 418 440 / 570 480 /
+  1 041 720; 245 149 920 leaves; 3 715 620 retained. Each of the 60 subtrees
+  has exactly the T3s level-3 counts (548 / 6 974 / 9 508 / 17 362), the
+  same per-move split, 4 085 832 leaves and 61 927 retained. Level 2 equals
+  T2's level 2 move by move.
+- **Result.** `EXHAUSTED`, no novel member, 0 A3 violations, final ℓ₋₃ 9,
+  dim U 9, ℓ 58. `h_sha256` = `6ea3919a…5542` (full value in `result.json`);
+  `h.jsonl` itself is not written (more than 2 000 000 lines, §A2.8).
+- **Direct evaluation.** All 1 000 sample pairs were also evaluated on the
+  glued closed foam and agree with β.
+- **Parallel = sequential.** The 60 subtrees run in worker processes; novelty
+  (§A2.7 step 2) is processed in family order in the parent (NOTES item 41).
+  Checks before the full run, on the first 3 first moves:
+  - 1 worker and 8 workers gave byte-identical `result.json`,
+    `pairsample.tsv`, `novel.jsonl` and `h.jsonl` (185 781 lines, SHA-256
+    `78ca72a0…436c`);
+  - lines 1–61 927 (the s0 subtree) are byte-identical to the T3s `h.jsonl`
+    of the mandatory run.
 
 **F0 (step 1):**
 - ℓ = 58, with ℓ_q = 9q⁻³+20q⁻¹+20q+9q³ and r_q = 9q⁻³+20q⁻¹+20q+11q³.
@@ -341,6 +370,19 @@ reading.
   - every `result.json`, `pairsample.tsv` and `union.json`;
   - every `h.jsonl` (compared in WSL).
 
+- **T3 run** (`--family T3 --jobs 8`, same machine; Implementation B was
+  running on it part of the time):
+  - count pass 252.5 s wall, 1 941.5 s CPU; main pass 635.2 s wall,
+    4 879.1 s CPU; whole process 889 s wall (00:44:43–00:59:32 UTC);
+  - estimate logged after the count pass: main 4 164 s CPU (60 × the T3s main
+    pass), 555 s wall with 8 workers. The main pass took 1.14× (wall) and
+    1.17× (CPU) of it, below the 3× stop;
+  - peak RSS 1 146 MB summed over the parent, the forkserver and 8 workers
+    (sampled every 0.5 s); no worker above 146 MB;
+  - the two 3-first-move test runs took 174 s and about 135 s wall (171 s and
+    387 s CPU), the union 2 s;
+  - T3 in total: about **0.33 runner-hours** and **2.05 CPU-hours**.
+
 ## Output files
 
 - **What is here:** `out/<web>/A2/...` and `out/A2-summary.json`. SHA-256
@@ -368,3 +410,11 @@ reading.
   Implementation B's program was running at the time: its executable path
   under `/home/claude/d1B/` and one command-line flag. Nothing of B's was
   opened.
+- **For T3 (branch d1/phase2b-t3):** I read `CLAUDE.md`, `search/d1/SPEC.md`
+  (Amendment 2 again, §A2.4–§A2.13), `search/d1/README.md` (the top-level
+  D1 README, now on the allowed list) and my own files and WSL outputs under
+  `~/d1A`. Not read: `implB/`, `~/d1B`, `compare.py`, any `chk/` directory,
+  the scratchpad. **Seen incidentally:** `git status` listed `compare.py` and
+  `implB/a2run.py` as modified in the working tree (not opened), and two
+  process listings in WSL showed B's T3 test run: `a2run.py family T3 --jobs 8
+  --m1-limit 3 --out /home/claude/d1B/t3/det8`. Nothing of B's was opened.

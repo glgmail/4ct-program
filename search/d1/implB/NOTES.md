@@ -165,8 +165,9 @@ produced after Amendment 1 was applied.
 
 Amendment 2 is applied, including the decisions in §A2.13. These runs were
 made: the mandatory families F0, KM, KMd, T2R, T2 and T3s, and controls
-C0, C1, C2, C3, C4, C5, C6 and C8. T3 and T4s were not run. C7 compares A
-with B and cannot be run from B alone. No stop criterion fired.
+C0, C1, C2, C3, C4, C5, C6 and C8. T3 was run later (items 39–46); T4s
+was not run. C7 compares A with B and cannot be run from B alone. No stop
+criterion fired.
 
 24. **Step 2 applies only to RET degrees.** F0 and KMd "retain all
     degrees". I read this as: every member is written to `h.jsonl` and
@@ -246,3 +247,68 @@ with B and cannot be run from B alone. No stop criterion fired.
     equal the count-only counts.
 38. **F0 cross-check.** F0's a-vector list is asserted identical to the
     Phase 2 STRICT-ALL single-move list from `sites.generate`.
+
+# Phase 2b, optional family T3 (Gabriel's go, 2026-09-30)
+
+T3 is "T3s without the symmetry reduction": all 60 bigon moves as M1
+(§A2.5), M2 IRREDUCIBLE, M3 REDUCIBLE and emitted, RET degrees retained, no
+Aut closure (§A2.7 step 2.4 is for T3s and T4s only), so `aut_novel` is `[]`.
+T4s is still not implemented; `a2run.py family T4s` refuses.
+
+39. **Parallel units.** T3's units are its 5,220 level-2 nodes in DFS order
+    (as for T3s, whose units are s0's 87 level-2 nodes). Each unit walks its
+    subtree in a worker. The parent consumes unit results strictly in unit
+    order, writes the h lines and does all of §A2.7 step 2 itself, so the
+    output is the same as a sequential run (§A2.10). At most 4 × jobs units
+    are in flight, which bounds memory. This bounded window replaced
+    `Pool.imap` for every family; the order of results is unchanged. After
+    the change, `family T2` and `family T3s` (8 workers) reproduced the
+    mandatory run's `result.json`, `pairsample.tsv` and `h.jsonl` byte for
+    byte, and so did F0.
+40. **h.jsonl.** T3 has 3,715,620 retained members, more than 2,000,000, so
+    `h.jsonl` is not written (§A2.8). The SHA-256 of the lines is computed on
+    the fly, in order, and is `h_sha256`. `run.json` also records one digest
+    per first move (`h_sha256_by_first_move`: label, first i, number of
+    lines, SHA-256). `--hprefix N` writes the first N lines to a separate file;
+    the full run used N = 61,927 for the s0 check (item 42). That file is not
+    committed.
+41. **Count-only checks.** Besides the §A2.5 T3 row (level 3, 245,149,920
+    leaves, 3,715,620 retained, expanded L1 60 and L2 5,220), the run checks
+    level 1 against the F0 row (0 / 60 / 60 / 180) and level 2 against the
+    T2 row (240 / 4,260 / 5,220 / 11,400); these are the same sites. It also
+    checks that each of the 60 first moves has exactly T3s's numbers:
+    level 3 548 / 6,974 / 9,508 / 17,362, 87 level-2 nodes, 4,085,832 leaves
+    and 61,927 retained. On any mismatch T3 stops before the main pass.
+42. **Checks made before the full run.**
+    - `--m1-limit 3` (a test option: only the first 3 first moves) run with
+      1 worker and with 8 workers gave byte-identical `result.json`,
+      `pairsample.tsv`, `h.jsonl` (185,781 lines) and per-first-move
+      digests. Its result.json fails the count check by design, since only
+      3 of the 60 subtrees are included.
+    - The first 61,927 lines (the s0 subtree) are byte-identical to T3s's
+      `h.jsonl` from the mandatory run (`~/d1B/a2out2/h/W1-A2-T3s-h.jsonl`);
+      checked with `cmp` in the `--m1-limit 3` runs and again in the full run.
+43. **Budget guard (§A2.10, §A2.13).** The estimate is 45 µs per leaf
+    (11,032 CPU s for T3), and a wall estimate of that divided by
+    min(jobs, 4). During T3's main pass the parent samples the CPU time of
+    itself and its workers from `/proc` every 10 units, and stops the pass
+    if CPU exceeds 3 × the estimate or wall time exceeds
+    min(3 × the wall estimate, 4 h − 10 min − the count-pass wall time).
+    It samples the summed RSS of all its processes in the same way
+    (`peak_total_rss_mb_sampled` in `run.json`); `peak_rss_mb` is still the
+    largest single process.
+44. **Pair sample storage.** Retained a-vectors are kept packed, 15 bytes
+    each (56 MB for T3), instead of as Python tuples. The sample is the same.
+45. **Union with T3.** `family T3` redoes §A2.7 step 4 with the order KM,
+    T2R, T2, T3s, T3. The novel members of the mandatory families are read
+    from their `result.json` under `--prior`; all were empty, so the union
+    processes T3's novel members only. If any mandatory family had novel
+    members the command refuses and asks for a full rerun.
+46. **What I read for T3.** Only `search/d1/implB/`, `search/d1/SPEC.md`
+    (Amendment 2), `CLAUDE.md` and my own WSL files under `~/d1B`. I did not
+    open `search/d1/implA/`, `~/d1A`, `search/d1/compare.py` or any `chk/`
+    directory. Two things passed in front of me without being opened: a
+    `git diff --stat` listed `search/d1/implA/a2run.py` and
+    `search/d1/compare.py` as modified in the working tree (names and line
+    counts only), and a `ps` listing on the shared WSL machine showed the
+    command line of implementation A's concurrent T3 test run.

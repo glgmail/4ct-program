@@ -86,6 +86,7 @@ files are identical, and each records its half-foam file's SHA-256:
 | T2R (control: two moves, first reducible) | 4,190,400 | 107,430 | 0 | 9 / 9 / 58 |
 | T2 (bigon move, then any move) | 1,499,040 | 50,220 | 0 | 9 / 9 / 58 |
 | T3s (three moves from one bigon site, closed under the 120 symmetries) | 4,085,832 | 61,927 | 0 | 9 / 9 / 58 |
+| T3 (optional: three moves from all 60 bigon sites, no symmetry reduction) | 245,149,920 | 3,715,620 | 0 | 9 / 9 / 58 |
 
 **The outcome is inconclusive, as the specification allows.** No family produced a single novel
 degree −3 vector, and neither stop fired. That decides nothing between 58 and 60: if the answer is
@@ -96,7 +97,18 @@ degree −3 vector, and neither stop fired. That decides nothing between 58 and 
 - Every control holds: T2R adds nothing, 0 vectors fall outside the predicted 20-dimensional space,
   and prism5, cube, W2 and W3 reach Tait.
 
-**Cost:** about 0.5 runner-hours of the 40-hour cap. The optional larger families, T3 and T4s, are
+**T3 (Gabriel's go, 2026-09-30).**
+- T3 checks the symmetry reduction behind T3s directly: it runs all 60 bigon sites instead of one
+  site and its 120 images. It agrees with T3s.
+- Its count pass matches the spec. Each of the 60 subtrees has the T3s counts, and the s0 subtree
+  reproduces T3s's half-foams byte for byte.
+- Both implementations run the 60 subtrees in parallel, and were checked byte-identical against a
+  one-worker run on the first three subtrees.
+- T3's degree −3 file has more than 2,000,000 lines, so it is never written (§A2.8). Its SHA-256 is
+  computed in order and is in `result.json`.
+
+**Cost:** about 0.5 runner-hours for the mandatory families and at most 1.3 for T3 (A and B ran
+partly at the same time), so at most about 1.8 of the 40-hour cap. T4s, the only deeper family, is
 Gabriel's decision.
 
 **Commands** (in WSL):
@@ -106,5 +118,8 @@ cd search/d1/implA && python3 a2run.py --all --jobs 5
 cd search/d1/implB && python3 a2run.py all --jobs 4 --out results
 python3 search/d1/compare.py
 ```
+
+T3 runs separately, with at most 8 workers each; see each implementation's README for its exact
+command. A took about 15 minutes of wall time and B about 35.
 
 The half-foam (`h.jsonl`) files are not committed. Their digests are in each `result.json`.

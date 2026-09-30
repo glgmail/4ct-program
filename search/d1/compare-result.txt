@@ -11,4 +11,5 @@ W1/A2/KMd: leaves=58500 retained=58500 novel=0 stop=EXHAUSTED final={'dimU': 9, 
 W1/A2/T2R: leaves=4190400 retained=107430 novel=0 stop=EXHAUSTED final={'dimU': 9, 'ell': 58, 'ell_3': 9, 'ell_m3': 9} h=f211ed2cf019c747  AGREE (result.json byte-identical)
 W1/A2/T2: leaves=1499040 retained=50220 novel=0 stop=EXHAUSTED final={'dimU': 9, 'ell': 58, 'ell_3': 9, 'ell_m3': 9} h=8c2c96ce95f42fe9  AGREE (result.json byte-identical)
 W1/A2/T3s: leaves=4085832 retained=61927 novel=0 stop=EXHAUSTED final={'dimU': 9, 'ell': 58, 'ell_3': 9, 'ell_m3': 9} h=5f31c4db60abf4fc  AGREE (result.json byte-identical)
+W1/A2/T3: leaves=245149920 retained=3715620 novel=0 stop=EXHAUSTED final={'dimU': 9, 'ell': 58, 'ell_3': 9, 'ell_m3': 9} h=6ea3919a1e7c7a83  AGREE (result.json byte-identical)
 ALL AGREE
